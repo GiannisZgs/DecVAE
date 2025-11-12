@@ -157,7 +157,6 @@ class ModelArguments:
         metadata={"help": "Length of vector span to mask along the time axis."},
     )
     layerdrop: float = field(default=0.0, metadata={"help": "The LayerDrop probability."})
-    
     feat_extract_norm: str = field(
         default="layer",
         metadata={"help": "The normalization to be applied after the feature extractor. Should be 'layer' or 'instance'."},
@@ -170,7 +169,6 @@ class ModelArguments:
         default=1e-5,
         metadata={"help": "The epsilon used by LayerNorm layers."},
     )
-
     apply_spec_augment: bool = field(
         default=True,
         metadata={"help": "Whether to apply SpecAugment to the input features or not."},
@@ -219,10 +217,6 @@ class ModelArguments:
         default=False,
         metadata={"help": "Whether to add skip connections to the convolutional layers in the feature extractor."},
     )
-    num_feat_extract_layers: int = field(
-        default=7,
-        metadata={"help": "The number of layers in the feature extractor."},
-    )
     do_stable_layer_norm: bool = field(
         default=True,
         metadata={"help": "Whether to use a stable layer norm implementation in the transformer aggregator."},
@@ -230,10 +224,6 @@ class ModelArguments:
     feat_extract_activation: str = field(
         default="gelu",
         metadata={"help": "The activation function to be used in the feature extractor."},
-    )
-    hidden_act: str = field(
-        default="gelu",
-        metadata={"help": "The activation function to be used in the transformer encoder."},
     )
     hidden_size: int = field(
         default=512,
@@ -503,10 +493,6 @@ class ModelArgumentsPost:
         default=False,
         metadata={"help": "Whether to add skip connections to the convolutional layers in the feature extractor."},
     )
-    num_feat_extract_layers: int = field(
-        default=7,
-        metadata={"help": "The number of layers in the feature extractor."},
-    )
     do_stable_layer_norm: bool = field(
         default=True,
         metadata={"help": "Whether to use a stable layer norm implementation in the transformer aggregator."},
@@ -514,10 +500,6 @@ class ModelArgumentsPost:
     feat_extract_activation: str = field(
         default="gelu",
         metadata={"help": "The activation function to be used in the feature extractor."},
-    )
-    hidden_act: str = field(
-        default="gelu",
-        metadata={"help": "The activation function to be used in the transformer encoder."},
     )
     hidden_size: int = field(
         default=512,

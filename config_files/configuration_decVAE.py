@@ -426,6 +426,8 @@ class DecVAEConfig(PretrainedConfig):
         feat_extract_norm="layer",
         agg_norm = "layer",
         feat_extract_activation="gelu",
+        conv_dim_z=(512, 512, 512, 512, 512, 512, 512),
+        conv_dim_s=(192, 192, 192, 192, 192, 192, 192),
         conv_dim=(512, 512, 512, 512, 512, 512, 512),
         conv_stride=(5, 2, 2, 2, 2, 2, 2),
         conv_kernel=(10, 3, 3, 3, 3, 2, 2),
@@ -533,6 +535,8 @@ class DecVAEConfig(PretrainedConfig):
         self.feat_extract_norm = feat_extract_norm
         self.agg_norm = agg_norm
         self.feat_extract_activation = feat_extract_activation
+        self.conv_dim_z = list(conv_dim_z)
+        self.conv_dim_s = list(conv_dim_s)
         self.conv_dim = list(conv_dim)
         self.conv_stride = list(conv_stride)
         self.conv_kernel = list(conv_kernel)
@@ -562,7 +566,7 @@ class DecVAEConfig(PretrainedConfig):
         #Wav2vec2 parameters
         self.num_conv_pos_embeddings = num_conv_pos_embeddings
         self.num_conv_pos_embedding_groups = num_conv_pos_embedding_groups
-        self.num_feat_extract_layers = len(self.conv_dim)
+        self.num_feat_extract_layers = len(self.conv_dim_z)
         self.num_hidden_layers = num_hidden_layers
         self.intermediate_size = intermediate_size
         self.hidden_act = hidden_act
@@ -577,12 +581,12 @@ class DecVAEConfig(PretrainedConfig):
         if (
             (len(self.conv_stride) != self.num_feat_extract_layers)
             or (len(self.conv_kernel) != self.num_feat_extract_layers)
-            or (len(self.conv_dim) != self.num_feat_extract_layers)
+            or (len(self.conv_dim_z) != self.num_feat_extract_layers)
         ):
             raise ValueError(
                 "Configuration for convolutional layers is incorrect. It is required that `len(config.conv_dim)` =="
                 " `len(config.conv_stride)` == `len(config.conv_kernel)`, but is `len(config.conv_dim) ="
-                f" {len(self.conv_dim)}`, `len(config.conv_stride) = {len(self.conv_stride)}`,"
+                f" {len(self.conv_dim_z)}`, `len(config.conv_stride) = {len(self.conv_stride)}`,"
                 f" `len(config.conv_kernel) = {len(self.conv_kernel)}`."
             )
 

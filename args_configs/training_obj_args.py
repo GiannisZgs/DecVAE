@@ -27,7 +27,7 @@ class TrainingObjectiveArguments:
     )
     divergence_type: str = field(
         default="js",
-        metadata={"help": "The type of divergence to use in the decomposition loss: kl or js."},
+        metadata={"help": "The type of divergence to use in the decomposition loss: kl or js (kl currently deprecated)."},
     )
     use_prior_regularization: bool = field(
         default=False,

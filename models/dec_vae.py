@@ -813,7 +813,6 @@ class Dec2VecModel(Wav2Vec2PreTrainedModel):
         """
         super().__init__(config)
         self.config = config
-        self.test_time_aug = False
         self.training_flag = "pretraining"
 
         #self.decomposition_module = DecompositionModule(self.config)
@@ -1107,7 +1106,7 @@ class Dec2VecModel(Wav2Vec2PreTrainedModel):
             return_dict=return_dict,
         )
         
-        #context representations c
+        #context representations c - after the transformer encoder
         last_hidden_states = encoder_outputs[0]
         
         if self.adapter is not None:
@@ -1116,9 +1115,9 @@ class Dec2VecModel(Wav2Vec2PreTrainedModel):
         if not return_dict:
             return (last_hidden_states, extract_features) + encoder_outputs[1:]
 
-        #last_hidden_states: c
+        #last_hidden_states: c - after transformer encoder
         #extract_features: z before projection
-        #hidden_states: z 
+        #hidden_states: z before transformer encoder
         return DecVAEBaseModelOutput(
             last_hidden_state=last_hidden_states,
             extract_features=extract_features,

@@ -114,10 +114,6 @@ class DataTrainingArguments:
         default=1000,
         metadata={"help": "Number of completed steps between each model checkpoint save"},
     )
-    tsne_plot_2d_3d: str = field(
-        default='both',
-        metadata={"help": "Whether to plot the tsne in 2d, 3d or both"},
-    )
     per_device_train_batch_size: int = field(
         default=4,
         metadata={"help": "Batch size (per device) for the training dataloader."},

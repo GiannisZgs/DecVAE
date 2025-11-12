@@ -1,3 +1,31 @@
+# coding=utf-8
+# Copyright 2025 Ioannis Ziogas <ziogioan@ieee.org>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""The Decomposition Model D_w^C that precedes a 🤗 DecVAE - Variational Decomposition Autoencoder Model. 
+Performs Decomposition Masking on the normalized audio signal x in the frame or/and the sequence level. The framing is performed with a window size of RFS
+and a stride of stride. Frames and sequences are "masked" by decomposition where the detected components represent
+masked versions of the original waveforms.
+
+Can be used as a preprocessing step (offline) or during training (online)*.
+
+Applies different decomposition methods (emd, vmd, ewt, filter) to extract oscillatory components (OCs) from the signal.
+These methods aim to capture different frequency bands and temporal dynamics present in the signal.
+Filter decomposition is a custom-made decomposition that uses bandpass IIR filters to extract OCs based on detected spectral peaks.
+It can also calculate time-domain quality metrics for the decomposition such as correlogram between components and NRMSE between original and reconstructed signal.
+"""
+
 import scipy.signal
 import torch
 import torch.nn as nn
@@ -623,7 +651,8 @@ class DecompositionModule(nn.Module):
                             masked_x[:,u,s,:] = np.concatenate((frame.reshape(1,len(frame)),np.zeros((self.NoC,frame_length))),axis=0)
                             component_indices[:,u,s] = torch.tensor([0]*self.NoC)
                             continue
-                        if self.decomp_to_perform == 'filter':                            
+                        if self.decomp_to_perform == 'filter':                
+                            "Filter Decomposition - FD"                         
                             OCs, _,OCs_spectrum, nrmse = self.filter_decomp(frame,freqs)
 
                             f,Pxx = scipy.signal.welch(frame, fs=self.fs, window='hann', nperseg=len(frame)/3, noverlap=len(frame)/40, nfft=self.nfft, detrend='constant', return_onesided=True, scaling='density', axis=-1, average='mean')
@@ -654,7 +683,7 @@ class DecompositionModule(nn.Module):
                             rmse = np.sqrt(mse)
                             nrmse = rmse / (np.max(frame) - np.min(frame))
                         elif self.decomp_to_perform == "vmd":
-                            "VMD"
+                            "Variational Mode Decomposition -VMD"
                             OCs, _, mode_freqs = VMD(frame, alpha = self.vmd_alpha, tau = self.vmd_tau, K = self.NoC, DC = self.vmd_DC, init = self.vmd_init, tol=self.vmd_tol)
                             sort_inds = np.argsort(mode_freqs[-1])
                             OCs = OCs[sort_inds]
@@ -725,7 +754,7 @@ class DecompositionModule(nn.Module):
                             rmse = np.sqrt(mse)
                             nrmse = rmse / (np.max(frame) - np.min(frame))
                         elif self.decomp_to_perform == "emd":
-                            "EMD"
+                            "Empirical Mode Decomposition - EMD"
                             #EMD returns IMFs (roughly) ranging from high to low frequencies - Last slice is the residual
                             self.emd = EMD(DTYPE=np.float32,spline_kind=self.emd_spline_kind,MAX_ITERATION=self.emd_max_iter,energy_ratio_thr=self.emd_energy_ratio_thr,std_thr=self.emd_std_thr,svar_thr=self.emd_svar_thr,total_power_thr=self.emd_total_power_thr,range_thr=self.emd_range_thr,extrema_detection=self.emd_extrema_detection)
 
@@ -773,7 +802,7 @@ class DecompositionModule(nn.Module):
                             rmse = np.sqrt(mse)
                             nrmse = rmse / (np.max(frame) - np.min(frame))
                         elif self.decomp_to_perform == "ewt":
-                            "EWT"
+                            "Empirical Wavelet Transform - EWT"
                             #Ewt returns a low frequency component + the specified number of OCs
                             OCs_w_lf,_ ,boundaries = ewtpy.EWT1D(frame, N = self.NoC+1, completion = self.ewt_completion, reg = self.ewt_filter,lengthFilter = self.ewt_filter_length,sigmaFilter = self.ewt_filter_sigma, log = self.ewt_log_spectrum, detect = self.ewt_detect)                                                     
                             #Discard first low frequency component
@@ -1170,11 +1199,11 @@ class DecompositionModule(nn.Module):
             freqs,exact_freqs,exact_freqs_amp = self.peak_detection(sequence,peak_det_intervals)
 
             if self.decomp_to_perform == 'filter':                            
-                "Filter Decomposition (FD)"
+                "Filter Decomposition - FD"
                 OCs, _,OCs_spectrum, nrmse = self.filter_decomp(sequence,freqs) 
 
             elif self.decomp_to_perform == "vmd":
-                "VMD"
+                "Variational Mode Decomposition - VMD"
                 OCs, _, mode_freqs = VMD(sequence, alpha = self.vmd_alpha, tau = self.vmd_tau, K = self.NoC_seq, DC = self.vmd_DC, init = self.vmd_init, tol=self.vmd_tol)
                 if OCs.shape[1] < sequence.shape[0]:
                     OCs = np.pad(OCs, ((0,0),(0,sequence.shape[0]-OCs.shape[1])), 'constant', constant_values=(0,0))
@@ -1182,7 +1211,7 @@ class DecompositionModule(nn.Module):
                 OCs = OCs[sort_inds]
                 
             elif self.decomp_to_perform == "emd":
-                "EMD"
+                "Empirical Mode Decomposition - EMD"
                 #EMD returns IMFs (roughly) ranging from high to low frequencies
                 OCs = self.emd.emd(sequence,max_imf=self.NoC_seq) #[:self.NoC_seq,:]
                 "Spectral refinement of found OCs"
@@ -1214,7 +1243,7 @@ class DecompositionModule(nn.Module):
                     freqs_not_deleted = True   
                                         
             elif self.decomp_to_perform == "ewt":
-                "EWT"
+                "Empirical Wavelet Transform - EWT"
                 #Ewt returns a low frequency component + the specified number of OCs
                 OCs_w_lf,_ ,boundaries = ewtpy.EWT1D(sequence, N = self.NoC_seq+1, completion = self.ewt_completion, reg = self.ewt_filter,lengthFilter = self.ewt_filter_length,sigmaFilter = self.ewt_filter_sigma, log = self.ewt_log_spectrum, detect = self.ewt_detect)                                                     
                 #Discard first low frequency component
@@ -1246,7 +1275,6 @@ class DecompositionModule(nn.Module):
                 except IndexError:
                     freqs_not_deleted = True
                     pass
-
 
             else:
                 raise ValueError('Decomposition method not supported')

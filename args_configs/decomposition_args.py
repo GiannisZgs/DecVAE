@@ -53,7 +53,7 @@ class DecompositionArguments:
            [5250, 6000],
            [6000, 6750],
            [6750, 7500]],
-        metadata={"help": "The frequency groups used in the simulation procedure."},
+        metadata={"help": "The frequency groups used in the procedure of oscillatory components detection."},
     )
     receptive_field: float = field(
         default=0.025,

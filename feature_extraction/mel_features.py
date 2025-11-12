@@ -8,7 +8,6 @@ warnings.filterwarnings("ignore", message="n_fft=.* is too large for input signa
                            category=UserWarning, module="librosa.core.spectrum")
 
 def extract_mel_spectrogram(audio, sample_rate, n_mels=128, n_fft=512, hop_length=512, normalize = 'global', feature_length = 400,ref=None):
-
     """
     Extract Mel Spectrogram from audio signal
     Args:
