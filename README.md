@@ -17,7 +17,7 @@ This library contains ```DecVAEs``` and numerous utilities/scripts for pre-train
 
 ## Overview
 
-![Model Architecture](overview.jpg)
+![Model Architecture](img/overview.jpg)
 
 Our method employs a novel variational decomposition autoencoder (DecVAE) architecture with several key innovations:
 
