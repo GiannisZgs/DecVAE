@@ -1,6 +1,6 @@
 # Variational Decomposition Autoencoders (DecVAE)
 
-**Codebase repository for the publication: "Variational decomposition autoencoding improves disentanglement of latent representations"**
+**Codebase repository for paper: "Variational decomposition autoencoding improves disentanglement of latent representations"**
 
 Understanding the structure of complex, nonstationary, high-dimensional time-evolving signals is a central
 challenge in scientific data analysis. In many domains, such as speech and biomedical signal processing, the abil
@@ -13,7 +13,7 @@ i.e., encoder-only neural networks that combine a signal decomposition model, a 
 task, and variational prior approximation to learn multiple latent subspaces aligned with time-frequency char
 acteristics.
 
-This library contains ```DecVAEs``` and numerous utilities/scripts for pre-training, fine-tuning transfer learning, zero-shot evaluation transfer learning of ```DecVAEs```, and evaluation of ```DecVAE``` representations through disentanglement and task-specific metrics.``` DecVAEs``` are built by adapting the 🤗 Wav2Vec2-encoder architecture to include VAE functionality for disentangled representation learning. Paper figures can be generated using R (```visualize_R```)
+This library contains ```DecVAEs``` and numerous utilities/scripts for pre-training, fine-tuning transfer learning and zero-shot transfer learning of ```DecVAEs```, evaluation of ```DecVAE``` representations through disentanglement and task-specific metrics, and latent analysis tools for interpretability.``` DecVAEs``` are built by adapting the 🤗 Wav2Vec2-encoder architecture to include VAE functionality for disentangled representation learning. Paper figures can be generated using R (```visualize_R```). Implementation is based on ```PyTorch```, 🤗 HuggingFace Transformers and Google Research ```disentanglement_lib```.
 
 ## Methodology
 
@@ -27,17 +27,16 @@ Our method employs a novel variational decomposition autoencoder (DecVAE) archit
 - **Contrastive Learning Objective**: Self-supervised training through masked prediction
 - **Variational Inference**: Probabilistic modeling of component distributions
 
-The architecture incorporates transformer-based processing with specialized modules for component extraction and integration, enabling robust decomposition across various signal types.
-
 ## Reproducibility
 
 All experiments are fully reproducible with the provided code and configurations. We provide:
 
-- **Complete source code** for all model components and training procedures
-- **Configuration files** for reproducing all experiments in the paper
-- **Pre-processing pipelines** for all datasets used in our evaluations
-- **Evaluation protocols** for assessing disentanglement and downstream performance
-
+- **Complete source code** for all model components and training procedures to reproduce the whole training process of DecVAEs.
+- **Configuration files** for reproducing experiments in the paper.
+- **Pre-processing pipelines** for all datasets used in our evaluations.
+- **Evaluation protocols** for assessing disentanglement and downstream performance.
+- **Analysis products** for reproducing figures in the paper without the need of pre-training models (```data```).
+- **Visualization utilities** for reproducing figures in the paper (```visualize_R``` and ```scripts/visualize```).
 
 ### Training Pipeline
 
@@ -68,23 +67,19 @@ python scripts/latent_response_analysis/latent_traversal_analysis.py --config_fi
 # Clone repository
 git clone https://github.com/GiannisZgs/DecVAE.git
 cd DecVAE
-
+```
 ## Citation
 If you use this code in your research, please cite our paper:
 
 I.N., Ziogas and A., Al Shehhi and A.H., Khandoker and L.J., Hadjileontiadis. Variational decomposition autoencoding improves disentanglement of latent representations.
 
-```bibtex
-@article{author2025variational,
-  title={Variational Decomposition Autoencoding: A Novel Approach to Learning Disentangled Representations from Complex Signals},
-  author={Author, A. and Author, B. and Author, C.},
-  journal={Nature},
-  volume={X},
-  number={X},
-  pages={XXX--XXX},
-  year={2025},
-  publisher={Nature Publishing Group}
-}
-```
-
 ## References
+Wolf T. et al. Transformers: State-of-the-art natural language processing. In Proceedings of the 2020
+ Conference on Empirical Methods in Natural Language Processing: System Demonstrations, pages 38–45,
+ (EMNLP,2020).
+
+Paszke A. et al. Pytorch: An imperative style, high-performance deep learning library. Advances in neural
+ information processing systems, 32, (2019).
+
+Shuangbin X., Chen M., Feng T., Zhan L., Zhou L., and Yu G. Use ggbreak to effectively utilize plotting
+space to deal with large datasets and outliers. Frontiers in Genetics, 12, (2021).
