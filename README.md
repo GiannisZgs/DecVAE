@@ -13,7 +13,7 @@ i.e., encoder-only neural networks that combine a signal decomposition model, a 
 task, and variational prior approximation to learn multiple latent subspaces aligned with time-frequency char
 acteristics.
 
-This library contains ```DecVAEs``` and numerous utilities/scripts for pre-training, fine-tuning transfer learning, zero-shot evaluation transfer learning of DecVAEs```, and evaluation of ```DecVAE``` representations through disentanglement and task-specific metrics.``` DecVAEs``` are built by adapting the 🤗 Wav2Vec2-encoder architecture to include VAE functionality for disentangled representation learning. Paper figures can be generated using R (```visualize_R```)
+This library contains ```DecVAEs``` and numerous utilities/scripts for pre-training, fine-tuning transfer learning, zero-shot evaluation transfer learning of ```DecVAEs```, and evaluation of ```DecVAE``` representations through disentanglement and task-specific metrics.``` DecVAEs``` are built by adapting the 🤗 Wav2Vec2-encoder architecture to include VAE functionality for disentangled representation learning. Paper figures can be generated using R (```visualize_R```)
 
 ## Methodology
 
