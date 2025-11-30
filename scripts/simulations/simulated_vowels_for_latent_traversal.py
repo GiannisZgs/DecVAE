@@ -19,27 +19,17 @@ This script generates controlled pairs of generative factors vowel and speaker t
 The data generated here are used to obtain Supplementary Information Figure 18.
 """
 
-
-
 import numpy as np
-from scipy.signal import butter, lfilter, fftconvolve, welch
-import matplotlib.pyplot as plt
-import matplotlib.mlab as mlab
-from scipy.io import wavfile
+from scipy.signal import butter, lfilter
 import os
 import json
 import gzip
-import random
-from feature_extraction import extract_mel_spectrogram
 
 #Fixed vowel traversal: for a single vowel, generate data from all speakers
 #Fixed speaker traversal: for a single speaker, generate data from all vowels
-#Frequency traversal: for a single speaker, generate data from all vowels and visualize individual OCs latent space
-# i.e. order OCs based on frequency: u-OC1 - 310, I-OC1 - 400, e-OC1 - 550, aw-OC1 - 590 - a-OC1 - 710,...
 
-SAVE_DIR = "/home/giannis/Documents/latent_traversals_data/" #"/home/giannis/Documents/sim_vowels/"    
+SAVE_DIR = os.path.join("..", "latent_traversal_data","sim_vowels_raw")  
 
-#"""
 CANONICAL_FORMANT_FREQUENCIES = {
     'a':  [710, 1100, 2540],
     'e': [550, 1770, 2490],
@@ -235,6 +225,9 @@ def generate_fixed_speakers_sequence(formant_frequencies):
 
 def main():
     
+    os.makedirs(os.path.join(SAVE_DIR,"fixed_vowels"), exist_ok=True)
+    os.makedirs(os.path.join(SAVE_DIR,"fixed_speakers"), exist_ok=True)
+
     fname_fixed_vowels_train = os.path.join(SAVE_DIR,"fixed_vowels","fixed_vowels_" + str(len(CANONICAL_FORMANT_FREQUENCIES))+ "_SNR_" + str(SNR_DB) + "_4s_train.json.gz")
     fname_fixed_vowels_dev = os.path.join(SAVE_DIR,"fixed_vowels","fixed_vowels_" + str(len(CANONICAL_FORMANT_FREQUENCIES))+ "_SNR_" + str(SNR_DB) + "_4s_dev.json.gz")
     fname_fixed_vowels_test = os.path.join(SAVE_DIR,"fixed_vowels","fixed_vowels_" + str(len(CANONICAL_FORMANT_FREQUENCIES))+ "_SNR_" + str(SNR_DB) + "_4s_test.json.gz")

@@ -67,7 +67,9 @@ All experiments are fully reproducible with the provided code and configurations
 - **Evaluation protocols** for assessing disentanglement and downstream performance.
 - **Analysis products** for reproducing figures (```figures```, ```supplementary_figures```) in the paper without the need of pre-training the models from scratch (```data```).
 - **Visualization utilities** for reproducing figures in the paper (```visualize_R``` and ```scripts/visualize```).
+- **Examples** for various use cases in ```examples/notebooks```.
 
+## Example: Disentanglement of simulated speech data (SimVowels dataset) 
 
 ### SimVowels data generation
 To generate the SimVowels dataset run the below after setting up the environment:
@@ -78,35 +80,76 @@ python scripts/simulations/simulated_vowels.py
 
 or download SimVowels directly from https://drive.google.com/drive/folders/1VE4mkC3P1GEDrorThmRgL07NdEoLtyf9?usp=sharing.
 
-### Training Pipeline
+### Input visualization
+To visualize the inputs (frame-level) to the models:
 
-#### Pretraining (Self-Supervised Learning)
 ```bash
-accelerate launch scripts/pre-training/base_models_ssl_pretraining_new.py --config_file config_pretraining_timit_NoC3.json
+accelerate launch scripts/visualize/low_dim_vis_input.py --config_file config_files/input_visualizations/config_visualizing_input_frames_vowels.json
 ```
 
-#### Fine-tuning
+To visualize the inputs (sequence-level) to the models:
+
 ```bash
-accelerate launch scripts/fine_tuning/ssl_fine_tune_pretrained_models.py --config_file config_finetune_iemocap_NoC4.json
+accelerate launch scripts/visualize/low_dim_vis_input.py --config_file config_files/input_visualizations/config_visualizing_input_sequences_vowels.json
 ```
 
-#### Latent Space Analysis
+For more details on setting crucial input visualization parameters, see ```config_files/README```.
+
+### Pre-training of a DecVAE
+Use the ```accelerate``` library: 
+
+For single-GPU training:
 ```bash
-python scripts/post-training/latents_post_analysis.py --config_file config_latent_anal_timit.json
+accelerate launch scripts/pre-training/base_models_ssl_pretraining.py --config_file config_files/DecVAEs/sim_vowels/pre-training/config_pretraining_sim_vowels_NoC3.json
 ```
 
-#### Component Visualization
+For multi-GPU training or to specify a GPU id:
 ```bash
-python scripts/latent_response_analysis/latent_traversal_analysis.py --config_file config_latent_traversals_timit_renderex.json
+accelerate launch --gpu_ids 0,1 scripts/pre-training/base_models_ssl_pretraining.py --config_file config_files/DecVAEs/sim_vowels/pre-training/config_pretraining_sim_vowels_NoC3.json
+```
+For more details on setting crucial DecVAE parameters for the pre-training, see ```config_files/README```.
+
+### Latent evaluation - Disentanglement and task-specific
+```bash
+accelerate launch scripts/post-training/latents_post_analysis.py --config_file config_files/DecVAEs/sim_vowels/latent_evaluations/config_latent_anal_sim_vowels.json
+```
+For more details on setting crucial DecVAE parameters for the evaluation, see ```config_files/README```.
+
+### Latent visualization
+To visualize the latent representations (frame-level):
+
+```bash
+accelerate launch scripts/visualize/low_dim_vis_latents.py --config_file config_files/DecVAEs/sim_vowels/latent_visualizations/config_latent_frames_visualization_vowels.json
+```
+To visualize the latent representations (sequence-level):
+
+```bash
+accelerate launch scripts/visualize/low_dim_vis_latents.py --config_file config_files/DecVAEs/sim_vowels/latent_visualizations/config_latent_sequences_visualization_vowels.json
+```
+For more details on setting crucial latent visualization parameters, see ```config_files/README```.
+
+### Latent traversals/response analysis
+To perform latent traversal analysis for the SimVowels dataset, first generate a small-scale 
+set where generative factors are controlled:
+
+```bash
+python scripts/simulations/simulated_vowels_for_latent_traversal.py
 ```
 
+Then use pre-trained DecVAE models as a representation function to obtain the latent responses:
+
+```bash
+accelerate launch scripts/latent_response_analysis/latent_traversal_analysis.py --config_file config_files/DecVAEs/sim_vowels/latent_traversals/config_latent_traversals_sim_vowels.json
+```
+For more details on setting crucial latent traversals parameters, see ```config_files/README```.
+
+### Benchmarks and more datasets
+The exact same process as above can be followed to pre-train and evaluate VAE-based models and ICA/PCA/kPCA, as well as DecVAE models for the other 3 supported datasets (TIMIT, VOC-ALS, IEMOCAP). The exact same scripts and config_files exist for VAEs. For details and parameters check ```config_files/README```.
 
 ## Citation
-If you use this codebase in your research, please cite our paper:
+If you use this codebase in your research, please cite our paper and this codebase:
 
 Ziogas I.N., Al Shehhi A., Khandoker A.H., and Hadjileontiadis L.J. Variational decomposition autoencoding improves disentanglement of latent representations. 
-
-and the codebase:
 
 Ziogas I.N., Al Shehhi A., Khandoker A.H., and Hadjileontiadis L.J. Variational decomposition autoencoding improves disentanglement of latent representations. *Zenodo*
 

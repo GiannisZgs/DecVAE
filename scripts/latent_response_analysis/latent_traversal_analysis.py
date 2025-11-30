@@ -72,7 +72,7 @@ os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 os.environ["TORCH_USE_CUDA_DSA"] = "1"
 os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 
-JSON_FILE_NAME_MANUAL = "config_latent_traversals_voc_als_renderex.json" #for debugging purposes only
+JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/sim_vowels/latent_traversals/config_latent_traversals_sim_vowels.json" #for debugging purposes only
 
 logger = get_logger(__name__)
 
@@ -440,7 +440,7 @@ def main():
         )
 
     "For vowels, we have already created the dataset in another script"
-    "For real data, the was created here before doing the traversals"
+    "For real data, the datasets are created here before doing the traversals"
 
     "Load the single batch of the dataloader for the traversal analysis"
     x_batch = next(iter(train_dataloader))
