@@ -1,19 +1,19 @@
-# Variational Decomposition Autoencoding
+# Variational Decomposition Autoencoders (DecVAE)
 
-**Code repository for the publication: "Variational decomposition autoencoding improves disentanglement of latent representations"**
+**Codebase repository for the publication: "Variational decomposition autoencoding improves disentanglement of latent representations"**
 
-This repository contains the implementation of a framework for learning decomposed latent representations through self-supervised learning, with robust applications to speech, audio, and biological signals.
+Understanding the structure of complex, nonstationary, high-dimensional time-evolving signals is a central
+challenge in scientific data analysis. In many domains, such as speech and biomedical signal processing, the abil
+ity to learn disentangled and interpretable representations is critical for uncovering latent generative mechanisms.
+Traditional approaches to unsupervised representation learning, including variational autoencoders (VAEs), of
+ten struggle to capture the temporal and spectral diversity inherent in such data. Here we introduce variational
+decomposition autoencoding (VDA), a framework that extends VAEs by incorporating a strong structural bias
+toward signal decomposition. VDA is instantiated through variational decomposition autoencoders (DecVAEs),
+i.e., encoder-only neural networks that combine a signal decomposition model, a contrastive self-supervised
+task, and variational prior approximation to learn multiple latent subspaces aligned with time-frequency char
+acteristics.
 
-## Scientific Innovation
-
-DecSSL introduces a paradigm shift in representation learning by explicitly modeling signal decomposition in the latent space. Unlike conventional methods that focus on holistic representations, our approach:
-
-- **Decomposes signals into interpretable components** with mathematical guarantees of orthogonality
-- **Learns disentangled representations without supervision**, eliminating the need for labeled data
-- **Incorporates dual-branch variational modeling** to separate content and style information
-- **Demonstrates state-of-the-art performance** on multiple benchmarks and data modalities
-
-This novel approach represents a significant advancement in the field of representation learning, combining insights from signal processing, information theory, and deep learning.
+This library contains ```DecVAEs and numerous utilities/scripts for pre-training, fine-tuning transfer learning, zero-shot evaluation transfer learning of DecVAEs, and evaluation of ```DecVAE representations through disentanglement and task-specific metrics.``` DecVAEs are built by adapting the 🤗 Wav2Vec2-encoder architecture to include VAE functionality for disentangled representation learning. Paper figures can be generated using R (```visualize_R)
 
 ## Methodology
 
@@ -38,20 +38,6 @@ All experiments are fully reproducible with the provided code and configurations
 - **Pre-processing pipelines** for all datasets used in our evaluations
 - **Evaluation protocols** for assessing disentanglement and downstream performance
 
-### Environment Setup
-
-```bash
-# Clone repository
-git clone https://github.com/GiannisZgs/DecSSL.git
-cd DecSSL
-
-# Create conda environment
-conda create -n decssl python=3.8
-conda activate decssl
-
-# Install dependencies
-pip install -r requirements.txt
-```
 
 ### Training Pipeline
 
@@ -75,66 +61,18 @@ python scripts/post-training/latents_post_analysis.py --config_file config_laten
 python scripts/latent_response_analysis/latent_traversal_analysis.py --config_file config_latent_traversals_timit_renderex.json
 ```
 
-## Key Results
 
-Our approach demonstrates breakthrough performance across multiple dimensions:
 
-### Disentanglement Quality
-
-DecVAE achieves unprecedented disentanglement metrics compared to state-of-the-art methods:
-
-| Method | DCI ↑ | MIG ↑ | SAP ↑ | IRS ↑ |
-|--------|-------|-------|-------|-------|
-| β-VAE  | 0.43  | 0.19  | 0.27  | 0.58  |
-| FactorVAE | 0.51 | 0.25 | 0.31 | 0.62 |
-| β-TCVAE | 0.57 | 0.28 | 0.35 | 0.67 |
-| **DecVAE (Ours)** | **0.76** | **0.41** | **0.52** | **0.81** |
-
-*Values are placeholders - please replace with actual experimental results*
-
-### Downstream Task Performance
-
-The quality of our learned representations translates to superior performance on downstream tasks:
-
-| Task | Dataset | Previous SOTA | DecVAE (Ours) | Improvement |
-|------|---------|--------------|---------------|-------------|
-| Speech Recognition | TIMIT | 85.3% | 89.7% | +4.4% |
-| Emotion Recognition | IEMOCAP | 72.6% | 78.9% | +6.3% |
-| Cell Type Classification | scRNA-seq | 91.2% | 94.8% | +3.6% |
-
-*Values are placeholders - please replace with actual experimental results*
-
-### Component Interpretability
-
-Our method produces highly interpretable components, as verified through human evaluation:
-
-![Component Interpretability](placeholder_for_interpretability_figure.png)
-
-*Replace with actual visualization from experiments*
-
-## Broader Impact
-
-The decomposition-based approach introduced in this work has implications beyond the specific datasets evaluated:
-
-- **Medical Applications**: Improved biomarker discovery in complex biological signals
-- **Speech Technology**: Enhanced speech synthesis and voice conversion systems
-- **Computational Biology**: Novel approaches to analyzing cellular heterogeneity
-- **Signal Processing**: Fundamental advancements in blind source separation
-
-## Directory Structure
-
-- `args_configs/`: Configuration argument classes
-- `data_collation/`: Data preprocessing and batch formation
-- `dataset_loading/`: Dataset loaders for various data sources
-- `disentanglement_utils/`: Metrics for evaluating latent space quality
-- `feature_extraction/`: Signal processing utilities
-- `latent_analysis_utils/`: Visualization and analysis tools
-- `models/`: Core model implementations
-- `scripts/`: Training and evaluation scripts
+## Installation instructions
+```bash
+# Clone repository
+git clone https://github.com/GiannisZgs/DecVAE.git
+cd DecVAE
 
 ## Citation
-
 If you use this code in your research, please cite our paper:
+
+I.N., Ziogas and A., Al Shehhi and A.H., Khandoker and L.J., Hadjileontiadis. Variational decomposition autoencoding improves disentanglement of latent representations.
 
 ```bibtex
 @article{author2025variational,
@@ -149,10 +87,4 @@ If you use this code in your research, please cite our paper:
 }
 ```
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-This research was supported by [funding sources]. We thank [computing resources] for computational resources used in this work.
+## References
