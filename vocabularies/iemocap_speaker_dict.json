@@ -1,12 +1,3 @@
-{
-    "Ses01F": 0,
-    "Ses01M": 1,
-    "Ses02F": 2,
-    "Ses02M": 3,
-    "Ses03F": 4,
-    "Ses03M": 5,
-    "Ses04F": 6,
-    "Ses04M": 7,
-    "Ses05F": 8,
-    "Ses05M": 9
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:975e3434dbdadc904be54354d5c9c3302ac0965e9b348f8b9f6551570f41d095
+size 183

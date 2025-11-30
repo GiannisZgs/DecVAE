@@ -312,7 +312,7 @@ def compute_disentanglement_metrics(data_training_args,config,checkpoint, latent
     elapsed_time_dci = end_time_dci - start_time_dci
     print(f"Total DCI time: {elapsed_time_dci: .4f} seconds")
 
-    "4. IRS: Interventional Robustness Score"
+    "3. IRS: Interventional Robustness Score"
     start_time_irs = time.time()
     irs_dict = irs.compute_irs(mus_combined, ys_combined, diff_quantile=0.99)
     irs_score = {"IRS": irs_dict["IRS"]}
@@ -322,7 +322,7 @@ def compute_disentanglement_metrics(data_training_args,config,checkpoint, latent
     
     
     if len(target) > 1:
-        "5. Modularity and Explicitness - Trains logistic regression"
+        "4. Modularity and Explicitness - Trains logistic regression"
         start_time_mod_expl = time.time()
         if "vowels" not in data_training_args.dataset_name:
             mod_expl_scores = modularity_explicitness.compute_modularity_explicitness(mu_train, y_train, mu_test, y_test, 

@@ -41,7 +41,7 @@ from models import DecVAEForPreTraining
 from config_files import DecVAEConfig
 from data_collation import DataCollatorForDecVAELatentVisualization
 from args_configs import ModelArgumentsPost, DataTrainingArgumentsPost, DecompositionArguments, TrainingObjectiveArguments, VisualizationArguments
-from utils.misc import parse_args, debugger_is_active
+from utils.misc import parse_args, debugger_is_active, extract_epoch
 
 import transformers
 from transformers import (
@@ -159,9 +159,6 @@ def main():
         if data_training_args.dataset_name == "VOC_ALS":
             vectorized_datasets["dev"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["dev"]])
 
-        if "scRNA_seq" in data_training_args.dataset_name:
-            vectorized_datasets['train'] = concatenate_datasets([vset for vset in vectorized_datasets['train'] if vset is not None])
-
         if min_length > 0.0:
             vectorized_datasets = vectorized_datasets.filter(
                 lambda x: x > min_length,
@@ -214,14 +211,8 @@ def main():
     if data_training_args.experiment == "ssl_loss":
         checkpoint_dir += "_" + str(data_training_args.ssl_loss_frame_perc) +"percent_frames"
 
-    "Make sure to obtain all the samples in the dataset"
+    "Make sure to use all frames in a batch for visualization"
     assert config.max_frames_per_batch == "all"
-
-    def extract_epoch(filename):
-        match = re.search(r'epoch_(\d+)', filename)
-        if match:
-            return int(match.group(1))
-        return -1  
 
     checkpoint_files = [f for f in os.listdir(checkpoint_dir) if 'config' not in f]
     checkpoint_files.append('epoch_-01')
