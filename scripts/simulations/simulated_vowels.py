@@ -34,8 +34,18 @@ import random
 #1. Vocal Tract Length (Speakers)
 #2. Vowels ()
 
+#A Course in Phonetics 6th Edition - Peter Ladefoged, Keith Johnson
+#i: as in heed, he, bead, heat, keyed - 0
+#I: as in hid, bid, hit, kid - 1
+#E - epsilon: as in head, bed - 2
+#ae - ash: as in had, bad, hat, cad - 3
+#a - script a: as in hard, bard, heart, card - 4
+#aw - open o: hawed, haw, bawd, cawed - 5
+#y - upsilon (inverse omega): hood, could - 6
+#u - lowercase u: who'd, who, booed, hoot, cooed - 7
+
 # Constants and Parameters
-SAVE_DIR = "../sim_vowels/"  
+SAVE_DIR = os.path.join("..", "sim_vowels")  
 
 CANONICAL_FORMANT_FREQUENCIES = {
     'a':  [710, 1100, 2540],
@@ -56,15 +66,6 @@ CANONICAL_FORMANT_FREQUENCIES = {
     'u': [310, 870, 2250],
 }
 """
-#A Course in Phonetics 6th Edition - Peter Ladefoged, Keith Johnson
-#i: as in heed, he, bead, heat, keyed - 0
-#I: as in hid, bid, hit, kid - 1
-#E - epsilon: as in head, bed - 2
-#ae - ash: as in had, bad, hat, cad - 3
-#a - script a: as in hard, bard, heart, card - 4
-#aw - open o: hawed, haw, bawd, cawed - 5
-#y - upsilon (inverse omega): hood, could - 6
-#u - lowercase u: who'd, who, booed, hoot, cooed - 7
 
 VOWEL_TO_INT = {vowel: idx for idx, vowel in enumerate(CANONICAL_FORMANT_FREQUENCIES.keys())}
 FORMANT_BANDWIDTHS = [200, 200, 200]
@@ -75,7 +76,6 @@ DURATION = 0.1  # Duration in seconds for each vowel
 SNR_DB = 15
 
 NUM_FFT_BINS = 2048 
-MEL_FILTERBANK_BINS = 40
 UTTERANCE_DUR = 4 # in seconds duration of "utterance"
 FRAME_SEQUENCES = [int(UTTERANCE_DUR / DURATION)] 
 TRAINING_SET_SIZE = 4000 
@@ -217,6 +217,8 @@ def generate_sequence(sequence_length, set_type, set_size):
 
 
 def main():
+
+    os.makedirs(SAVE_DIR, exist_ok=True)
 
     for part in range(1,PARTS+1):
     
