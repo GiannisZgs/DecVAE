@@ -22,6 +22,7 @@ This library contains ```DecVAEs``` and numerous utilities/scripts for pre-train
 Our method employs a novel variational decomposition autoencoder (DecVAE) architecture with several key innovations:
 
 - **Enhanced disentanglement, generalizability and interpretability** in disentangling two and more factors of variation in simulated speech, real speech, dysarthric speech and emotional speech.
+- **Zero-shot capability extending to unseen generative factors** when pre-training in datasets with less generative factors and applied to new domains with new unseen generative factors. 
 - **Decomposition of the latent space**: DecVAE assumes a generative process that is expressed through multiple frequency-resonant latent subspaces.
 - **Signal decomposition model**: DecVAE utilizes a signal decomposition model that decomposes inputs in C components (C masked views of the input signal), that share information with the initial input, are time-frequency orthogonal to each other and their superposition reconstructs the input signal. This creates positive (initial signal-component) and negative (component-component) pairs. Initial signal and components are propagated through the shared encoder; the latent representation space is forced to retain the orthogonality and reconstruction properties of the input space.  
 - **Prior (Gaussian) approximation**: DecVAE retains the prior approximation functionality of beta-VAE-based models.
