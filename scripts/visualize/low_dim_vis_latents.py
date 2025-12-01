@@ -40,7 +40,7 @@ if project_root not in sys.path:
 from models import DecVAEForPreTraining
 from config_files import DecVAEConfig
 from data_collation import DataCollatorForDecVAELatentVisualization
-from args_configs import ModelArgumentsPost, DataTrainingArgumentsPost, DecompositionArguments, TrainingObjectiveArguments, VisualizationArguments
+from args_configs import ModelArgumentsPost, DataTrainingArgumentsPost, DecompositionArguments, TrainingObjectiveArguments, VisualizationsArguments
 from utils.misc import parse_args, debugger_is_active, extract_epoch
 
 import transformers
@@ -74,7 +74,7 @@ warnings.simplefilter("ignore")
 #os.environ["TORCH_USE_CUDA_DSA"] = "1"
 #os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 
-JSON_FILE_NAME_MANUAL = "config_latent_anal_voc_als_renderex.json" #for debugging purposes only
+JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/sim_vowels/latent_visualizations/config_latent_frames_visualization_vowels.json" #for debugging purposes only
 
 logger = get_logger(__name__)
 

@@ -87,7 +87,7 @@ from feature_extraction import extract_mel_spectrogram
 from latent_analysis_utils import visualize
 
 
-JSON_FILE_NAME_MANUAL = "config_files/input_visualizations/config_visualizing_input_frames_voc_als.json" #for debugging purposes only
+JSON_FILE_NAME_MANUAL = "config_files/input_visualizations/config_visualizing_input_frames_vowels.json" #for debugging purposes only
 
 logger = get_logger(__name__)
 

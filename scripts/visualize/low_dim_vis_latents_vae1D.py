@@ -69,7 +69,7 @@ warnings.simplefilter("ignore")
 #os.environ["TORCH_USE_CUDA_DSA"] = "1"
 #os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 
-JSON_FILE_NAME_MANUAL = "config_files/VAEs/iemocap/latent_visualizations/config_vae1d_latent_frames_visualization_iemocap.json" #for debugging purposes only
+JSON_FILE_NAME_MANUAL = "config_files/VAEs/sim_vowels/latent_visualizations/config_vae1d_latent_frames_visualization_vowels.json" #for debugging purposes only
 
 logger = get_logger(__name__)
 
