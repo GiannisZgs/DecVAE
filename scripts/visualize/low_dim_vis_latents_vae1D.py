@@ -223,7 +223,10 @@ def main():
         data_training_args.epoch_range_to_evaluate = checkpoint_files
     else:
         if len(data_training_args.epoch_range_to_evaluate) == 2:
-            data_training_args.epoch_range_to_evaluate = checkpoint_files[data_training_args.epoch_range_to_evaluate[0]:data_training_args.epoch_range_to_evaluate[1]]  
+            if data_training_args.epoch_range_to_evaluate[1] == -1:
+                data_training_args.epoch_range_to_evaluate = checkpoint_files[data_training_args.epoch_range_to_evaluate[0]:]   
+            else:
+                data_training_args.epoch_range_to_evaluate = checkpoint_files[data_training_args.epoch_range_to_evaluate[0]:data_training_args.epoch_range_to_evaluate[1]]  
         elif len(data_training_args.epoch_range_to_evaluate) == 1:
             data_training_args.epoch_range_to_evaluate = [checkpoint_files[data_training_args.epoch_range_to_evaluate[0]]]
         else:
@@ -948,7 +951,7 @@ def main():
                             if vis_args.visualize_latent_frame and (step*batch_size < vis_args.latent_dev_set_frames_to_vis): # or vis_args.latent_dev_set_frames_to_vis == vis_args.latent_dev_set_seq_to_vis):
                                 vowel_labels_batch = [[ph for i,ph in enumerate(batch) if not overlap_mask_batch[j,i]] for j,batch in enumerate(vowel_labels_batch)] 
 
-                        elif data_training_args.dataset_name == "timit:
+                        elif data_training_args.dataset_name == "timit":
                             batch["mask_time_indices"] = sub_attention_mask.clone()
                             batch.pop("phonemes48", None)
                             "Phonemes39 (vowels/consonants)"

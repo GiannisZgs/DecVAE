@@ -223,7 +223,10 @@ def main():
         data_training_args.epoch_range_to_evaluate = checkpoint_files
     else:
         if len(data_training_args.epoch_range_to_evaluate) == 2:
-            data_training_args.epoch_range_to_evaluate = checkpoint_files[data_training_args.epoch_range_to_evaluate[0]:data_training_args.epoch_range_to_evaluate[1]]  
+            if data_training_args.epoch_range_to_evaluate[1] == -1:
+                data_training_args.epoch_range_to_evaluate = checkpoint_files[data_training_args.epoch_range_to_evaluate[0]:]   
+            else:
+                data_training_args.epoch_range_to_evaluate = checkpoint_files[data_training_args.epoch_range_to_evaluate[0]:data_training_args.epoch_range_to_evaluate[1]]  
         elif len(data_training_args.epoch_range_to_evaluate) == 1:
             data_training_args.epoch_range_to_evaluate = [checkpoint_files[data_training_args.epoch_range_to_evaluate[0]]]
         else:
