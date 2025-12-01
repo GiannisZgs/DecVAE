@@ -332,8 +332,6 @@ class DecVAEConfig(PretrainedConfig):
             
     ```"""
 
-    #model_type = "wav2vec2"
-
     def __init__(
         self,
         decomp_to_perform = "filter",
