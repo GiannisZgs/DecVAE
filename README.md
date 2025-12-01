@@ -211,7 +211,7 @@ If you use this codebase in your research, please cite our paper and this codeba
 
 Ziogas I.N., Al Shehhi A., Khandoker A.H., and Hadjileontiadis L.J. Variational decomposition autoencoding improves disentanglement of latent representations. 
 
-Ziogas I.N., Al Shehhi A., Khandoker A.H., and Hadjileontiadis L.J. Variational decomposition autoencoding improves disentanglement of latent representations. *Zenodo*
+Ziogas I.N., Al Shehhi A., Khandoker A.H., and Hadjileontiadis L.J. Variational decomposition autoencoding improves disentanglement of latent representations. *Zenodo* [![DOI](https://zenodo.org/badge/1094562708.svg)](https://doi.org/10.5281/zenodo.17773434)
 
 ## References
 Wolf T. et al. Transformers: State-of-the-art natural language processing. *In Proceedings of the 2020
