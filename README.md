@@ -171,7 +171,7 @@ accelerate launch scripts/visualize/low_dim_vis_latents.py --config_file config_
 Running the post training latent visualization requires:
 - a pre-trained DecVAE model ```.safetensors``` checkpoint.
 
-Running the post-training evaluation can yield:
+Running the post-training evaluation yields:
 1) TSNE and/or UMAP visualizations of latent representations will be saved in the directory specified by ```save_vis_dir```.
 
 For more details on setting latent visualization parameters, see ```args_configs```.
@@ -193,7 +193,14 @@ accelerate launch scripts/latent_response_analysis/latent_traversal_analysis.py 
 Running the post training latent traversal analysis requires:
 - a pre-trained DecVAE model ```.safetensors``` checkpoint.
 
+Running the post-training latent traversal analysis yields:
+1) latent response matrices for every subspace in ```.json``` format. These are used to create the visualizations in R (see ```visualize_R```).
+
 For more details on setting crucial latent traversals parameters, see ```args_configs```.
+
+### More visualizations with R
+
+Use the calculated results to create figures with R through the scripts at ```visualize_R```. See ```visualize_R/README``` for more details.
 
 ### Benchmarks and more datasets
 The exact same process as above can be followed to pre-train and evaluate VAE-based models and ICA/PCA/kPCA, as well as DecVAE models for the other 3 supported datasets (TIMIT, VOC-ALS, IEMOCAP). The exact same scripts and config_files exist for VAEs. For details and parameters check ```args_configs``` and ```examples```.
