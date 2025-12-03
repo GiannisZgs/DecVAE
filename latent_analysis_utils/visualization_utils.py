@@ -15,6 +15,7 @@ import torch
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 ANGLES = [45, 135, 225, 315]  # angles for taking screenshots of the 3D rotating plots
+NUM_POINTS_FOR_GAUSSIAN = 1000
 
 VIS_METHODS = {
     'umap': umap.UMAP(n_components=2, random_state=42, metric = 'euclidean',n_neighbors=10,min_dist=0.1,densmap=False),
@@ -74,7 +75,6 @@ def visualize(data_training_args, config,X,OCs,y_vec,z_or_h,data_set,target,mani
         target: Target variable name for coloring the plots.
         manifold_dict: Dictionary of manifold learning methods (optional). If not provided a default will be used based on 
             which manifold method has been specified in data_training_args.vis_method.
-        display_figures: If True, displays the generated figures.
         save_dir: Directory to save the generated plots (optional).
     """
     if "seq" in target:
@@ -390,14 +390,13 @@ def visualize(data_training_args, config,X,OCs,y_vec,z_or_h,data_set,target,mani
         elif X is None and OCs is not None:
             mvgmean = np.zeros(OCs_original.size(1))
             mvgcov = np.eye(OCs_original.size(1))
-        num_points = 1000
         if X is not None and OCs is not None:
-            mvgpoints = torch.tensor(np.random.multivariate_normal(mvgmean, mvgcov, num_points)).to(combined_features.device).to(combined_features.dtype)
+            mvgpoints = torch.tensor(np.random.multivariate_normal(mvgmean, mvgcov, NUM_POINTS_FOR_GAUSSIAN)).to(combined_features.device).to(combined_features.dtype)
             combined_features = torch.cat((combined_features,mvgpoints),dim=0)
         elif X is None and OCs is not None:
-            mvgpoints = torch.tensor(np.random.multivariate_normal(mvgmean, mvgcov, num_points)).to(combined_components_only.device).to(combined_components_only.dtype)
+            mvgpoints = torch.tensor(np.random.multivariate_normal(mvgmean, mvgcov, NUM_POINTS_FOR_GAUSSIAN)).to(combined_components_only.device).to(combined_components_only.dtype)
         elif X is not None and OCs is None:
-            mvgpoints = torch.tensor(np.random.multivariate_normal(mvgmean, mvgcov, num_points)).to(X_original.device).to(X_original.dtype)
+            mvgpoints = torch.tensor(np.random.multivariate_normal(mvgmean, mvgcov, NUM_POINTS_FOR_GAUSSIAN)).to(X_original.device).to(X_original.dtype)
             original_features = torch.cat((original_features,mvgpoints),dim=0)
         if OCs is not None:
             combined_components_only = torch.cat((combined_components_only,mvgpoints),dim=0)
@@ -431,15 +430,15 @@ def visualize(data_training_args, config,X,OCs,y_vec,z_or_h,data_set,target,mani
         #Find std of multivariate Gaussian in reduced dimension
         if X is not None and OCs is not None:
             if data_training_args.tsne_plot_2d_3d == "2d" or data_training_args.tsne_plot_2d_3d == "both":
-                tsne_mvG = tsne_results[combined_features.size(0)-num_points:,:]
-                assert tsne_mvG.shape[0] == num_points
-                tsne_results = tsne_results[:combined_features.size(0)-num_points,:]
+                tsne_mvG = tsne_results[combined_features.size(0)-NUM_POINTS_FOR_GAUSSIAN:,:]
+                assert tsne_mvG.shape[0] == NUM_POINTS_FOR_GAUSSIAN
+                tsne_results = tsne_results[:combined_features.size(0)-NUM_POINTS_FOR_GAUSSIAN,:]
                 std_mvG_2d = np.std(tsne_mvG,axis=0)        
                 center_mvG_2d = np.mean(tsne_mvG,axis=0)
             if data_training_args.tsne_plot_2d_3d == "3d" or data_training_args.tsne_plot_2d_3d == "both":
-                tsne_mvG_3d = tsne_results_3d[combined_features.size(0)-num_points:,:]
-                assert tsne_mvG_3d.shape[0] == num_points
-                tsne_results_3d = tsne_results_3d[:combined_features.size(0)-num_points,:]
+                tsne_mvG_3d = tsne_results_3d[combined_features.size(0)-NUM_POINTS_FOR_GAUSSIAN:,:]
+                assert tsne_mvG_3d.shape[0] == NUM_POINTS_FOR_GAUSSIAN
+                tsne_results_3d = tsne_results_3d[:combined_features.size(0)-NUM_POINTS_FOR_GAUSSIAN,:]
                 std_mvG_3d = np.std(tsne_mvG_3d,axis=0)
                 center_mvG_3d = np.mean(tsne_mvG_3d,axis=0)
 
@@ -457,19 +456,19 @@ def visualize(data_training_args, config,X,OCs,y_vec,z_or_h,data_set,target,mani
     
         if OCs is not None:
             if data_training_args.tsne_plot_2d_3d == "2d" or data_training_args.tsne_plot_2d_3d == "both":    
-                tsne_mvG_comps_only = tsne_components_only_results[combined_components_only.size(0)-num_points:,:]
-                tsne_components_only_results = tsne_components_only_results[:combined_components_only.size(0)-num_points,:]
+                tsne_mvG_comps_only = tsne_components_only_results[combined_components_only.size(0)-NUM_POINTS_FOR_GAUSSIAN:,:]
+                tsne_components_only_results = tsne_components_only_results[:combined_components_only.size(0)-NUM_POINTS_FOR_GAUSSIAN,:]
                 std_mvG_2d_comps_only = np.std(tsne_mvG_comps_only,axis=0)
                 center_mvG_2d_comps_only = np.mean(tsne_mvG_comps_only,axis=0)
                 
             if data_training_args.tsne_plot_2d_3d == "3d" or data_training_args.tsne_plot_2d_3d == "both":    
-                tsne_mvG_comps_only_3d = tsne_components_only_3d_results[combined_components_only.size(0)-num_points:,:]
-                tsne_components_only_3d_results = tsne_components_only_3d_results[:combined_components_only.size(0)-num_points,:]
+                tsne_mvG_comps_only_3d = tsne_components_only_3d_results[combined_components_only.size(0)-NUM_POINTS_FOR_GAUSSIAN:,:]
+                tsne_components_only_3d_results = tsne_components_only_3d_results[:combined_components_only.size(0)-NUM_POINTS_FOR_GAUSSIAN,:]
                 std_mvG_3d_comps_only = np.std(tsne_mvG_comps_only_3d,axis=0)            
                 center_mvG_3d_comps_only = np.mean(tsne_mvG_comps_only_3d,axis=0)
 
     colors_frequency = mpl.colormaps['Set1'].colors[:NoC+1]
-    if data_training_args.dataset_name in ["sim_vowels","VOC_ALS","scRNA_seq"]:
+    if data_training_args.dataset_name in ["sim_vowels","VOC_ALS"]:
         colors = (mpl.colormaps['Set1'].colors \
         + mpl.colormaps['Set2'].colors \
         + mpl.colormaps['Set3'].colors)
