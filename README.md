@@ -13,7 +13,7 @@ i.e., encoder-only neural networks that combine a signal decomposition model, a 
 task, and variational prior approximation to learn multiple latent subspaces aligned with time-frequency char
 acteristics.
 
-This library contains ```DecVAEs``` and numerous utilities/scripts for pre-training, fine-tuning transfer learning and zero-shot transfer learning of ```DecVAEs```, evaluation of ```DecVAE``` representations through disentanglement and task-specific metrics, and latent analysis tools for interpretability.``` DecVAEs``` are built by adapting the 🤗 Wav2Vec2-encoder architecture to include VAE functionality for disentangled representation learning. We accommodate the analysis of 4 datasets: TIMIT, IEMOCAP, VOC-ALS and SimVowels, a custom simulated speech dataset. Paper figures can be generated using R (```visualize_R```). Implementation is based on PyTorch, 🤗 HuggingFace Transformers and Google Research ```disentanglement_lib```.
+This library contains ```DecVAEs``` and numerous utilities/scripts for pre-training, fine-tuning transfer learning and zero-shot transfer learning of ```DecVAEs```, evaluation of ```DecVAE``` representations through disentanglement and task-specific metrics, and latent analysis tools for interpretability.``` DecVAEs``` are built by adapting the 🤗 Wav2Vec2-encoder architecture to include VAE functionality for disentangled representation learning. We accommodate the analysis of 4 datasets: TIMIT, IEMOCAP, VOC-ALS and SimVowels, a custom simulated speech dataset. Paper figures can be generated using R (```visualize_R```). Implementation is based on PyTorch, 🤗 HuggingFace Transformers and Google Research ```disentanglement_lib```. This codebase also support logging of pre-training and post-training through Weights & Biases @wandb. 
 
 ## Method highlights
 
@@ -227,3 +227,12 @@ space to deal with large datasets and outliers. *Frontiers in Genetics*, 12, (20
 Locatello F., Bauer S., Lucic M., Raetsch G., Gelly S., Sch¨olkopf B., and Bachem O. Challenging
 Common Assumptions in the Unsupervised Learning of Disentangled Representations, *Proceedings of the 36th
 International Conference on Machine Learning*, 97:4114–4124, (PMLR,2019).
+
+B. Lukas. Experiment Tracking with Weights and Biases, *Software available from wandb.com at https://www.wandb.com/*, (2020)
+
+## License 
+
+[Apache License 2.0][LICENSE] 
+
+
+
