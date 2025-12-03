@@ -302,7 +302,7 @@ def main():
         
             weights = load_file(pretrained_model_file)
 
-            representation_function.load_state_dict(weights)
+            representation_function.load_state_dict(weights, strict=False)
         
         
         representation_function.eval()
@@ -1313,8 +1313,6 @@ def main():
                         target = "vowel",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','vowels',data_training_args.vis_method)
                     )
                     
@@ -1341,8 +1339,6 @@ def main():
                             target = "vowel",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','vowels',data_training_args.vis_method)
                         )
 
@@ -1369,8 +1365,6 @@ def main():
                             target = "vowel",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','vowels',data_training_args.vis_method)
                         )
 
@@ -1397,8 +1391,6 @@ def main():
                                 target = "vowel",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','vowels',data_training_args.vis_method)
                             )
 
@@ -1428,8 +1420,6 @@ def main():
                         target = "speaker_frame",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','speakers',data_training_args.vis_method)
                     )
 
@@ -1455,8 +1445,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','speakers',data_training_args.vis_method)
                         )
 
@@ -1483,8 +1471,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','speakers',data_training_args.vis_method)
                         )
                         
@@ -1510,8 +1496,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','speakers',data_training_args.vis_method)
                             )
 
@@ -1590,8 +1574,6 @@ def main():
                         target = "phoneme39",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','phonemes',data_training_args.vis_method)
                     )
                     
@@ -1618,8 +1600,6 @@ def main():
                             target = "phoneme39",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','phonemes',data_training_args.vis_method)
                         )
 
@@ -1646,8 +1626,6 @@ def main():
                             target = "phoneme39",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','phonemes',data_training_args.vis_method)
                         )
 
@@ -1672,8 +1650,6 @@ def main():
                             target = "phoneme39",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','phonemes',data_training_args.vis_method)
                         )
 
@@ -1707,8 +1683,6 @@ def main():
                         target = "vowel",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','vowel',data_training_args.vis_method)
                     )
                     
@@ -1735,8 +1709,6 @@ def main():
                             target = "vowel",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','vowel',data_training_args.vis_method)
                         )
 
@@ -1763,8 +1735,6 @@ def main():
                             target = "vowel",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','vowel',data_training_args.vis_method)
                         )
 
@@ -1790,8 +1760,6 @@ def main():
                                 target = "vowel",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','vowel',data_training_args.vis_method)
                             )
 
@@ -1825,8 +1793,6 @@ def main():
                         target = "consonant",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','consonant',data_training_args.vis_method)
                     )
                     
@@ -1852,8 +1818,6 @@ def main():
                             target = "consonant",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','consonant',data_training_args.vis_method)
                         )
 
@@ -1880,8 +1844,6 @@ def main():
                             target = "consonant",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','consonant',data_training_args.vis_method)
                         )
 
@@ -1907,8 +1869,6 @@ def main():
                                 target = "consonant",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','consonant',data_training_args.vis_method)
                             )
 
@@ -1939,8 +1899,6 @@ def main():
                         target = "speaker_frame",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','speakers',data_training_args.vis_method)
                     )
 
@@ -1966,8 +1924,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','speakers',data_training_args.vis_method)
                         )
                     if vis_args.use_umap:
@@ -1993,8 +1949,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','speakers',data_training_args.vis_method)
                         )
 
@@ -2020,8 +1974,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','speakers',data_training_args.vis_method)
                             )
 
@@ -2081,8 +2033,6 @@ def main():
                         target = "phoneme",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','phonemes',data_training_args.vis_method)
                     )
                     
@@ -2108,8 +2058,6 @@ def main():
                             target = "phoneme",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','phonemes',data_training_args.vis_method)
                         )
 
@@ -2136,8 +2084,6 @@ def main():
                             target = "phoneme",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','phonemes',data_training_args.vis_method)
                         )
 
@@ -2163,8 +2109,6 @@ def main():
                                 target = "phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','phonemes',data_training_args.vis_method)
                             )
 
@@ -2197,8 +2141,6 @@ def main():
                         target = "non_verbal_phoneme",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','non_verbal_phonemes',data_training_args.vis_method)
                     )
                     
@@ -2224,8 +2166,6 @@ def main():
                             target = "non_verbal_phoneme",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','non_verbal_phonemes',data_training_args.vis_method)
                         )
 
@@ -2252,8 +2192,6 @@ def main():
                             target = "non_verbal_phoneme",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','non_verbal_phonemes',data_training_args.vis_method)
                         )
 
@@ -2279,8 +2217,6 @@ def main():
                                 target = "non_verbal_phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','non_verbal_phonemes',data_training_args.vis_method)
                             )
 
@@ -2310,8 +2246,6 @@ def main():
                         target = "speaker_frame",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','speakers',data_training_args.vis_method)
                     )
 
@@ -2337,8 +2271,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','speakers',data_training_args.vis_method)
                         )
 
@@ -2365,8 +2297,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','speakers',data_training_args.vis_method)
                         )
 
@@ -2392,8 +2322,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','speakers',data_training_args.vis_method)
                             )
 
@@ -2423,8 +2351,6 @@ def main():
                         target = "emotion",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','categorical_emotions',data_training_args.vis_method)
                     )
 
@@ -2450,8 +2376,6 @@ def main():
                             target = "emotion",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','categorical_emotions',data_training_args.vis_method)
                         )
 
@@ -2478,8 +2402,6 @@ def main():
                             target = "emotion",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','categorical_emotions',data_training_args.vis_method)
                         )
 
@@ -2505,8 +2427,6 @@ def main():
                                 target = "emotion",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','categorical_emotions',data_training_args.vis_method)
                             )
 
@@ -2562,8 +2482,6 @@ def main():
                         target = "phoneme",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','phoneme',data_training_args.vis_method)
                     )
                     
@@ -2589,8 +2507,6 @@ def main():
                             target = "phoneme",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','phoneme',data_training_args.vis_method)
                         )
 
@@ -2617,8 +2533,6 @@ def main():
                             target = "phoneme",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','phoneme',data_training_args.vis_method)
                         )
 
@@ -2644,8 +2558,6 @@ def main():
                                 target = "phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','phoneme',data_training_args.vis_method)
                             )
 
@@ -2679,8 +2591,6 @@ def main():
                         target = "alsfrs_total",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','alsfrs_total',data_training_args.vis_method)
                     )
                     
@@ -2706,8 +2616,6 @@ def main():
                             target = "alsfrs_total",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','alsfrs_total',data_training_args.vis_method)
                         )
 
@@ -2734,8 +2642,6 @@ def main():
                             target = "alsfrs_total",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','alsfrs_total',data_training_args.vis_method)
                         )
 
@@ -2761,8 +2667,6 @@ def main():
                                 target = "alsfrs_total",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','alsfrs_total',data_training_args.vis_method)
                             )
 
@@ -2796,8 +2700,6 @@ def main():
                         target = "alsfrs_speech",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','alsfrs_speech',data_training_args.vis_method)
                     )
                     
@@ -2823,8 +2725,6 @@ def main():
                             target = "alsfrs_speech",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','alsfrs_speech',data_training_args.vis_method)
                         )
 
@@ -2851,8 +2751,6 @@ def main():
                             target = "alsfrs_speech",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','alsfrs_speech',data_training_args.vis_method)
                         )
 
@@ -2878,8 +2776,6 @@ def main():
                                 target = "alsfrs_speech",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','alsfrs_speech',data_training_args.vis_method)
                             )
 
@@ -2912,8 +2808,6 @@ def main():
                         target = "disease_duration",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','disease_duration',data_training_args.vis_method)
                     )
                     
@@ -2939,8 +2833,6 @@ def main():
                             target = "disease_duration",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','disease_duration',data_training_args.vis_method)
                         )
 
@@ -2967,8 +2859,6 @@ def main():
                             target = "disease_duration",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','disease_duration',data_training_args.vis_method)
                         )
 
@@ -2994,8 +2884,6 @@ def main():
                                 target = "disease_duration",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','disease_duration',data_training_args.vis_method)
                             )
 
@@ -3029,8 +2917,6 @@ def main():
                         target = "king_stage",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','king_stage',data_training_args.vis_method)
                     )
                     
@@ -3056,8 +2942,6 @@ def main():
                             target = "king_stage",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','king_stage',data_training_args.vis_method)
                         )
 
@@ -3084,8 +2968,6 @@ def main():
                             target = "king_stage",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','king_stage',data_training_args.vis_method)
                         )
 
@@ -3111,8 +2993,6 @@ def main():
                                 target = "king_stage",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','king_stage',data_training_args.vis_method)
                             )
 
@@ -3145,8 +3025,6 @@ def main():
                         target = "group",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','group',data_training_args.vis_method)
                     )
                     
@@ -3172,8 +3050,6 @@ def main():
                             target = "group",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','group',data_training_args.vis_method)
                         )
 
@@ -3200,8 +3076,6 @@ def main():
                             target = "group",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','group',data_training_args.vis_method)
                         )
 
@@ -3227,8 +3101,6 @@ def main():
                                 target = "group",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','group',data_training_args.vis_method)
                             )
 
@@ -3262,8 +3134,6 @@ def main():
                         target = "cantagallo",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','cantagallo',data_training_args.vis_method)
                     )
                     
@@ -3289,8 +3159,6 @@ def main():
                             target = "cantagallo",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','cantagallo',data_training_args.vis_method)
                         )
 
@@ -3317,8 +3185,6 @@ def main():
                             target = "cantagallo",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','cantagallo',data_training_args.vis_method)
                         )
 
@@ -3344,8 +3210,6 @@ def main():
                                 target = "cantagallo",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','cantagallo',data_training_args.vis_method)
                             )
 
@@ -3375,8 +3239,6 @@ def main():
                         target = "speaker_frame",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = False,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','speakers',data_training_args.vis_method)
                     )
 
@@ -3402,8 +3264,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','speakers',data_training_args.vis_method)
                         )
 
@@ -3430,8 +3290,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = False,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','speakers',data_training_args.vis_method)
                         )
 
@@ -3457,8 +3315,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = False,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,model_args.vae_type + '_' + model_args.vae_input_type,data_training_args.dataset_name,BETAS,data_subset,'X','speakers',data_training_args.vis_method)
                             )
 

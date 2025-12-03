@@ -852,10 +852,10 @@ class Dec2VecModel(Wav2Vec2PreTrainedModel):
             if config.NoC > 15:
                 raise ValueError("DecVAE currently supports up to 15 components only.")
 
-        if config.do_stable_layer_norm:
-            self.encoder = Dec2VecEncoderStableLayerNorm(config)
-        else:
-            self.encoder = Wav2Vec2Encoder(config)
+        #if config.do_stable_layer_norm:
+        #    self.encoder = Dec2VecEncoderStableLayerNorm(config)
+        #else:
+        #    self.encoder = Wav2Vec2Encoder(config)
 
         self.adapter = Wav2Vec2Adapter(config) if config.add_adapter else None
 
@@ -1026,8 +1026,8 @@ class Dec2VecModel(Wav2Vec2PreTrainedModel):
             total_levels = extract_features.shape[0] #NoC + 1
 
             hidden_states = torch.zeros((extract_features.shape[0],extract_features.shape[1],extract_features.shape[2],
-                    self.encoder.pos_conv_embed.conv.in_channels),dtype=extract_features.dtype,device=extract_features.device)
-        
+                    self.config.hidden_size),dtype=extract_features.dtype,device=extract_features.device)
+            #If transformer encoder is used, self.encoder.pos_conv_embed.conv.in_channels instead of hidden size
             #If a single decomposition level is chosen for the transformer encoder randomly, propagate that
 
             for i in range(total_levels):
@@ -1092,34 +1092,30 @@ class Dec2VecModel(Wav2Vec2PreTrainedModel):
                     self.comp_15_embed = nn.Parameter(torch.mean(hidden_states[n+1][component_indices[n]],dim = 0),requires_grad=False)
 
 
+            #selected_hidden_states = hidden_states[0,...]
 
-            #Decomposition loss needs components at the extract features stage
-            #Transformer takes the original frames - In pretraining, these are not used anyway
-            #In fine-tuning, they will be used for the CTC loss
-            selected_hidden_states = hidden_states[0,...]
-
-        encoder_outputs = self.encoder(
-            selected_hidden_states,
-            attention_mask=attention_mask,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
+        #encoder_outputs = self.encoder(
+        #    selected_hidden_states,
+        #    attention_mask=attention_mask,
+        #    output_attentions=output_attentions,
+        #   output_hidden_states=output_hidden_states,
+        #   return_dict=return_dict,
+        #)
         
         #context representations c - after the transformer encoder
-        last_hidden_states = encoder_outputs[0]
+        #last_hidden_states = encoder_outputs[0]
         
-        if self.adapter is not None:
-            last_hidden_states = self.adapter(last_hidden_states)
+        #if self.adapter is not None:
+        #    last_hidden_states = self.adapter(last_hidden_states)
 
-        if not return_dict:
-            return (last_hidden_states, extract_features) + encoder_outputs[1:]
+        #if not return_dict:
+        #    return (last_hidden_states, extract_features) + encoder_outputs[1:]
 
         #last_hidden_states: c - after transformer encoder
         #extract_features: z before projection
         #hidden_states: z before transformer encoder
         return DecVAEBaseModelOutput(
-            last_hidden_state=last_hidden_states,
+            last_hidden_state= None, #last_hidden_states,
             extract_features=extract_features,
             hidden_states=hidden_states,
             attentions=attention_mask,

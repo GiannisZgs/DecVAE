@@ -55,7 +55,7 @@ def save_animation_screenshot(fig, ax, angle, save_path, dpi=600):
     #print(f"Screenshot saved at {save_path}")
 
 
-def visualize(data_training_args, config,X,OCs,y_vec,z_or_h,data_set,target,manifold_dict = None, display_figures=False,save_dir=None):
+def visualize(data_training_args, config,X,OCs,y_vec,z_or_h,data_set,target,manifold_dict = None, save_dir=None):
     """
     Utilities for visualizing latent spaces in a 2D/3D manifold using manifold learning algorithms.    
     Visualizations are created to showcase frequency-resonant latent subspaces and final latent space (prior approximation), as well as generative factors-related
@@ -513,11 +513,10 @@ def visualize(data_training_args, config,X,OCs,y_vec,z_or_h,data_set,target,mani
     
     elif "VOC_ALS" in data_training_args.dataset_name:
         legend_labels = le.inverse_transform(np.unique(y_original))
-    elif "scRNA_seq" in data_training_args.dataset_name:
-        pass
+
     
     "Frequency plot"
-    if data_training_args.frequency_vis and display_figures:
+    if data_training_args.frequency_vis:
         if data_training_args.tsne_plot_2d_3d == "2d" or data_training_args.tsne_plot_2d_3d == "both":
             "Original + all components"
             if X is not None and OCs is not None:
@@ -689,7 +688,7 @@ def visualize(data_training_args, config,X,OCs,y_vec,z_or_h,data_set,target,mani
             
 
     "Generative Factors Plot - Phonetic Content and Speaker"
-    if data_training_args.generative_factors_vis and display_figures:
+    if data_training_args.generative_factors_vis:
         if data_training_args.tsne_plot_2d_3d == "2d" or data_training_args.tsne_plot_2d_3d == "both":
             "All components combined"
             if OCs is not None:

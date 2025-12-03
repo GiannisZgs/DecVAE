@@ -303,7 +303,7 @@ def main():
         
             weights = load_file(pretrained_model_file)
 
-            representation_function.load_state_dict(weights)
+            representation_function.load_state_dict(weights, strict=False)
         
         
         representation_function.eval()

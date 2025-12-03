@@ -678,22 +678,6 @@ def main():
         disease_duration = torch.tensor(np.array(quality_frame["disease_duration"])).repeat(1,quality_frame["overlap_mask"].shape[-1]).reshape(-1)
         speaker_id = torch.tensor(np.array(quality_frame["speaker_id"])).repeat(1,quality_frame["overlap_mask"].shape[-1]).reshape(-1)
    
-    elif data_training_args.dataset_name == "scRNA_seq":
-        cell_type_seq = np.array(quality_seq["celltype"])
-        condition_seq = np.array(quality_seq["condition"])
-        batch_information_seq = np.array(quality_seq["batch"])
-
-        "For overlap mask"
-        max_length = max([len(x[0]) for x in quality_frame["overlap_mask"]])
-        new_overlap_mask = torch.ones((len(quality_frame["overlap_mask"]),max_length),dtype=torch.bool)
-        for i in range(len(quality_frame["overlap_mask"])):
-            new_overlap_mask[i,:quality_frame["overlap_mask"][i].shape[-1]] = torch.tensor(quality_frame["overlap_mask"][i])
-        quality_frame["overlap_mask"] = new_overlap_mask
-        overlap_mask = quality_frame["overlap_mask"].reshape(-1)
-        "For all other variables"
-        cell_type = torch.tensor(np.array(quality_frame["celltype"])).repeat(1,quality_frame["overlap_mask"].shape[-1]).reshape(-1)
-        condition = torch.tensor(np.array(quality_frame["condition"])).repeat(1,quality_frame["overlap_mask"].shape[-1]).reshape(-1)
-        batch_information = torch.tensor(np.array(quality_frame["batch"])).repeat(1,quality_frame["overlap_mask"].shape[-1]).reshape(-1)
 
     "Then sequence data"
     quality_seq["time_domain"] = torch.tensor(np.array(quality_seq["time_domain"]))
@@ -708,7 +692,7 @@ def main():
 
     "Real mel data have to be padded to a common length - in training this is handled by the dataloader"
     if vis_args.vis_mel_seq:
-        if data_training_args.dataset_name == "sim_vowels" or data_training_args.dataset_name == "scRNA_seq":
+        if data_training_args.dataset_name == "sim_vowels":
             quality_seq["mel"] = torch.tensor(np.array(quality_seq["mel"]))
         else:
             max_length = max([x.shape[-1] for x in quality_seq["mel"]])
@@ -718,7 +702,7 @@ def main():
             quality_seq["mel"] = new_mel_seq
 
         mel_seq = quality_seq["mel"][:,0,:]
-        if data_training_args.dataset_name == "sim_vowels" or data_training_args.dataset_name == "scRNA_seq":
+        if data_training_args.dataset_name == "sim_vowels":
             mel_OCs_seq = quality_seq["mel"][:,1:,:]
             mel_OCs_concat_seq = mel_OCs_seq.reshape(mel_OCs_seq.shape[0],-1)
         else:
@@ -887,8 +871,6 @@ def main():
                 target = "vowel",
                 data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'vowels')
             )
 
@@ -902,8 +884,6 @@ def main():
                 target = "vowel",
                 data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'vowels')
             )
 
@@ -923,8 +903,6 @@ def main():
                     target = "vowel",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'vowels')
                 )
 
@@ -938,8 +916,6 @@ def main():
                     target = "vowel",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'vowels')
                 )
 
@@ -966,8 +942,6 @@ def main():
                 target = "speaker_frame",
                 data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
             )
 
@@ -981,8 +955,6 @@ def main():
                 target = "speaker_frame",
                 data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
             )
             
@@ -1001,8 +973,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
                 )
 
@@ -1016,8 +986,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
                 )
             
@@ -1075,8 +1043,6 @@ def main():
                 target = "vowel",
                 data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict= manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'vowels')
             )
 
@@ -1090,8 +1056,6 @@ def main():
                 target = "vowel",
                 data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'vowels')
             )
             
@@ -1111,8 +1075,6 @@ def main():
                     target = "vowel",
                     data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'vowels')
                 )
 
@@ -1126,8 +1088,6 @@ def main():
                     target = "vowel",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'vowels')
                 )
 
@@ -1154,8 +1114,6 @@ def main():
                 target = "speaker_frame",
                 data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict= manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
             )
 
@@ -1169,8 +1127,6 @@ def main():
                 target = "speaker_frame",
                 data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
             )
 
@@ -1189,8 +1145,6 @@ def main():
                     target = "speaker_frame",
                     data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
                 )
 
@@ -1204,8 +1158,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
                 )
 
@@ -1266,8 +1218,6 @@ def main():
                 target = "speaker_seq",
                 data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis) + '_seqs',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name)
             )
 
@@ -1281,8 +1231,6 @@ def main():
                 target = "speaker_seq",
                 data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name)
             )
 
@@ -1301,8 +1249,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis) + '_seqs',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name)
                 )
                 "Also plot for the concatenated OCs"
@@ -1315,8 +1261,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name)
                 )
         
@@ -1371,8 +1315,6 @@ def main():
                 target = "speaker_seq",
                 data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis) + '_seqs',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name)
             )
 
@@ -1386,8 +1328,6 @@ def main():
                 target = "speaker_seq",
                 data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name)
             )
 
@@ -1406,8 +1346,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name)
                 )
                 "Also plot for the concatenated OCs"
@@ -1420,8 +1358,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name)
                 )
 
@@ -1545,8 +1481,6 @@ def main():
                 target = "phoneme",
                 data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'phonemes')
             )
            
@@ -1560,8 +1494,6 @@ def main():
                 target = "phoneme",
                 data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'phonemes')
             )
 
@@ -1581,8 +1513,6 @@ def main():
                     target = "phoneme",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'phonemes')
                 )
 
@@ -1596,8 +1526,6 @@ def main():
                     target = "phoneme",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'phonemes')
                 )
 
@@ -1625,8 +1553,6 @@ def main():
                 target = "vowel",
                 data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'vowels')
             )
 
@@ -1640,8 +1566,8 @@ def main():
                 target = "vowel",
                 data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
+                
+                
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'vowels')
             )
 
@@ -1661,8 +1587,6 @@ def main():
                     target = "vowel",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'vowels')
                 )
 
@@ -1676,8 +1600,6 @@ def main():
                     target = "vowel",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'vowels')
                 )
 
@@ -1705,8 +1627,6 @@ def main():
                 target = "consonant",
                 data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'consonants')
             )
 
@@ -1720,8 +1640,8 @@ def main():
                 target = "consonant",
                 data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
+                
+                
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'consonants')
             )
 
@@ -1741,8 +1661,6 @@ def main():
                     target = "consonant",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'consonants')
                 )
 
@@ -1756,8 +1674,8 @@ def main():
                     target = "consonant",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
+                    
+                    
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'consonants')
                 )
 
@@ -1785,8 +1703,6 @@ def main():
                 target = "phoneme",
                 data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'selected_phonemes')
             )
 
@@ -1800,8 +1716,6 @@ def main():
                 target = "phoneme",
                 data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'selected_phonemes')
             )
 
@@ -1821,8 +1735,6 @@ def main():
                     target = "phoneme",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'selected_phonemes')
                 )
 
@@ -1836,8 +1748,6 @@ def main():
                     target = "phoneme",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'selected_phonemes')
                 )
 
@@ -1865,8 +1775,6 @@ def main():
                 target = "speaker_frame",
                 data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
             )
 
@@ -1880,8 +1788,6 @@ def main():
                 target = "speaker_frame",
                 data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
             )
             
@@ -1900,8 +1806,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
                 )
 
@@ -1915,8 +1819,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
                 )
 
@@ -1938,8 +1840,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
                 )
 
@@ -1953,8 +1853,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
                 )
                 
@@ -1973,8 +1871,6 @@ def main():
                         target = "speaker_frame",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
                     )
 
@@ -1988,8 +1884,6 @@ def main():
                         target = "speaker_frame",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
                     )
                 
@@ -2076,8 +1970,6 @@ def main():
                 target = "phoneme",
                 data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict= manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'phonemes')
             )
 
@@ -2091,8 +1983,6 @@ def main():
                 target = "phoneme",
                 data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'phonemes')
             )
 
@@ -2111,8 +2001,6 @@ def main():
                     target = "phoneme",
                     data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'phonemes')
                 )
 
@@ -2126,8 +2014,6 @@ def main():
                     target = "phoneme",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'phonemes')
                 )
 
@@ -2153,8 +2039,6 @@ def main():
                 target = "vowel",
                 data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict= manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'vowels')
             )
 
@@ -2168,8 +2052,6 @@ def main():
                 target = "vowel",
                 data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'vowels')
             )
 
@@ -2188,8 +2070,6 @@ def main():
                     target = "vowel",
                     data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'vowels')
                 )
 
@@ -2203,8 +2083,6 @@ def main():
                     target = "vowel",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'vowels')
                 )
 
@@ -2230,8 +2108,6 @@ def main():
                 target = "consonant",
                 data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict= manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'consonants')
             )
 
@@ -2245,8 +2121,6 @@ def main():
                 target = "consonant",
                 data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'consonants')
             )
 
@@ -2265,8 +2139,6 @@ def main():
                     target = "consonant",
                     data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'consonants')
                 )
 
@@ -2280,8 +2152,6 @@ def main():
                     target = "consonant",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'consonants')
                 )
 
@@ -2307,8 +2177,6 @@ def main():
                 target = "phoneme",
                 data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict= manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'selected_phonemes')
             )
 
@@ -2322,8 +2190,6 @@ def main():
                 target = "phoneme",
                 data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'selected_phonemes')
             )
 
@@ -2342,8 +2208,6 @@ def main():
                     target = "phoneme",
                     data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'selected_phonemes')
                 )
 
@@ -2357,8 +2221,6 @@ def main():
                     target = "phoneme",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'selected_phonemes')
                 )
 
@@ -2388,8 +2250,6 @@ def main():
                 target = "speaker_frame",
                 data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames_10_speakers',
                 manifold_dict= manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
             )
 
@@ -2403,8 +2263,6 @@ def main():
                 target = "speaker_frame",
                 data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames_10_speakers',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
             )
 
@@ -2423,8 +2281,6 @@ def main():
                     target = "speaker_frame",
                     data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames_10_speakers',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
                 )
 
@@ -2438,8 +2294,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames_10_speakers',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
                 )
 
@@ -2454,8 +2308,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames_20_speakers',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
                 )
 
@@ -2469,8 +2321,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames_20_speakers',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
                 )
 
@@ -2489,8 +2339,6 @@ def main():
                         target = "speaker_frame",
                         data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames_20_speakers',
                         manifold_dict= manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
                     )
 
@@ -2504,8 +2352,6 @@ def main():
                         target = "speaker_frame",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames_20_speakers',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
                     )
 
@@ -2600,8 +2446,6 @@ def main():
                 target = "speaker_seq",
                 data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis) + '_seqs_10_speakers',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name)
             )
 
@@ -2615,8 +2459,6 @@ def main():
                 target = "speaker_seq",
                 data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs_10_speakers',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name)
             )
 
@@ -2635,8 +2477,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis) + '_seqs_10_speakers',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name)
                 )
                 "Also plot for the concatenated OCs"
@@ -2649,8 +2489,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs_10_speakers',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name)
                 )
             
@@ -2677,8 +2515,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis) + '_seqs_20_speakers',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name)
                 )
 
@@ -2692,8 +2528,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs_20_speakers',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name)
                 )
 
@@ -2712,8 +2546,6 @@ def main():
                         target = "speaker_seq",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis) + '_seqs_20_speakers',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name)
                     )
                     "Also plot for the concatenated OCs"
@@ -2726,8 +2558,6 @@ def main():
                         target = "speaker_seq",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs_20_speakers',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name)
                     )
 
@@ -2819,8 +2649,6 @@ def main():
                 target = "speaker_seq",
                 data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis) + '_seqs_10_speakers',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name)
             )
 
@@ -2834,8 +2662,6 @@ def main():
                 target = "speaker_seq",
                 data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs_10_speakers',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name)
             )
 
@@ -2854,8 +2680,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis) +'_seqs_10_speakers',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name)
                 )
                 "Also plot for the concatenated OCs"
@@ -2868,8 +2692,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs_10_speakers',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name)
                 )
 
@@ -2896,8 +2718,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis) + '_seqs_20_speakers',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name)
                 )
 
@@ -2911,8 +2731,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs_20_speakers',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name)
                 )
 
@@ -2931,8 +2749,6 @@ def main():
                         target = "speaker_seq",
                         data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis) +'_seqs_20_speakers',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name)
                     )
                     "Also plot for the concatenated OCs"
@@ -2945,8 +2761,6 @@ def main():
                         target = "speaker_seq",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs_20_speakers',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name)
                     )
 
@@ -3028,8 +2842,6 @@ def main():
                 target = "phoneme",
                 data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'phonemes')
             )
 
@@ -3043,8 +2855,6 @@ def main():
                 target = "phoneme",
                 data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'phonemes')
             )
 
@@ -3064,8 +2874,6 @@ def main():
                     target = "phoneme",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'phonemes')
                 )
 
@@ -3079,8 +2887,6 @@ def main():
                     target = "phoneme",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'phonemes')
                 )
 
@@ -3108,8 +2914,6 @@ def main():
                 target = "non_verbal_phoneme",
                 data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'non_verbal_phonemes')
             )
 
@@ -3123,8 +2927,6 @@ def main():
                 target = "non_verbal_phoneme",
                 data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'non_verbal_phonemes')
             )
 
@@ -3143,8 +2945,6 @@ def main():
                     target = "non_verbal_phoneme",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'non_verbal_phonemes')
                 )
 
@@ -3158,8 +2958,6 @@ def main():
                     target = "non_verbal_phoneme",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'non_verbal_phonemes')
                 )
 
@@ -3187,8 +2985,6 @@ def main():
                 target = "emotion",
                 data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'categorical_emotions')
             )
 
@@ -3202,8 +2998,6 @@ def main():
                 target = "emotion",
                 data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'categorical_emotions')
             )
 
@@ -3223,8 +3017,6 @@ def main():
                     target = "emotion",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'categorical_emotions')
                 )
 
@@ -3238,8 +3030,6 @@ def main():
                     target = "emotion",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'categorical_emotions')
                 )
 
@@ -3268,8 +3058,6 @@ def main():
                 target = "speaker_frame",
                 data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
             )
 
@@ -3283,8 +3071,6 @@ def main():
                 target = "speaker_frame",
                 data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
             )
             
@@ -3303,8 +3089,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
                 )
 
@@ -3318,8 +3102,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
                 )
                 
@@ -3390,8 +3172,6 @@ def main():
                 target = "phoneme",
                 data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict= manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'phonemes')
             )
 
@@ -3405,8 +3185,6 @@ def main():
                 target = "phoneme",
                 data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'phonemes')
             )
 
@@ -3425,8 +3203,6 @@ def main():
                     target = "phoneme",
                     data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'phonemes')
                 )
 
@@ -3440,8 +3216,6 @@ def main():
                     target = "phoneme",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'phonemes')
                 )
 
@@ -3467,8 +3241,6 @@ def main():
                 target = "non_verbal_phoneme",
                 data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict= manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'non_verbal_phonemes')
             )
 
@@ -3482,8 +3254,6 @@ def main():
                 target = "non_verbal_phoneme",
                 data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'non_verbal_phonemes')
             )
 
@@ -3502,8 +3272,6 @@ def main():
                     target = "non_verbal_phoneme",
                     data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'non_verbal_phonemes')
                 )
 
@@ -3517,8 +3285,6 @@ def main():
                     target = "non_verbal_phoneme",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'non_verbal_phonemes')
                 )
 
@@ -3544,8 +3310,6 @@ def main():
                 target = "emotion",
                 data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict= manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'categorical_emotions')
             )
 
@@ -3559,8 +3323,6 @@ def main():
                 target = "emotion",
                 data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'categorical_emotions')
             )
 
@@ -3579,8 +3341,6 @@ def main():
                     target = "emotion",
                     data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'categorical_emotions')
                 )
 
@@ -3594,8 +3354,6 @@ def main():
                     target = "emotion",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'categorical_emotions')
                 )
 
@@ -3624,8 +3382,6 @@ def main():
                 target = "speaker_frame",
                 data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict= manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
             )
 
@@ -3639,8 +3395,6 @@ def main():
                 target = "speaker_frame",
                 data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
             )
 
@@ -3659,8 +3413,6 @@ def main():
                     target = "speaker_frame",
                     data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
                 )
 
@@ -3674,8 +3426,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
                 )
 
@@ -3738,8 +3488,6 @@ def main():
                 target = "speaker_seq",
                 data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis) + '_seqs',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name, 'speakers_seq')
             )
 
@@ -3753,8 +3501,6 @@ def main():
                 target = "speaker_seq",
                 data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name, 'speakers_seq')
             )
 
@@ -3773,8 +3519,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis) + '_seqs',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name, 'speakers_seq')
                 )
                 "Also plot for the concatenated OCs"
@@ -3787,8 +3531,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name, 'speakers_seq')
                 )
             
@@ -3817,8 +3559,6 @@ def main():
                 target = "emotion_seq",
                 data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis) + '_seqs',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name, 'emotion_seq')
             )
 
@@ -3832,8 +3572,6 @@ def main():
                 target = "emotion_seq",
                 data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name, 'emotion_seq')
             )
 
@@ -3852,8 +3590,6 @@ def main():
                     target = "emotion_seq",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis) + '_seqs',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name, 'emotion_seq')
                 )
                 "Also plot for the concatenated OCs"
@@ -3866,8 +3602,6 @@ def main():
                     target = "emotion_seq",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name, 'emotion_seq')
                 )
 
@@ -3926,8 +3660,6 @@ def main():
                 target = "speaker_seq",
                 data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis) + '_seqs',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name, 'speakers_seq')
             )
 
@@ -3941,8 +3673,6 @@ def main():
                 target = "speaker_seq",
                 data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name, 'speakers_seq')
             )
 
@@ -3961,8 +3691,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis) +'_seqs',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name, 'speakers_seq')
                 )
                 "Also plot for the concatenated OCs"
@@ -3975,8 +3703,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name, 'speakers_seq')
                 )
 
@@ -4005,8 +3731,6 @@ def main():
                 target = "emotion_seq",
                 data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis) + '_seqs',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name, 'emotion_seq')
             )
 
@@ -4020,8 +3744,6 @@ def main():
                 target = "emotion_seq",
                 data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs',
                 manifold_dict = manifold_dict,
-                return_data = True,
-                display_figures = True,
                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name, 'emotion_seq')
             )
 
@@ -4040,8 +3762,6 @@ def main():
                     target = "emotion_seq",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis) +'_seqs',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name, 'emotion_seq')
                 )
                 "Also plot for the concatenated OCs"
@@ -4054,8 +3774,6 @@ def main():
                     target = "emotion_seq",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name, 'emotion_seq')
                 )
 
@@ -4143,8 +3861,6 @@ def main():
                     target = "phoneme",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'phonemes')
                 )
 
@@ -4158,8 +3874,6 @@ def main():
                     target = "phoneme",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'phonemes')
                 )
 
@@ -4179,8 +3893,6 @@ def main():
                         target = "phoneme",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'phonemes')
                     )
 
@@ -4194,8 +3906,6 @@ def main():
                         target = "phoneme",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'phonemes')
                     )
             
@@ -4224,8 +3934,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
                 )
 
@@ -4239,8 +3947,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
                 )
                 
@@ -4259,8 +3965,6 @@ def main():
                         target = "speaker_frame",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
                     )
 
@@ -4274,8 +3978,6 @@ def main():
                         target = "speaker_frame",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'speakers')
                     )
 
@@ -4303,8 +4005,6 @@ def main():
                     target = "group_frame",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'group')
                 )
 
@@ -4318,8 +4018,6 @@ def main():
                     target = "group_frame",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'group')
                 )
                 
@@ -4338,8 +4036,6 @@ def main():
                         target = "group_frame",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'group')
                     )
 
@@ -4353,8 +4049,6 @@ def main():
                         target = "group_frame",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'group')
                     )
 
@@ -4382,8 +4076,6 @@ def main():
                     target = "disease_duration_frame",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'disease_duration')
                 )
 
@@ -4397,8 +4089,6 @@ def main():
                     target = "disease_duration_frame",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'disease_duration')
                 )
                 
@@ -4417,8 +4107,6 @@ def main():
                         target = "disease_duration_frame",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'disease_duration')
                     )
 
@@ -4432,8 +4120,6 @@ def main():
                         target = "disease_duration_frame",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'disease_duration')
                     )
 
@@ -4462,8 +4148,6 @@ def main():
                     target = "king_stage_frame",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'king_stage')
                 )
 
@@ -4477,8 +4161,6 @@ def main():
                     target = "king_stage_frame",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'king_stage')
                 )
                 
@@ -4497,8 +4179,6 @@ def main():
                         target = "king_stage_frame",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'king_stage')
                     )
 
@@ -4512,8 +4192,6 @@ def main():
                         target = "king_stage_frame",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'king_stage')
                     )
 
@@ -4541,8 +4219,6 @@ def main():
                     target = "cantagallo_frame",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'cantagallo')
                 )
 
@@ -4556,8 +4232,6 @@ def main():
                     target = "cantagallo_frame",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'cantagallo')
                 )
                 
@@ -4576,8 +4250,6 @@ def main():
                         target = "cantagallo_frame",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'cantagallo')
                     )
 
@@ -4591,8 +4263,6 @@ def main():
                         target = "cantagallo_frame",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'cantagallo')
                     )
 
@@ -4621,8 +4291,6 @@ def main():
                     target = "alsfrs_total_frame",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'alsfrs_total')
                 )
 
@@ -4636,8 +4304,6 @@ def main():
                     target = "alsfrs_total_frame",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'alsfrs_total')
                 )
                 
@@ -4656,8 +4322,6 @@ def main():
                         target = "alsfrs_total_frame",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'alsfrs_total')
                     )
 
@@ -4671,8 +4335,6 @@ def main():
                         target = "alsfrs_total_frame",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'alsfrs_total')
                     )
 
@@ -4700,8 +4362,6 @@ def main():
                     target = "alsfrs_speech_frame",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'alsfrs_speech')
                 )
 
@@ -4715,8 +4375,6 @@ def main():
                     target = "alsfrs_speech_frame",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'alsfrs_speech')
                 )
                 
@@ -4735,8 +4393,6 @@ def main():
                         target = "alsfrs_speech_frame",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'alsfrs_speech')
                     )
 
@@ -4750,8 +4406,6 @@ def main():
                         target = "alsfrs_speech_frame",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_frame',data_training_args.dataset_name,'alsfrs_speech')
                     )
 
@@ -4815,8 +4469,6 @@ def main():
                     target = "phoneme",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'phonemes')
                 )
 
@@ -4830,8 +4482,6 @@ def main():
                     target = "phoneme",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'phonemes')
                 )
                 
@@ -4850,8 +4500,6 @@ def main():
                         target = "phoneme",
                         data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict= manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'phonemes')
                     )
 
@@ -4865,8 +4513,6 @@ def main():
                         target = "phoneme",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'phonemes')
                     )
 
@@ -4894,8 +4540,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames_10_speakers',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
                 )
 
@@ -4909,8 +4553,6 @@ def main():
                     target = "speaker_frame",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames_10_speakers',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
                 )
 
@@ -4929,8 +4571,6 @@ def main():
                         target = "speaker_frame",
                         data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames_10_speakers',
                         manifold_dict= manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
                     )
 
@@ -4944,8 +4584,6 @@ def main():
                         target = "speaker_frame",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames_10_speakers',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'speakers')
                     )
 
@@ -4970,8 +4608,6 @@ def main():
                     target = "group_frame",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'group')
                 )
 
@@ -4985,8 +4621,6 @@ def main():
                     target = "group_frame",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'group')
                 )
                 
@@ -5005,8 +4639,6 @@ def main():
                         target = "group_frame",
                         data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict= manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'group')
                     )
 
@@ -5020,8 +4652,6 @@ def main():
                         target = "group_frame",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'group')
                     )
 
@@ -5046,8 +4676,6 @@ def main():
                     target = "disease_duration_frame",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'disease_duration')
                 )
 
@@ -5061,8 +4689,6 @@ def main():
                     target = "disease_duration_frame",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'disease_duration')
                 )
                 
@@ -5081,8 +4707,6 @@ def main():
                         target = "disease_duration_frame",
                         data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict= manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'disease_duration')
                     )
 
@@ -5096,8 +4720,6 @@ def main():
                         target = "disease_duration_frame",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'disease_duration')
                     ) 
 
@@ -5122,8 +4744,6 @@ def main():
                     target = "king_stage_frame",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'king_stage')
                 )
 
@@ -5137,8 +4757,6 @@ def main():
                     target = "king_stage_frame",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'king_stage')
                 )
                 
@@ -5157,8 +4775,6 @@ def main():
                         target = "king_stage_frame",
                         data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict= manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'king_stage')
                     )
 
@@ -5172,8 +4788,6 @@ def main():
                         target = "king_stage_frame",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'king_stage')
                     ) 
 
@@ -5198,8 +4812,6 @@ def main():
                     target = "cantagallo_frame",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'cantagallo')
                 )
 
@@ -5213,8 +4825,6 @@ def main():
                     target = "cantagallo_frame",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'cantagallo')
                 )
                 
@@ -5233,8 +4843,6 @@ def main():
                         target = "cantagallo_frame",
                         data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict= manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'cantagallo')
                     )
 
@@ -5248,8 +4856,6 @@ def main():
                         target = "cantagallo_frame",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'cantagallo')
                     ) 
 
@@ -5274,8 +4880,6 @@ def main():
                     target = "alsfrs_total_frame",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'alsfrs_total')
                 )
 
@@ -5289,8 +4893,6 @@ def main():
                     target = "alsfrs_total_frame",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'alsfrs_total')
                 )
                 
@@ -5309,8 +4911,6 @@ def main():
                         target = "alsfrs_total_frame",
                         data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict= manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'alsfrs_total')
                     )
 
@@ -5324,8 +4924,6 @@ def main():
                         target = "alsfrs_total_frame",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'alsfrs_total')
                     ) 
 
@@ -5350,8 +4948,6 @@ def main():
                     target = "alsfrs_speech_frame",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict= manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'alsfrs_speech')
                 )
 
@@ -5365,8 +4961,6 @@ def main():
                     target = "alsfrs_speech_frame",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'alsfrs_speech')
                 )
                 
@@ -5385,8 +4979,6 @@ def main():
                         target = "alsfrs_speech_frame",
                         data_set =  data_training_args.dataset_name + '_mel_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict= manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'alsfrs_speech')
                     )
 
@@ -5400,8 +4992,6 @@ def main():
                         target = "alsfrs_speech_frame",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.frames_to_vis) + '_frames',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_frame',data_training_args.dataset_name,'alsfrs_speech')
                     ) 
 
@@ -5469,8 +5059,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis) + '_seqs_10_speakers',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'speakers')
                 )
 
@@ -5484,8 +5072,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs_10_speakers',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name)
                 )
 
@@ -5504,8 +5090,6 @@ def main():
                         target = "speaker_seq",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis) + '_seqs_10_speakers',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name)
                     )
                     "Also plot for the concatenated OCs"
@@ -5518,8 +5102,6 @@ def main():
                         target = "speaker_seq",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs_10_speakers',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name)
                     )
             
@@ -5547,8 +5129,6 @@ def main():
                     target = "phoneme_seq",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'phonemes')
                 )
 
@@ -5562,8 +5142,6 @@ def main():
                     target = "phoneme_seq",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'phonemes')
                 )
 
@@ -5582,8 +5160,6 @@ def main():
                         target = "phoneme_seq",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'phonemes')
                     )
                     "Also plot for the concatenated OCs"
@@ -5596,8 +5172,6 @@ def main():
                         target = "phoneme_seq",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'phonemes')
                     )
            
@@ -5625,8 +5199,6 @@ def main():
                     target = "group_seq",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'group')
                 )
 
@@ -5640,8 +5212,6 @@ def main():
                     target = "group_seq",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'group')
                 )
 
@@ -5660,8 +5230,6 @@ def main():
                         target = "group_seq",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'group')
                     )
                     "Also plot for the concatenated OCs"
@@ -5674,8 +5242,6 @@ def main():
                         target = "group_seq",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'group')
                     )
 
@@ -5703,8 +5269,6 @@ def main():
                     target = "disease_duration_seq",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'disease_duration')
                 )
 
@@ -5718,8 +5282,6 @@ def main():
                     target = "disease_duration_seq",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'disease_duration')
                 )
 
@@ -5738,8 +5300,6 @@ def main():
                         target = "disease_duration_seq",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'disease_duration')
                     )
                     "Also plot for the concatenated OCs"
@@ -5752,8 +5312,6 @@ def main():
                         target = "disease_duration_seq",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'disease_duration')
                     )
 
@@ -5781,8 +5339,6 @@ def main():
                     target = "king_stage_seq",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'king_stage')
                 )
 
@@ -5796,8 +5352,6 @@ def main():
                     target = "king_stage_seq",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'king_stage')
                 )
 
@@ -5816,8 +5370,6 @@ def main():
                         target = "king_stage_seq",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'king_stage')
                     )
                     "Also plot for the concatenated OCs"
@@ -5830,8 +5382,6 @@ def main():
                         target = "king_stage_seq",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'king_stage')
                     )
 
@@ -5859,8 +5409,6 @@ def main():
                     target = "cantagallo_seq",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'cantagallo')
                 )
 
@@ -5874,8 +5422,6 @@ def main():
                     target = "cantagallo_seq",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'cantagallo')
                 )
 
@@ -5894,8 +5440,6 @@ def main():
                         target = "cantagallo_seq",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'cantagallo')
                     )
                     "Also plot for the concatenated OCs"
@@ -5908,8 +5452,6 @@ def main():
                         target = "cantagallo_seq",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'cantagallo')
                     )
 
@@ -5937,8 +5479,6 @@ def main():
                     target = "alsfrs_total_seq",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'alsfrs_total')
                 )
 
@@ -5952,8 +5492,6 @@ def main():
                     target = "alsfrs_total_seq",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'alsfrs_total')
                 )
 
@@ -5972,8 +5510,6 @@ def main():
                         target = "alsfrs_total_seq",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'alsfrs_total')
                     )
                     "Also plot for the concatenated OCs"
@@ -5986,8 +5522,6 @@ def main():
                         target = "alsfrs_total_seq",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'alsfrs_total')
                     )
 
@@ -6015,8 +5549,6 @@ def main():
                     target = "alsfrs_speech_seq",
                     data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'alsfrs_speech')
                 )
 
@@ -6030,8 +5562,6 @@ def main():
                     target = "alsfrs_speech_seq",
                     data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'alsfrs_speech')
                 )
 
@@ -6050,8 +5580,6 @@ def main():
                         target = "alsfrs_speech_seq",
                         data_set = data_training_args.dataset_name + '_td_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'alsfrs_speech')
                     )
                     "Also plot for the concatenated OCs"
@@ -6064,8 +5592,6 @@ def main():
                         target = "alsfrs_speech_seq",
                         data_set = data_training_args.dataset_name + '_td_OCs_concat_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'time_domain_sequence',data_training_args.dataset_name,'alsfrs_speech')
                     )
 
@@ -6129,8 +5655,8 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis) + '_seqs_10_speakers',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
+                    
+                    
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'speakers')
                 )
 
@@ -6144,8 +5670,6 @@ def main():
                     target = "speaker_seq",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs_10_speakers',
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'speakers')
                 )
 
@@ -6164,8 +5688,6 @@ def main():
                         target = "speaker_seq",
                         data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis) +'_seqs_10_speakers',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'speakers')
                     )
                     "Also plot for the concatenated OCs"
@@ -6178,8 +5700,6 @@ def main():
                         target = "speaker_seq",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis) + '_seqs_10_speakers',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'speakers')
                     )
 
@@ -6207,8 +5727,6 @@ def main():
                     target = "phoneme_seq",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'phonemes')
                 )
 
@@ -6222,8 +5740,6 @@ def main():
                     target = "phoneme_seq",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'phonemes')
                 )
 
@@ -6242,8 +5758,6 @@ def main():
                         target = "phoneme_seq",
                         data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'phonemes')
                     )
                     "Also plot for the concatenated OCs"
@@ -6256,8 +5770,6 @@ def main():
                         target = "phoneme_seq",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'phonemes')
                     )
 
@@ -6285,8 +5797,6 @@ def main():
                     target = "group_seq",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'group')
                 )
 
@@ -6300,8 +5810,6 @@ def main():
                     target = "group_seq",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'group')
                 )
 
@@ -6320,8 +5828,6 @@ def main():
                         target = "group_seq",
                         data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'group')
                     )
                     "Also plot for the concatenated OCs"
@@ -6334,8 +5840,6 @@ def main():
                         target = "group_seq",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'group')
                     )
 
@@ -6363,8 +5867,6 @@ def main():
                     target = "disease_duration_seq",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'disease_duration')
                 )
 
@@ -6378,8 +5880,6 @@ def main():
                     target = "disease_duration_seq",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'disease_duration')
                 )
 
@@ -6398,8 +5898,6 @@ def main():
                         target = "disease_duration_seq",
                         data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'disease_duration')
                     )
                     "Also plot for the concatenated OCs"
@@ -6412,8 +5910,6 @@ def main():
                         target = "disease_duration_seq",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'disease_duration')
                     )
 
@@ -6441,8 +5937,6 @@ def main():
                     target = "king_stage_seq",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'king_stage')
                 )
 
@@ -6456,8 +5950,6 @@ def main():
                     target = "king_stage_seq",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'king_stage')
                 )
 
@@ -6476,8 +5968,6 @@ def main():
                         target = "king_stage_seq",
                         data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'king_stage')
                     )
                     "Also plot for the concatenated OCs"
@@ -6490,8 +5980,6 @@ def main():
                         target = "king_stage_seq",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'king_stage')
                     )
 
@@ -6520,8 +6008,6 @@ def main():
                     target = "cantagallo_seq",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'cantagallo')
                 )
 
@@ -6535,8 +6021,8 @@ def main():
                     target = "cantagallo_seq",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
+                    
+                    
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'cantagallo')
                 )
 
@@ -6555,8 +6041,6 @@ def main():
                         target = "cantagallo_seq",
                         data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'cantagallo')
                     )
                     "Also plot for the concatenated OCs"
@@ -6569,8 +6053,6 @@ def main():
                         target = "cantagallo_seq",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'cantagallo')
                     )
 
@@ -6598,8 +6080,6 @@ def main():
                     target = "alsfrs_total_seq",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'alsfrs_total')
                 )
 
@@ -6613,8 +6093,6 @@ def main():
                     target = "alsfrs_total_seq",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'alsfrs_total')
                 )
 
@@ -6633,8 +6111,6 @@ def main():
                         target = "alsfrs_total_seq",
                         data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'alsfrs_total')
                     )
                     "Also plot for the concatenated OCs"
@@ -6647,8 +6123,6 @@ def main():
                         target = "alsfrs_total_seq",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'alsfrs_total')
                     )
 
@@ -6676,8 +6150,6 @@ def main():
                     target = "alsfrs_speech_seq",
                     data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'alsfrs_speech')
                 )
 
@@ -6691,8 +6163,6 @@ def main():
                     target = "alsfrs_speech_seq",
                     data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis),
                     manifold_dict = manifold_dict,
-                    return_data = True,
-                    display_figures = True,
                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'alsfrs_speech')
                 )
 
@@ -6711,8 +6181,6 @@ def main():
                         target = "alsfrs_speech_seq",
                         data_set = data_training_args.dataset_name + '_mel_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'alsfrs_speech')
                     )
                     "Also plot for the concatenated OCs"
@@ -6725,8 +6193,6 @@ def main():
                         target = "alsfrs_speech_seq",
                         data_set = data_training_args.dataset_name + '_mel_OCs_concat_' + str(vis_args.seq_to_vis),
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,'low_input_dim',vis_args.set_to_use_for_vis,data_training_args.vis_method,'mel_sequence',data_training_args.dataset_name,'alsfrs_speech')
                     )
 

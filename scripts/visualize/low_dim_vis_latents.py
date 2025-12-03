@@ -252,13 +252,13 @@ def main():
                     del weights[key]
                     print(f"Removed deprecated module {key} from weights.")
 
-            representation_function.load_state_dict(weights)
+            representation_function.load_state_dict(weights, strict=False)
         
         representation_function.eval()
         for param in representation_function.parameters():
             param.requires_grad = False
 
-        "data collator, optimizer and scheduler"
+        "data collator"
         mask_time_prob = config.mask_time_prob if model_args.mask_time_prob is None else model_args.mask_time_prob
         mask_time_length = config.mask_time_length if model_args.mask_time_length is None else model_args.mask_time_length
 
@@ -524,8 +524,6 @@ def main():
                                 phonemes_seq = torch.cat((phonemes_seq,torch.stack(phonemes_batch)),dim = 0)
                                 speaker_id_seq = torch.cat((speaker_id_seq,torch.stack(speaker_id_batch)),dim = 0)
                                 group_seq = torch.cat((group_seq,torch.stack(group_batch)),dim = 0)
-
-
 
 
                     "Gather latents for evaluations"
@@ -1004,8 +1002,6 @@ def main():
                             target = "vowel",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','vowels',data_training_args.vis_method)
                         )
                     if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -1021,8 +1017,6 @@ def main():
                             target = "vowel",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','vowels',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -1038,8 +1032,6 @@ def main():
                                 target = "vowel",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','vowels',data_training_args.vis_method)
                             )
                     if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -1055,8 +1047,6 @@ def main():
                             target = "vowel",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','vowels',data_training_args.vis_method)
                         )
                     
@@ -1075,7 +1065,6 @@ def main():
                         if "X_OCs_freq" in vis_args.aggregation_strategies_to_plot_frame:
                             "TSNE - X / OCs - Vowels & Frequency - 3D sphere"
 
-                            
                             visualize(data_training_args, 
                                 config,
                                 X = mu_originals_z,
@@ -1085,8 +1074,6 @@ def main():
                                 target = "vowel",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','vowels',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -1101,8 +1088,6 @@ def main():
                                 target = "vowel",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','vowels',data_training_args.vis_method)
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -1118,8 +1103,6 @@ def main():
                                     target = "vowel",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','vowels',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -1135,8 +1118,6 @@ def main():
                                 target = "vowel",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','vowels',data_training_args.vis_method)
                             )
 
@@ -1165,8 +1146,6 @@ def main():
                                 target = "vowel",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','vowels',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -1181,8 +1160,6 @@ def main():
                                 target = "vowel",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','vowels',data_training_args.vis_method)
 
                             )
@@ -1199,8 +1176,6 @@ def main():
                                     target = "vowel",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','vowels',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -1216,8 +1191,6 @@ def main():
                                 target = "vowel",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','vowels',data_training_args.vis_method)
                             )
 
@@ -1244,8 +1217,6 @@ def main():
                                     target = "vowel",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','vowels',data_training_args.vis_method)
                                 )
                             if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -1260,8 +1231,6 @@ def main():
                                     target = "vowel",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','vowels',data_training_args.vis_method)
 
                                 )
@@ -1279,8 +1248,6 @@ def main():
                                         target = "vowel",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','vowels',data_training_args.vis_method)
                                     )
 
@@ -1297,8 +1264,6 @@ def main():
                                     target = "vowel",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','vowels',data_training_args.vis_method)
                                 )
 
@@ -1332,8 +1297,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers',data_training_args.vis_method)
                         )
 
@@ -1349,8 +1312,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers',data_training_args.vis_method)
                         )
 
@@ -1367,8 +1328,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers',data_training_args.vis_method)
                             )
 
@@ -1385,8 +1344,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers',data_training_args.vis_method)
                         )
 
@@ -1416,8 +1373,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers',data_training_args.vis_method)
                             )
 
@@ -1433,8 +1388,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers',data_training_args.vis_method)
                             )
 
@@ -1451,8 +1404,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -1468,8 +1419,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers',data_training_args.vis_method)
                             )
 
@@ -1499,8 +1448,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers',data_training_args.vis_method)
                             )
 
@@ -1516,8 +1463,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers',data_training_args.vis_method)
 
                             )
@@ -1535,8 +1480,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers',data_training_args.vis_method)
                                 )
 
@@ -1553,8 +1496,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers',data_training_args.vis_method)
                             )
 
@@ -1583,8 +1524,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers',data_training_args.vis_method)
                                 )
 
@@ -1600,8 +1539,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers',data_training_args.vis_method)
 
                                 )
@@ -1619,8 +1556,6 @@ def main():
                                         target = "speaker_frame",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers',data_training_args.vis_method)
                                     )
                             
@@ -1637,8 +1572,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers',data_training_args.vis_method)
                                 )
 
@@ -1689,8 +1622,6 @@ def main():
                         target = "speaker_seq",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers_seq',data_training_args.vis_method)
                     )
 
@@ -1706,8 +1637,6 @@ def main():
                         target = "speaker_seq",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers_seq',data_training_args.vis_method)
                     )
 
@@ -1723,8 +1652,6 @@ def main():
                         target = "speaker_seq",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers_seq',data_training_args.vis_method)
                     )
 
@@ -1740,8 +1667,6 @@ def main():
                         target = "speaker_seq",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers_seq',data_training_args.vis_method)
                     )
 
@@ -1773,8 +1698,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -1790,8 +1713,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -1807,8 +1728,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers_seq',data_training_args.vis_method)
                         )
                     if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -1823,8 +1742,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -1852,8 +1769,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers_seq',data_training_args.vis_method)
                         )
                     if "OCs_joint" in vis_args.aggregation_strategies_to_plot_seq:
@@ -1868,8 +1783,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -1885,8 +1798,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -1902,8 +1813,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -1931,8 +1840,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -1948,8 +1855,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -1965,8 +1870,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -1982,8 +1885,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -2118,8 +2019,6 @@ def main():
                             target = "phoneme39",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','phonemes',data_training_args.vis_method)
                         )
                     if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2135,8 +2034,6 @@ def main():
                             target = "phoneme39",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','phonemes',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2152,8 +2049,6 @@ def main():
                                 target = "phoneme39",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','phonemes',data_training_args.vis_method)
                             )
                     if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2169,8 +2064,6 @@ def main():
                             target = "phoneme39",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','phonemes',data_training_args.vis_method)
                         )
                     
@@ -2198,8 +2091,6 @@ def main():
                                 target = "phoneme39",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','phonemes',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2214,8 +2105,6 @@ def main():
                                 target = "phoneme39",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','phonemes',data_training_args.vis_method)
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2231,8 +2120,6 @@ def main():
                                     target = "phoneme39",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','phonemes',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2248,8 +2135,6 @@ def main():
                                 target = "phoneme39",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','phonemes',data_training_args.vis_method)
                             )
 
@@ -2277,8 +2162,6 @@ def main():
                                 target = "phoneme39",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','phonemes',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2293,8 +2176,6 @@ def main():
                                 target = "phoneme39",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','phonemes',data_training_args.vis_method)
 
                             )
@@ -2311,8 +2192,6 @@ def main():
                                     target = "phoneme39",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','phonemes',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2328,8 +2207,6 @@ def main():
                                 target = "phoneme39",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','phonemes',data_training_args.vis_method)
                             )
 
@@ -2357,8 +2234,6 @@ def main():
                                     target = "phoneme39",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','phonemes',data_training_args.vis_method)
                                 )
                             if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2373,8 +2248,6 @@ def main():
                                     target = "phoneme39",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','phonemes',data_training_args.vis_method)
 
                                 )
@@ -2392,8 +2265,6 @@ def main():
                                         target = "phoneme39",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','phonemes',data_training_args.vis_method)
                                     )
 
@@ -2410,8 +2281,6 @@ def main():
                                     target = "phoneme39",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','phonemes',data_training_args.vis_method)
                                 )
 
@@ -2445,8 +2314,6 @@ def main():
                             target = "consonant",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','consonants',data_training_args.vis_method)
                         )
                     if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2462,8 +2329,6 @@ def main():
                             target = "consonant",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','consonants',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2479,8 +2344,6 @@ def main():
                                 target = "consonant",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','consonants',data_training_args.vis_method)
                             )
                     if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2496,8 +2359,6 @@ def main():
                             target = "consonant",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','consonants',data_training_args.vis_method)
                         )
                     
@@ -2526,8 +2387,6 @@ def main():
                                 target = "consonant",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','consonants',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2542,8 +2401,6 @@ def main():
                                 target = "consonant",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','consonants',data_training_args.vis_method)
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2559,8 +2416,6 @@ def main():
                                     target = "consonant",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','consonants',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2576,8 +2431,6 @@ def main():
                                 target = "consonant",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','consonants',data_training_args.vis_method)
                             )
 
@@ -2606,8 +2459,6 @@ def main():
                                 target = "consonant",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','consonants',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2622,8 +2473,6 @@ def main():
                                 target = "consonant",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','consonants',data_training_args.vis_method)
 
                             )
@@ -2640,8 +2489,6 @@ def main():
                                     target = "consonant",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','consonants',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2657,8 +2504,6 @@ def main():
                                 target = "consonant",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','consonants',data_training_args.vis_method)
                             )
 
@@ -2686,8 +2531,6 @@ def main():
                                     target = "consonant",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','consonants',data_training_args.vis_method)
                                 )
                             if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2702,8 +2545,6 @@ def main():
                                     target = "consonant",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','consonants',data_training_args.vis_method)
 
                                 )
@@ -2721,8 +2562,6 @@ def main():
                                         target = "consonant",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','consonants',data_training_args.vis_method)
                                     )
 
@@ -2739,8 +2578,6 @@ def main():
                                     target = "consonant",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','consonants',data_training_args.vis_method)
                                 )
 
@@ -2773,8 +2610,6 @@ def main():
                             target = "vowel",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','vowels',data_training_args.vis_method)
                         )
                     if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2790,8 +2625,6 @@ def main():
                             target = "vowel",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','vowels',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2807,8 +2640,6 @@ def main():
                                 target = "vowel",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','vowels',data_training_args.vis_method)
                             )
                     if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2824,8 +2655,6 @@ def main():
                             target = "vowel",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','vowels',data_training_args.vis_method)
                         )
                     
@@ -2853,8 +2682,6 @@ def main():
                                 target = "vowel",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','vowels',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2869,8 +2696,6 @@ def main():
                                 target = "vowel",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','vowels',data_training_args.vis_method)
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2886,8 +2711,6 @@ def main():
                                     target = "vowel",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','vowels',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2903,8 +2726,6 @@ def main():
                                 target = "vowel",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','vowels',data_training_args.vis_method)
                             )
 
@@ -2932,8 +2753,6 @@ def main():
                                 target = "vowel",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','vowels',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2948,8 +2767,6 @@ def main():
                                 target = "vowel",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','vowels',data_training_args.vis_method)
 
                             )
@@ -2966,8 +2783,6 @@ def main():
                                     target = "vowel",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','vowels',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -2983,8 +2798,6 @@ def main():
                                 target = "vowel",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','vowels',data_training_args.vis_method)
                             )
 
@@ -3012,8 +2825,6 @@ def main():
                                     target = "vowel",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','vowels',data_training_args.vis_method)
                                 )
                             if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -3028,10 +2839,7 @@ def main():
                                     target = "vowel",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','vowels',data_training_args.vis_method)
-
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                                 data_training_args.frequency_vis = False
@@ -3047,8 +2855,6 @@ def main():
                                         target = "vowel",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','vowels',data_training_args.vis_method)
                                     )
 
@@ -3065,8 +2871,6 @@ def main():
                                     target = "vowel",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','vowels',data_training_args.vis_method)
                                 )
 
@@ -3097,8 +2901,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers',data_training_args.vis_method)
                         )
 
@@ -3114,8 +2916,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers',data_training_args.vis_method)
                         )
 
@@ -3132,8 +2932,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers',data_training_args.vis_method)
                             )
 
@@ -3150,8 +2948,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers',data_training_args.vis_method)
                         )
 
@@ -3181,8 +2977,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers',data_training_args.vis_method)
                             )
 
@@ -3198,8 +2992,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers',data_training_args.vis_method)
                             )
 
@@ -3216,8 +3008,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -3233,8 +3023,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers',data_training_args.vis_method)
                             )
 
@@ -3262,8 +3050,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers',data_training_args.vis_method)
                             )
 
@@ -3279,10 +3065,7 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers',data_training_args.vis_method)
-
                             )
 
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -3298,8 +3081,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers',data_training_args.vis_method)
                                 )
 
@@ -3316,8 +3097,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers',data_training_args.vis_method)
                             )
 
@@ -3346,8 +3125,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers',data_training_args.vis_method)
                                 )
 
@@ -3363,10 +3140,7 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers',data_training_args.vis_method)
-
                                 )
 
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -3382,8 +3156,6 @@ def main():
                                         target = "speaker_frame",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers',data_training_args.vis_method)
                                     )
                             
@@ -3400,8 +3172,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers',data_training_args.vis_method)
                                 )
 
@@ -3464,8 +3234,6 @@ def main():
                         target = "speaker_seq",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers_seq',data_training_args.vis_method)
                     )
 
@@ -3481,8 +3249,6 @@ def main():
                         target = "speaker_seq",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers_seq',data_training_args.vis_method)
                     )
                 if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -3497,8 +3263,6 @@ def main():
                         target = "speaker_seq",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers_seq',data_training_args.vis_method)
                     )
 
@@ -3514,8 +3278,6 @@ def main():
                         target = "speaker_seq",
                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                         manifold_dict = manifold_dict,
-                        return_data = True,
-                        display_figures = True,
                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers_seq',data_training_args.vis_method)
                     )
 
@@ -3546,8 +3308,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -3563,8 +3323,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -3580,8 +3338,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers_seq',data_training_args.vis_method)
                         )
                     if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -3596,8 +3352,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -3625,8 +3379,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers_seq',data_training_args.vis_method)
                         )
                     
@@ -3642,8 +3394,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -3659,8 +3409,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -3676,8 +3424,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -3706,8 +3452,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -3723,8 +3467,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers_seq',data_training_args.vis_method)
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -3739,8 +3481,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers_seq',data_training_args.vis_method)
                             )
                         if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -3755,8 +3495,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -3841,8 +3579,6 @@ def main():
                             target = "phoneme",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','phonemes',data_training_args.vis_method)
                         )
                     if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -3858,10 +3594,9 @@ def main():
                             target = "phoneme",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','phonemes',data_training_args.vis_method)
                         )
+                        
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                         data_training_args.frequency_vis = False
                         "TSNE - OCs projection - Phonemes"
@@ -3875,8 +3610,6 @@ def main():
                                 target = "phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','phonemes',data_training_args.vis_method)
                             )
                     if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -3892,8 +3625,6 @@ def main():
                             target = "phoneme",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','phonemes',data_training_args.vis_method)
                         )
                     
@@ -3921,8 +3652,6 @@ def main():
                                 target = "phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','phonemes',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -3937,8 +3666,6 @@ def main():
                                 target = "phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','phonemes',data_training_args.vis_method)
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -3954,8 +3681,6 @@ def main():
                                     target = "phoneme",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','phonemes',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -3971,8 +3696,6 @@ def main():
                                 target = "phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','phonemes',data_training_args.vis_method)
                             )
 
@@ -4000,8 +3723,6 @@ def main():
                                 target = "phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','phonemes',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -4016,10 +3737,7 @@ def main():
                                 target = "phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','phonemes',data_training_args.vis_method)
-
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                             data_training_args.frequency_vis = False
@@ -4034,8 +3752,6 @@ def main():
                                     target = "phoneme",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','phonemes',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -4051,8 +3767,6 @@ def main():
                                 target = "phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','phonemes',data_training_args.vis_method)
                             )
 
@@ -4080,8 +3794,6 @@ def main():
                                     target = "phoneme",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','phonemes',data_training_args.vis_method)
                                 )
                             if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -4096,10 +3808,7 @@ def main():
                                     target = "phoneme",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','phonemes',data_training_args.vis_method)
-
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                                 data_training_args.frequency_vis = False
@@ -4115,8 +3824,6 @@ def main():
                                         target = "phoneme",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','phonemes',data_training_args.vis_method)
                                     )
 
@@ -4133,8 +3840,6 @@ def main():
                                     target = "phoneme",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','phonemes',data_training_args.vis_method)
                                 )
 
@@ -4166,8 +3871,6 @@ def main():
                             target = "non_verbal_phoneme",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','non_verbal_phonemes',data_training_args.vis_method)
                         )
                     if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -4183,8 +3886,6 @@ def main():
                             target = "non_verbal_phoneme",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','non_verbal_phonemes',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -4200,8 +3901,6 @@ def main():
                                 target = "non_verbal_phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','non_verbal_phonemes',data_training_args.vis_method)
                             )
                     if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -4217,8 +3916,6 @@ def main():
                             target = "non_verbal_phoneme",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','non_verbal_phonemes',data_training_args.vis_method)
                         )
                     
@@ -4246,8 +3943,6 @@ def main():
                                 target = "non_verbal_phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','non_verbal_phonemes',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -4262,8 +3957,6 @@ def main():
                                 target = "non_verbal_phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','non_verbal_phonemes',data_training_args.vis_method)
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -4279,8 +3972,6 @@ def main():
                                     target = "non_verbal_phoneme",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','non_verbal_phonemes',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -4296,8 +3987,6 @@ def main():
                                 target = "non_verbal_phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','non_verbal_phonemes',data_training_args.vis_method)
                             )
 
@@ -4325,8 +4014,6 @@ def main():
                                 target = "non_verbal_phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','non_verbal_phonemes',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -4341,10 +4028,7 @@ def main():
                                 target = "non_verbal_phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','non_verbal_phonemes',data_training_args.vis_method)
-
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                             data_training_args.frequency_vis = False
@@ -4359,8 +4043,6 @@ def main():
                                     target = "non_verbal_phoneme",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','non_verbal_phonemes',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -4376,8 +4058,6 @@ def main():
                                 target = "non_verbal_phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','non_verbal_phonemes',data_training_args.vis_method)
                             )
 
@@ -4405,8 +4085,6 @@ def main():
                                     target = "non_verbal_phoneme",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','non_verbal_phonemes',data_training_args.vis_method)
                                 )
                             if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -4421,10 +4099,7 @@ def main():
                                     target = "non_verbal_phoneme",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','non_verbal_phonemes',data_training_args.vis_method)
-
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                                 data_training_args.frequency_vis = False
@@ -4440,8 +4115,6 @@ def main():
                                         target = "non_verbal_phoneme",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','non_verbal_phonemes',data_training_args.vis_method)
                                     )
 
@@ -4458,8 +4131,6 @@ def main():
                                     target = "non_verbal_phoneme",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','non_verbal_phonemes',data_training_args.vis_method)
                                 )
                                 
@@ -4491,8 +4162,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers',data_training_args.vis_method)
                         )
 
@@ -4508,8 +4177,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers',data_training_args.vis_method)
                         )
 
@@ -4526,8 +4193,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers',data_training_args.vis_method)
                             )
 
@@ -4544,8 +4209,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers',data_training_args.vis_method)
                         )
 
@@ -4575,8 +4238,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers',data_training_args.vis_method)
                             )
 
@@ -4592,8 +4253,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers',data_training_args.vis_method)
                             )
 
@@ -4610,8 +4269,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -4627,8 +4284,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers',data_training_args.vis_method)
                             )
 
@@ -4656,8 +4311,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers',data_training_args.vis_method)
                             )
 
@@ -4673,10 +4326,7 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers',data_training_args.vis_method)
-
                             )
 
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -4692,8 +4342,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers',data_training_args.vis_method)
                                 )
 
@@ -4710,8 +4358,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers',data_training_args.vis_method)
                             )
 
@@ -4740,8 +4386,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers',data_training_args.vis_method)
                                 )
 
@@ -4757,10 +4401,7 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers',data_training_args.vis_method)
-
                                 )
 
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -4776,8 +4417,6 @@ def main():
                                         target = "speaker_frame",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers',data_training_args.vis_method)
                                     )
                             
@@ -4794,8 +4433,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers',data_training_args.vis_method)
                                 )
 
@@ -4826,8 +4463,6 @@ def main():
                             target = "emotion_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','categorical_emotions',data_training_args.vis_method)
                         )
 
@@ -4843,8 +4478,6 @@ def main():
                             target = "emotion_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','categorical_emotions',data_training_args.vis_method)
                         )
 
@@ -4861,8 +4494,6 @@ def main():
                                 target = "emotion_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','categorical_emotions',data_training_args.vis_method)
                             )
 
@@ -4879,8 +4510,6 @@ def main():
                             target = "emotion_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','categorical_emotions',data_training_args.vis_method)
                         )
 
@@ -4910,8 +4539,6 @@ def main():
                                 target = "emotion_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','categorical_emotions',data_training_args.vis_method)
                             )
 
@@ -4927,8 +4554,6 @@ def main():
                                 target = "emotion_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','categorical_emotions',data_training_args.vis_method)
                             )
 
@@ -4945,8 +4570,6 @@ def main():
                                     target = "emotion_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','categorical_emotions',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -4962,8 +4585,6 @@ def main():
                                 target = "emotion_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','categorical_emotions',data_training_args.vis_method)
                             )
 
@@ -4991,8 +4612,6 @@ def main():
                                 target = "emotion_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','categorical_emotions',data_training_args.vis_method)
                             )
 
@@ -5008,10 +4627,7 @@ def main():
                                 target = "emotion_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','categorical_emotions',data_training_args.vis_method)
-
                             )
 
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -5027,8 +4643,6 @@ def main():
                                     target = "emotion_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','categorical_emotions',data_training_args.vis_method)
                                 )
 
@@ -5045,8 +4659,6 @@ def main():
                                 target = "emotion_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','categorical_emotions',data_training_args.vis_method)
                             )
 
@@ -5075,8 +4687,6 @@ def main():
                                     target = "emotion_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','categorical_emotions',data_training_args.vis_method)
                                 )
 
@@ -5092,10 +4702,7 @@ def main():
                                     target = "emotion_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','categorical_emotions',data_training_args.vis_method)
-
                                 )
 
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -5111,8 +4718,6 @@ def main():
                                         target = "emotion_frame",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','categorical_emotions',data_training_args.vis_method)
                                     )
                             
@@ -5129,8 +4734,6 @@ def main():
                                     target = "emotion_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','categorical_emotions',data_training_args.vis_method)
                                 )
 
@@ -5184,8 +4787,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -5201,8 +4802,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers_seq',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -5217,8 +4816,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -5234,8 +4831,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -5266,8 +4861,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -5283,8 +4876,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -5300,8 +4891,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers_seq',data_training_args.vis_method)
                             )
                         if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -5316,8 +4905,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -5345,8 +4932,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers_seq',data_training_args.vis_method)
                             )
                         
@@ -5362,8 +4947,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -5379,8 +4962,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -5396,8 +4977,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -5426,8 +5005,6 @@ def main():
                                     target = "speaker_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers_seq',data_training_args.vis_method)
                                 )
 
@@ -5443,8 +5020,6 @@ def main():
                                     target = "speaker_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers_seq',data_training_args.vis_method)
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -5459,8 +5034,6 @@ def main():
                                     target = "speaker_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers_seq',data_training_args.vis_method)
                                 )
                             if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -5475,8 +5048,6 @@ def main():
                                     target = "speaker_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers_seq',data_training_args.vis_method)
                                 )
 
@@ -5506,8 +5077,6 @@ def main():
                             target = "emotion_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','emotion_seq',data_training_args.vis_method)
                         )
 
@@ -5523,8 +5092,6 @@ def main():
                             target = "emotion_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','emotion_seq',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -5539,8 +5106,6 @@ def main():
                             target = "emotion_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','emotion_seq',data_training_args.vis_method)
                         )
 
@@ -5556,8 +5121,6 @@ def main():
                             target = "emotion_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','emotion_seq',data_training_args.vis_method)
                         )
 
@@ -5588,8 +5151,6 @@ def main():
                                 target = "emotion_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','emotion_seq',data_training_args.vis_method)
                             )
 
@@ -5605,8 +5166,6 @@ def main():
                                 target = "emotion_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','emotion_seq',data_training_args.vis_method)
                             )
 
@@ -5622,8 +5181,6 @@ def main():
                                 target = "emotion_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','emotion_seq',data_training_args.vis_method)
                             )
                         if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -5638,8 +5195,6 @@ def main():
                                 target = "emotion_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','emotion_seq',data_training_args.vis_method)
                             )
 
@@ -5667,8 +5222,6 @@ def main():
                                 target = "emotion_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','emotion_seq',data_training_args.vis_method)
                             )
                         
@@ -5684,8 +5237,6 @@ def main():
                                 target = "emotion_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','emotion_seq',data_training_args.vis_method)
                             )
 
@@ -5701,8 +5252,6 @@ def main():
                                 target = "emotion_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','emotion_seq',data_training_args.vis_method)
                             )
 
@@ -5718,8 +5267,6 @@ def main():
                                 target = "emotion_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','emotion_seq',data_training_args.vis_method)
                             )
 
@@ -5748,8 +5295,6 @@ def main():
                                     target = "emotion_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','emotion_seq',data_training_args.vis_method)
                                 )
 
@@ -5765,8 +5310,6 @@ def main():
                                     target = "emotion_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','emotion_seq',data_training_args.vis_method)
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -5781,8 +5324,6 @@ def main():
                                     target = "emotion_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','emotion_seq',data_training_args.vis_method)
                                 )
                             if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -5797,8 +5338,6 @@ def main():
                                     target = "emotion_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','emotion_seq',data_training_args.vis_method)
                                 )
 
@@ -5897,8 +5436,6 @@ def main():
                             target = "phoneme39",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','phonemes',data_training_args.vis_method)
                         )
                     if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -5914,8 +5451,6 @@ def main():
                             target = "phoneme",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','phonemes',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -5931,8 +5466,6 @@ def main():
                                 target = "phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','phonemes',data_training_args.vis_method)
                             )
                     if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -5948,8 +5481,6 @@ def main():
                             target = "phoneme",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','phonemes',data_training_args.vis_method)
                         )
                     
@@ -5977,8 +5508,6 @@ def main():
                                 target = "phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','phonemes',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -5993,8 +5522,6 @@ def main():
                                 target = "phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','phonemes',data_training_args.vis_method)
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6010,8 +5537,6 @@ def main():
                                     target = "phoneme",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','phonemes',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6027,8 +5552,6 @@ def main():
                                 target = "phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','phonemes',data_training_args.vis_method)
                             )
 
@@ -6056,8 +5579,6 @@ def main():
                                 target = "phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','phonemes',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6072,10 +5593,7 @@ def main():
                                 target = "phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','phonemes',data_training_args.vis_method)
-
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                             data_training_args.frequency_vis = False
@@ -6090,8 +5608,6 @@ def main():
                                     target = "phoneme",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','phonemes',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6107,8 +5623,6 @@ def main():
                                 target = "phoneme",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','phonemes',data_training_args.vis_method)
                             )
 
@@ -6136,8 +5650,6 @@ def main():
                                     target = "phoneme",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','phonemes',data_training_args.vis_method)
                                 )
                             if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6152,10 +5664,7 @@ def main():
                                     target = "phoneme",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','phonemes',data_training_args.vis_method)
-
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                                 data_training_args.frequency_vis = False
@@ -6171,8 +5680,6 @@ def main():
                                         target = "phoneme",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','phonemes',data_training_args.vis_method)
                                     )
 
@@ -6189,8 +5696,6 @@ def main():
                                     target = "phoneme",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','phonemes',data_training_args.vis_method)
                                 )
 
@@ -6223,8 +5728,6 @@ def main():
                             target = "alsfrs_total",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','alsfrs_total',data_training_args.vis_method)
                         )
                     if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6240,8 +5743,6 @@ def main():
                             target = "alsfrs_total",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','alsfrs_total',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6257,8 +5758,6 @@ def main():
                                 target = "alsfrs_total",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','alsfrs_total',data_training_args.vis_method)
                             )
                     if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6274,8 +5773,6 @@ def main():
                             target = "alsfrs_total",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','alsfrs_total',data_training_args.vis_method)
                         )
                     
@@ -6303,8 +5800,6 @@ def main():
                                 target = "alsfrs_total",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','alsfrs_total',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6319,8 +5814,6 @@ def main():
                                 target = "alsfrs_total",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','alsfrs_total',data_training_args.vis_method)
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6336,8 +5829,6 @@ def main():
                                     target = "alsfrs_total",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','alsfrs_total',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6353,8 +5844,6 @@ def main():
                                 target = "alsfrs_total",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','alsfrs_total',data_training_args.vis_method)
                             )
 
@@ -6382,8 +5871,6 @@ def main():
                                 target = "alsfrs_total",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','alsfrs_total',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6398,10 +5885,7 @@ def main():
                                 target = "alsfrs_total",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','alsfrs_total',data_training_args.vis_method)
-
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                             data_training_args.frequency_vis = False
@@ -6416,8 +5900,6 @@ def main():
                                     target = "alsfrs_total",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','alsfrs_total',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6433,8 +5915,6 @@ def main():
                                 target = "alsfrs_total",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','alsfrs_total',data_training_args.vis_method)
                             )
 
@@ -6462,8 +5942,6 @@ def main():
                                     target = "alsfrs_total",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','alsfrs_total',data_training_args.vis_method)
                                 )
                             if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6478,10 +5956,7 @@ def main():
                                     target = "alsfrs_total",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','alsfrs_total',data_training_args.vis_method)
-
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                                 data_training_args.frequency_vis = False
@@ -6497,8 +5972,6 @@ def main():
                                         target = "alsfrs_total",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','alsfrs_total',data_training_args.vis_method)
                                     )
 
@@ -6515,8 +5988,6 @@ def main():
                                     target = "alsfrs_total",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','alsfrs_total',data_training_args.vis_method)
                                 )
 
@@ -6549,8 +6020,6 @@ def main():
                             target = "alsfrs_speech",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','alsfrs_speech',data_training_args.vis_method)
                         )
                     if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6566,8 +6035,6 @@ def main():
                             target = "alsfrs_speech",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','alsfrs_speech',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6583,8 +6050,6 @@ def main():
                                 target = "alsfrs_speech",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','alsfrs_speech',data_training_args.vis_method)
                             )
                     if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6600,8 +6065,6 @@ def main():
                             target = "alsfrs_speech",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','alsfrs_speech',data_training_args.vis_method)
                         )
                     
@@ -6629,8 +6092,6 @@ def main():
                                 target = "alsfrs_speech",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','alsfrs_speech',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6645,8 +6106,6 @@ def main():
                                 target = "alsfrs_speech",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','alsfrs_speech',data_training_args.vis_method)
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6662,8 +6121,6 @@ def main():
                                     target = "alsfrs_speech",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','alsfrs_speech',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6679,8 +6136,6 @@ def main():
                                 target = "alsfrs_speech",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','alsfrs_speech',data_training_args.vis_method)
                             )
 
@@ -6708,8 +6163,6 @@ def main():
                                 target = "alsfrs_speech",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','alsfrs_speech',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6724,10 +6177,7 @@ def main():
                                 target = "alsfrs_speech",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','alsfrs_speech',data_training_args.vis_method)
-
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                             data_training_args.frequency_vis = False
@@ -6742,8 +6192,6 @@ def main():
                                     target = "alsfrs_speech",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','alsfrs_speech',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6759,8 +6207,6 @@ def main():
                                 target = "alsfrs_speech",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','alsfrs_speech',data_training_args.vis_method)
                             )
 
@@ -6788,8 +6234,6 @@ def main():
                                     target = "alsfrs_speech",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','alsfrs_speech',data_training_args.vis_method)
                                 )
                             if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -6804,10 +6248,7 @@ def main():
                                     target = "alsfrs_speech",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','alsfrs_speech',data_training_args.vis_method)
-
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                                 data_training_args.frequency_vis = False
@@ -6823,8 +6264,6 @@ def main():
                                         target = "alsfrs_speech",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','alsfrs_speech',data_training_args.vis_method)
                                     )
 
@@ -6841,8 +6280,6 @@ def main():
                                     target = "alsfrs_speech",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','alsfrs_speech',data_training_args.vis_method)
                                 )
 
@@ -6874,8 +6311,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers',data_training_args.vis_method)
                         )
 
@@ -6891,8 +6326,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers',data_training_args.vis_method)
                         )
 
@@ -6909,8 +6342,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers',data_training_args.vis_method)
                             )
 
@@ -6927,8 +6358,6 @@ def main():
                             target = "speaker_frame",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers',data_training_args.vis_method)
                         )
 
@@ -6958,8 +6387,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers',data_training_args.vis_method)
                             )
 
@@ -6975,8 +6402,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers',data_training_args.vis_method)
                             )
 
@@ -6993,8 +6418,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7010,8 +6433,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers',data_training_args.vis_method)
                             )
 
@@ -7039,8 +6460,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers',data_training_args.vis_method)
                             )
 
@@ -7056,10 +6475,7 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers',data_training_args.vis_method)
-
                             )
 
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7075,8 +6491,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers',data_training_args.vis_method)
                                 )
 
@@ -7093,8 +6507,6 @@ def main():
                                 target = "speaker_frame",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers',data_training_args.vis_method)
                             )
 
@@ -7123,8 +6535,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers',data_training_args.vis_method)
                                 )
 
@@ -7140,10 +6550,7 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers',data_training_args.vis_method)
-
                                 )
 
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7159,8 +6566,6 @@ def main():
                                         target = "speaker_frame",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers',data_training_args.vis_method)
                                     )
                             
@@ -7177,8 +6582,6 @@ def main():
                                     target = "speaker_frame",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers',data_training_args.vis_method)
                                 )
 
@@ -7210,8 +6613,6 @@ def main():
                             target = "disease_duration",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','disease_duration',data_training_args.vis_method)
                         )
                     if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7227,8 +6628,6 @@ def main():
                             target = "disease_duration",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','disease_duration',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7244,8 +6643,6 @@ def main():
                                 target = "disease_duration",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','disease_duration',data_training_args.vis_method)
                             )
                     if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7261,8 +6658,6 @@ def main():
                             target = "disease_duration",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','disease_duration',data_training_args.vis_method)
                         )
                     
@@ -7290,8 +6685,6 @@ def main():
                                 target = "disease_duration",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','disease_duration',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7306,8 +6699,6 @@ def main():
                                 target = "disease_duration",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','disease_duration',data_training_args.vis_method)
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7323,8 +6714,6 @@ def main():
                                     target = "disease_duration",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','disease_duration',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7340,8 +6729,6 @@ def main():
                                 target = "disease_duration",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','disease_duration',data_training_args.vis_method)
                             )
 
@@ -7369,8 +6756,6 @@ def main():
                                 target = "disease_duration",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','disease_duration',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7385,10 +6770,7 @@ def main():
                                 target = "disease_duration",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','disease_duration',data_training_args.vis_method)
-
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                             data_training_args.frequency_vis = False
@@ -7403,8 +6785,6 @@ def main():
                                     target = "disease_duration",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','disease_duration',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7420,8 +6800,6 @@ def main():
                                 target = "disease_duration",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','disease_duration',data_training_args.vis_method)
                             )
 
@@ -7449,8 +6827,6 @@ def main():
                                     target = "disease_duration",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','disease_duration',data_training_args.vis_method)
                                 )
                             if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7465,10 +6841,7 @@ def main():
                                     target = "disease_duration",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','disease_duration',data_training_args.vis_method)
-
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                                 data_training_args.frequency_vis = False
@@ -7484,8 +6857,6 @@ def main():
                                         target = "disease_duration",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','disease_duration',data_training_args.vis_method)
                                     )
 
@@ -7502,8 +6873,6 @@ def main():
                                     target = "disease_duration",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','disease_duration',data_training_args.vis_method)
                                 )
 
@@ -7536,8 +6905,6 @@ def main():
                             target = "king_stage",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','king_stage',data_training_args.vis_method)
                         )
                     if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7553,8 +6920,6 @@ def main():
                             target = "king_stage",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','king_stage',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7570,8 +6935,6 @@ def main():
                                 target = "king_stage",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','king_stage',data_training_args.vis_method)
                             )
                     if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7587,8 +6950,6 @@ def main():
                             target = "king_stage",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','king_stage',data_training_args.vis_method)
                         )
                     
@@ -7616,8 +6977,6 @@ def main():
                                 target = "king_stage",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','king_stage',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7632,8 +6991,6 @@ def main():
                                 target = "king_stage",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','king_stage',data_training_args.vis_method)
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7649,8 +7006,6 @@ def main():
                                     target = "king_stage",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','king_stage',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7666,8 +7021,6 @@ def main():
                                 target = "king_stage",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','king_stage',data_training_args.vis_method)
                             )
 
@@ -7695,8 +7048,6 @@ def main():
                                 target = "king_stage",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','king_stage',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7711,8 +7062,6 @@ def main():
                                 target = "king_stage",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','king_stage',data_training_args.vis_method)
 
                             )
@@ -7729,8 +7078,6 @@ def main():
                                     target = "king_stage",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','king_stage',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7746,8 +7093,6 @@ def main():
                                 target = "king_stage",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','king_stage',data_training_args.vis_method)
                             )
 
@@ -7775,8 +7120,6 @@ def main():
                                     target = "king_stage",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','king_stage',data_training_args.vis_method)
                                 )
                             if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7791,10 +7134,7 @@ def main():
                                     target = "king_stage",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','king_stage',data_training_args.vis_method)
-
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                                 data_training_args.frequency_vis = False
@@ -7810,8 +7150,6 @@ def main():
                                         target = "king_stage",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','king_stage',data_training_args.vis_method)
                                     )
 
@@ -7828,8 +7166,6 @@ def main():
                                     target = "king_stage",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','king_stage',data_training_args.vis_method)
                                 )
 
@@ -7862,8 +7198,6 @@ def main():
                             target = "group",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','group',data_training_args.vis_method)
                         )
                     if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7879,8 +7213,6 @@ def main():
                             target = "group",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','group',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7896,8 +7228,6 @@ def main():
                                 target = "group",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','group',data_training_args.vis_method)
                             )
                     if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7913,8 +7243,6 @@ def main():
                             target = "group",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','group',data_training_args.vis_method)
                         )
                     
@@ -7942,8 +7270,6 @@ def main():
                                 target = "group",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','group',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7958,8 +7284,6 @@ def main():
                                 target = "group",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','group',data_training_args.vis_method)
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7975,8 +7299,6 @@ def main():
                                     target = "group",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','group',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -7992,8 +7314,6 @@ def main():
                                 target = "group",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','group',data_training_args.vis_method)
                             )
 
@@ -8021,8 +7341,6 @@ def main():
                                 target = "group",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','group',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -8037,10 +7355,7 @@ def main():
                                 target = "group",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','group',data_training_args.vis_method)
-
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                             data_training_args.frequency_vis = False
@@ -8055,8 +7370,6 @@ def main():
                                     target = "group",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','group',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -8072,8 +7385,6 @@ def main():
                                 target = "group",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','group',data_training_args.vis_method)
                             )
 
@@ -8101,8 +7412,6 @@ def main():
                                     target = "group",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','group',data_training_args.vis_method)
                                 )
                             if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -8117,8 +7426,6 @@ def main():
                                     target = "group",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','group',data_training_args.vis_method)
 
                                 )
@@ -8136,8 +7443,6 @@ def main():
                                         target = "group",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','group',data_training_args.vis_method)
                                     )
 
@@ -8154,8 +7459,6 @@ def main():
                                     target = "group",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','group',data_training_args.vis_method)
                                 )
 
@@ -8187,8 +7490,6 @@ def main():
                             target = "cantagallo",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','cantagallo',data_training_args.vis_method)
                         )
                     if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -8204,8 +7505,6 @@ def main():
                             target = "cantagallo",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','cantagallo',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -8221,8 +7520,6 @@ def main():
                                 target = "cantagallo",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','cantagallo',data_training_args.vis_method)
                             )
                     if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -8238,8 +7535,6 @@ def main():
                             target = "cantagallo",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','cantagallo',data_training_args.vis_method)
                         )
                     
@@ -8266,8 +7561,6 @@ def main():
                                 target = "cantagallo",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','cantagallo',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -8282,8 +7575,6 @@ def main():
                                 target = "cantagallo",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','cantagallo',data_training_args.vis_method)
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
@@ -8299,8 +7590,6 @@ def main():
                                     target = "cantagallo",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','cantagallo',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -8316,8 +7605,6 @@ def main():
                                 target = "cantagallo",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','cantagallo',data_training_args.vis_method)
                             )
 
@@ -8345,8 +7632,6 @@ def main():
                                 target = "cantagallo",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','cantagallo',data_training_args.vis_method)
                             )
                         if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -8361,10 +7646,7 @@ def main():
                                 target = "cantagallo",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','cantagallo',data_training_args.vis_method)
-
                             )
                         if "OCs_proj" in vis_args.aggregation_strategies_to_plot_frame:
                             data_training_args.frequency_vis = False
@@ -8379,8 +7661,6 @@ def main():
                                     target = "cantagallo",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','cantagallo',data_training_args.vis_method)
                                 )
                         if "all" in vis_args.aggregation_strategies_to_plot_frame:
@@ -8396,8 +7676,6 @@ def main():
                                 target = "cantagallo",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','cantagallo',data_training_args.vis_method)
                             )
 
@@ -8425,8 +7703,6 @@ def main():
                                     target = "cantagallo",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','cantagallo',data_training_args.vis_method)
                                 )
                             if "OCs_joint" in vis_args.aggregation_strategies_to_plot_frame:
@@ -8441,8 +7717,6 @@ def main():
                                     target = "cantagallo",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','cantagallo',data_training_args.vis_method)
 
                                 )
@@ -8460,8 +7734,6 @@ def main():
                                         target = "cantagallo",
                                         data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                         manifold_dict = manifold_dict,
-                                        return_data = True,
-                                        display_figures = True,
                                         save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','cantagallo',data_training_args.vis_method)
                                     )
 
@@ -8478,8 +7750,6 @@ def main():
                                     target = "cantagallo",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' + str(vis_args.latent_train_set_frames_to_vis) + '_frames',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','cantagallo',data_training_args.vis_method)
                                 )
 
@@ -8545,8 +7815,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -8562,8 +7830,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers_seq',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -8578,8 +7844,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -8595,8 +7859,6 @@ def main():
                             target = "speaker_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers_seq',data_training_args.vis_method)
                         )
 
@@ -8627,8 +7889,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -8644,8 +7904,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -8661,8 +7919,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers_seq',data_training_args.vis_method)
                             )
                         if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -8677,8 +7933,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -8706,8 +7960,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers_seq',data_training_args.vis_method)
                             )
                         
@@ -8723,8 +7975,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -8740,8 +7990,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -8757,8 +8005,6 @@ def main():
                                 target = "speaker_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers_seq',data_training_args.vis_method)
                             )
 
@@ -8787,8 +8033,6 @@ def main():
                                     target = "speaker_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','speakers_seq',data_training_args.vis_method)
                                 )
 
@@ -8804,8 +8048,6 @@ def main():
                                     target = "speaker_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','speakers_seq',data_training_args.vis_method)
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -8820,8 +8062,6 @@ def main():
                                     target = "speaker_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','speakers_seq',data_training_args.vis_method)
                                 )
                             if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -8836,8 +8076,6 @@ def main():
                                     target = "speaker_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','speakers_seq',data_training_args.vis_method)
                                 )
 
@@ -8871,8 +8109,6 @@ def main():
                             target = "phoneme_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','phoneme_seq',data_training_args.vis_method)
                         )
 
@@ -8888,8 +8124,6 @@ def main():
                             target = "phoneme_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','phoneme_seq',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -8904,8 +8138,6 @@ def main():
                             target = "phoneme_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','phoneme_seq',data_training_args.vis_method)
                         )
 
@@ -8921,8 +8153,6 @@ def main():
                             target = "phoneme_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','phoneme_seq',data_training_args.vis_method)
                         )
 
@@ -8953,8 +8183,6 @@ def main():
                                 target = "phoneme_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','phoneme_seq',data_training_args.vis_method)
                             )
 
@@ -8970,8 +8198,6 @@ def main():
                                 target = "phoneme_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','phoneme_seq',data_training_args.vis_method)
                             )
 
@@ -8987,8 +8213,6 @@ def main():
                                 target = "phoneme_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','phoneme_seq',data_training_args.vis_method)
                             )
                         if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -9003,8 +8227,6 @@ def main():
                                 target = "phoneme_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','phoneme_seq',data_training_args.vis_method)
                             )
 
@@ -9032,8 +8254,6 @@ def main():
                                 target = "phoneme_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','phoneme_seq',data_training_args.vis_method)
                             )
                         
@@ -9049,8 +8269,6 @@ def main():
                                 target = "phoneme_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','phoneme_seq',data_training_args.vis_method)
                             )
 
@@ -9066,8 +8284,6 @@ def main():
                                 target = "phoneme_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','phoneme_seq',data_training_args.vis_method)
                             )
 
@@ -9083,8 +8299,6 @@ def main():
                                 target = "phoneme_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','phoneme_seq',data_training_args.vis_method)
                             )
 
@@ -9113,8 +8327,6 @@ def main():
                                     target = "phoneme_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','phoneme_seq',data_training_args.vis_method)
                                 )
 
@@ -9130,8 +8342,6 @@ def main():
                                     target = "phoneme_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','phoneme_seq',data_training_args.vis_method)
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -9146,8 +8356,6 @@ def main():
                                     target = "phoneme_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','phoneme_seq',data_training_args.vis_method)
                                 )
                             if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -9162,8 +8370,6 @@ def main():
                                     target = "phoneme_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','phoneme_seq',data_training_args.vis_method)
                                 )
 
@@ -9197,8 +8403,6 @@ def main():
                             target = "alsfrs_total_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','alsfrs_total_seq',data_training_args.vis_method)
                         )
 
@@ -9214,8 +8418,6 @@ def main():
                             target = "alsfrs_total_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','alsfrs_total_seq',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -9230,8 +8432,6 @@ def main():
                             target = "alsfrs_total_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','alsfrs_total_seq',data_training_args.vis_method)
                         )
 
@@ -9247,8 +8447,6 @@ def main():
                             target = "alsfrs_total_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','alsfrs_total_seq',data_training_args.vis_method)
                         )
 
@@ -9279,8 +8477,6 @@ def main():
                                 target = "alsfrs_total_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','alsfrs_total_seq',data_training_args.vis_method)
                             )
 
@@ -9296,8 +8492,6 @@ def main():
                                 target = "alsfrs_total_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','alsfrs_total_seq',data_training_args.vis_method)
                             )
 
@@ -9313,8 +8507,6 @@ def main():
                                 target = "alsfrs_total_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','alsfrs_total_seq',data_training_args.vis_method)
                             )
                         if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -9329,8 +8521,6 @@ def main():
                                 target = "alsfrs_total_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','alsfrs_total_seq',data_training_args.vis_method)
                             )
 
@@ -9358,8 +8548,6 @@ def main():
                                 target = "alsfrs_total_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','alsfrs_total_seq',data_training_args.vis_method)
                             )
                         
@@ -9375,8 +8563,6 @@ def main():
                                 target = "alsfrs_total_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','alsfrs_total_seq',data_training_args.vis_method)
                             )
 
@@ -9392,8 +8578,6 @@ def main():
                                 target = "alsfrs_total_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','alsfrs_total_seq',data_training_args.vis_method)
                             )
 
@@ -9409,8 +8593,6 @@ def main():
                                 target = "alsfrs_total_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','alsfrs_total_seq',data_training_args.vis_method)
                             )
 
@@ -9439,8 +8621,6 @@ def main():
                                     target = "alsfrs_total_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','alsfrs_total_seq',data_training_args.vis_method)
                                 )
 
@@ -9456,8 +8636,6 @@ def main():
                                     target = "alsfrs_total_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','alsfrs_total_seq',data_training_args.vis_method)
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -9472,8 +8650,6 @@ def main():
                                     target = "alsfrs_total_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','alsfrs_total_seq',data_training_args.vis_method)
                                 )
                             if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -9488,8 +8664,6 @@ def main():
                                     target = "alsfrs_total_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','alsfrs_total_seq',data_training_args.vis_method)
                                 )
 
@@ -9523,8 +8697,6 @@ def main():
                             target = "alsfrs_speech_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','alsfrs_speech_seq',data_training_args.vis_method)
                         )
 
@@ -9540,8 +8712,6 @@ def main():
                             target = "alsfrs_speech_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','alsfrs_speech_seq',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -9556,8 +8726,6 @@ def main():
                             target = "alsfrs_speech_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','alsfrs_speech_seq',data_training_args.vis_method)
                         )
 
@@ -9573,8 +8741,6 @@ def main():
                             target = "alsfrs_speech_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','alsfrs_speech_seq',data_training_args.vis_method)
                         )
 
@@ -9605,8 +8771,6 @@ def main():
                                 target = "alsfrs_speech_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','alsfrs_speech_seq',data_training_args.vis_method)
                             )
 
@@ -9622,8 +8786,6 @@ def main():
                                 target = "alsfrs_speech_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','alsfrs_speech_seq',data_training_args.vis_method)
                             )
 
@@ -9639,8 +8801,6 @@ def main():
                                 target = "alsfrs_speech_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','alsfrs_speech_seq',data_training_args.vis_method)
                             )
                         if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -9655,8 +8815,6 @@ def main():
                                 target = "alsfrs_speech_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','alsfrs_speech_seq',data_training_args.vis_method)
                             )
 
@@ -9684,8 +8842,6 @@ def main():
                                 target = "alsfrs_speech_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','alsfrs_speech_seq',data_training_args.vis_method)
                             )
                         
@@ -9701,8 +8857,6 @@ def main():
                                 target = "alsfrs_speech_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','alsfrs_speech_seq',data_training_args.vis_method)
                             )
 
@@ -9718,8 +8872,6 @@ def main():
                                 target = "alsfrs_speech_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','alsfrs_speech_seq',data_training_args.vis_method)
                             )
 
@@ -9735,8 +8887,6 @@ def main():
                                 target = "alsfrs_speech_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','alsfrs_speech_seq',data_training_args.vis_method)
                             )
 
@@ -9765,8 +8915,6 @@ def main():
                                     target = "alsfrs_speech_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','alsfrs_speech_seq',data_training_args.vis_method)
                                 )
 
@@ -9782,8 +8930,6 @@ def main():
                                     target = "alsfrs_speech_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','alsfrs_speech_seq',data_training_args.vis_method)
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -9798,8 +8944,6 @@ def main():
                                     target = "alsfrs_speech_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','alsfrs_speech_seq',data_training_args.vis_method)
                                 )
                             if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -9814,8 +8958,6 @@ def main():
                                     target = "alsfrs_speech_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','alsfrs_speech_seq',data_training_args.vis_method)
                                 )
 
@@ -9849,8 +8991,6 @@ def main():
                             target = "disease_duration_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','disease_duration_seq',data_training_args.vis_method)
                         )
 
@@ -9866,8 +9006,6 @@ def main():
                             target = "disease_duration_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','disease_duration_seq',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -9882,8 +9020,6 @@ def main():
                             target = "disease_duration_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','disease_duration_seq',data_training_args.vis_method)
                         )
 
@@ -9899,8 +9035,6 @@ def main():
                             target = "disease_duration_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','disease_duration_seq',data_training_args.vis_method)
                         )
 
@@ -9931,8 +9065,6 @@ def main():
                                 target = "disease_duration_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','disease_duration_seq',data_training_args.vis_method)
                             )
 
@@ -9948,8 +9080,6 @@ def main():
                                 target = "disease_duration_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','disease_duration_seq',data_training_args.vis_method)
                             )
 
@@ -9965,8 +9095,6 @@ def main():
                                 target = "disease_duration_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','disease_duration_seq',data_training_args.vis_method)
                             )
                         if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -9981,8 +9109,6 @@ def main():
                                 target = "disease_duration_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','disease_duration_seq',data_training_args.vis_method)
                             )
 
@@ -10010,8 +9136,6 @@ def main():
                                 target = "disease_duration_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','disease_duration_seq',data_training_args.vis_method)
                             )
                         
@@ -10027,8 +9151,6 @@ def main():
                                 target = "disease_duration_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','disease_duration_seq',data_training_args.vis_method)
                             )
 
@@ -10044,8 +9166,6 @@ def main():
                                 target = "disease_duration_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','disease_duration_seq',data_training_args.vis_method)
                             )
 
@@ -10061,8 +9181,6 @@ def main():
                                 target = "disease_duration_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','disease_duration_seq',data_training_args.vis_method)
                             )
 
@@ -10091,8 +9209,6 @@ def main():
                                     target = "disease_duration_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','disease_duration_seq',data_training_args.vis_method)
                                 )
 
@@ -10108,8 +9224,6 @@ def main():
                                     target = "disease_duration_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','disease_duration_seq',data_training_args.vis_method)
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -10124,8 +9238,6 @@ def main():
                                     target = "disease_duration_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','disease_duration_seq',data_training_args.vis_method)
                                 )
                             if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -10140,8 +9252,6 @@ def main():
                                     target = "disease_duration_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','disease_duration_seq',data_training_args.vis_method)
                                 )
 
@@ -10175,8 +9285,6 @@ def main():
                             target = "king_stage_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','king_stage_seq',data_training_args.vis_method)
                         )
 
@@ -10192,8 +9300,6 @@ def main():
                             target = "king_stage_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','king_stage_seq',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -10208,8 +9314,6 @@ def main():
                             target = "king_stage_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','king_stage_seq',data_training_args.vis_method)
                         )
 
@@ -10225,8 +9329,6 @@ def main():
                             target = "king_stage_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','king_stage_seq',data_training_args.vis_method)
                         )
 
@@ -10257,8 +9359,6 @@ def main():
                                 target = "king_stage_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','king_stage_seq',data_training_args.vis_method)
                             )
 
@@ -10274,8 +9374,6 @@ def main():
                                 target = "king_stage_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','king_stage_seq',data_training_args.vis_method)
                             )
 
@@ -10291,8 +9389,6 @@ def main():
                                 target = "king_stage_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','king_stage_seq',data_training_args.vis_method)
                             )
                         if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -10307,8 +9403,6 @@ def main():
                                 target = "king_stage_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','king_stage_seq',data_training_args.vis_method)
                             )
 
@@ -10336,8 +9430,6 @@ def main():
                                 target = "king_stage_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','king_stage_seq',data_training_args.vis_method)
                             )
                         
@@ -10353,8 +9445,6 @@ def main():
                                 target = "king_stage_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','king_stage_seq',data_training_args.vis_method)
                             )
 
@@ -10370,8 +9460,6 @@ def main():
                                 target = "king_stage_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','king_stage_seq',data_training_args.vis_method)
                             )
 
@@ -10387,8 +9475,6 @@ def main():
                                 target = "king_stage_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','king_stage_seq',data_training_args.vis_method)
                             )
 
@@ -10417,8 +9503,6 @@ def main():
                                     target = "king_stage_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','king_stage_seq',data_training_args.vis_method)
                                 )
 
@@ -10434,8 +9518,6 @@ def main():
                                     target = "king_stage_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','king_stage_seq',data_training_args.vis_method)
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -10450,8 +9532,6 @@ def main():
                                     target = "king_stage_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','king_stage_seq',data_training_args.vis_method)
                                 )
                             if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -10466,8 +9546,6 @@ def main():
                                     target = "king_stage_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','king_stage_seq',data_training_args.vis_method)
                                 )
 
@@ -10501,8 +9579,6 @@ def main():
                             target = "group_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','group_seq',data_training_args.vis_method)
                         )
 
@@ -10518,8 +9594,6 @@ def main():
                             target = "group_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','group_seq',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -10534,8 +9608,6 @@ def main():
                             target = "group_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','group_seq',data_training_args.vis_method)
                         )
 
@@ -10551,8 +9623,6 @@ def main():
                             target = "group_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','group_seq',data_training_args.vis_method)
                         )
 
@@ -10583,8 +9653,6 @@ def main():
                                 target = "group_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','group_seq',data_training_args.vis_method)
                             )
 
@@ -10600,8 +9668,6 @@ def main():
                                 target = "group_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','group_seq',data_training_args.vis_method)
                             )
 
@@ -10617,8 +9683,6 @@ def main():
                                 target = "group_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','group_seq',data_training_args.vis_method)
                             )
                         if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -10633,8 +9697,6 @@ def main():
                                 target = "group_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','group_seq',data_training_args.vis_method)
                             )
 
@@ -10662,8 +9724,6 @@ def main():
                                 target = "group_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','group_seq',data_training_args.vis_method)
                             )
                         
@@ -10679,8 +9739,6 @@ def main():
                                 target = "group_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','group_seq',data_training_args.vis_method)
                             )
 
@@ -10696,8 +9754,6 @@ def main():
                                 target = "group_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','group_seq',data_training_args.vis_method)
                             )
 
@@ -10713,8 +9769,6 @@ def main():
                                 target = "group_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','group_seq',data_training_args.vis_method)
                             )
 
@@ -10743,8 +9797,6 @@ def main():
                                     target = "group_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','group_seq',data_training_args.vis_method)
                                 )
 
@@ -10760,8 +9812,6 @@ def main():
                                     target = "group_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','group_seq',data_training_args.vis_method)
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -10776,8 +9826,6 @@ def main():
                                     target = "group_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','group_seq',data_training_args.vis_method)
                                 )
                             if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -10792,8 +9840,6 @@ def main():
                                     target = "group_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','group_seq',data_training_args.vis_method)
                                 )
 
@@ -10827,8 +9873,6 @@ def main():
                             target = "cantagallo_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','cantagallo_seq',data_training_args.vis_method)
                         )
 
@@ -10844,8 +9888,6 @@ def main():
                             target = "cantagallo_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','cantagallo_seq',data_training_args.vis_method)
                         )
                     if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -10860,8 +9902,6 @@ def main():
                             target = "cantagallo_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','cantagallo_seq',data_training_args.vis_method)
                         )
 
@@ -10877,8 +9917,6 @@ def main():
                             target = "cantagallo_seq",
                             data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                             manifold_dict = manifold_dict,
-                            return_data = True,
-                            display_figures = True,
                             save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','cantagallo_seq',data_training_args.vis_method)
                         )
 
@@ -10909,8 +9947,6 @@ def main():
                                 target = "cantagallo_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','cantagallo_seq',data_training_args.vis_method)
                             )
 
@@ -10926,8 +9962,6 @@ def main():
                                 target = "cantagallo_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','cantagallo_seq',data_training_args.vis_method)
                             )
 
@@ -10943,8 +9977,6 @@ def main():
                                 target = "cantagallo_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','cantagallo_seq',data_training_args.vis_method)
                             )
                         if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -10959,8 +9991,6 @@ def main():
                                 target = "cantagallo_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','cantagallo_seq',data_training_args.vis_method)
                             )
 
@@ -10988,8 +10018,6 @@ def main():
                                 target = "cantagallo_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','cantagallo_seq',data_training_args.vis_method)
                             )
                         
@@ -11005,8 +10033,6 @@ def main():
                                 target = "cantagallo_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','cantagallo_seq',data_training_args.vis_method)
                             )
 
@@ -11022,8 +10048,6 @@ def main():
                                 target = "cantagallo_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','cantagallo_seq',data_training_args.vis_method)
                             )
 
@@ -11039,8 +10063,6 @@ def main():
                                 target = "cantagallo_seq",
                                 data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                 manifold_dict = manifold_dict,
-                                return_data = True,
-                                display_figures = True,
                                 save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','cantagallo_seq',data_training_args.vis_method)
                             )
 
@@ -11069,8 +10091,6 @@ def main():
                                     target = "cantagallo_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'X_OCs','cantagallo_seq',data_training_args.vis_method)
                                 )
 
@@ -11086,8 +10106,6 @@ def main():
                                     target = "cantagallo_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_joint_emb','cantagallo_seq',data_training_args.vis_method)
                                 )
                             if "OCs_proj" in vis_args.aggregation_strategies_to_plot_seq:
@@ -11102,8 +10120,6 @@ def main():
                                     target = "cantagallo_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'OCs_projection','cantagallo_seq',data_training_args.vis_method)
                                 )
                             if "all" in vis_args.aggregation_strategies_to_plot_seq:
@@ -11118,8 +10134,6 @@ def main():
                                     target = "cantagallo_seq",
                                     data_set = data_training_args.dataset_name + '_' + data_subset + '_' +  str(vis_args.latent_train_set_seq_to_vis) + '_seqs',
                                     manifold_dict = manifold_dict,
-                                    return_data = True,
-                                    display_figures = True,
                                     save_dir = os.path.join(vis_args.save_vis_dir,decomp_args.decomp_to_perform,data_training_args.dataset_name,BETAS,data_subset,'all_joint_emb','cantagallo_seq',data_training_args.vis_method)
                                 )
 

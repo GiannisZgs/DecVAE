@@ -241,7 +241,7 @@ def main():
                     del weights[key]
                     print(f"Removed deprecated module {key} from weights.")
 
-            representation_function.load_state_dict(weights)
+            representation_function.load_state_dict(weights, strict=False)
         
         representation_function.eval()
         for param in representation_function.parameters():
