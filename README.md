@@ -13,7 +13,8 @@ i.e., encoder-only neural networks that combine a signal decomposition model, a 
 task, and variational prior approximation to learn multiple latent subspaces aligned with time-frequency char
 acteristics.
 
-This library contains ```DecVAEs``` and numerous utilities/scripts for pre-training, fine-tuning transfer learning and zero-shot transfer learning of ```DecVAEs```, evaluation of ```DecVAE``` representations through disentanglement and task-specific metrics, and latent analysis tools for interpretability.``` DecVAEs``` are built by adapting the 🤗 Wav2Vec2-encoder architecture to include VAE functionality for disentangled representation learning. We accommodate the analysis of 4 datasets: TIMIT, IEMOCAP, VOC-ALS and SimVowels, a custom simulated speech dataset. Paper figures can be generated using R (```visualize_R```). Implementation is based on PyTorch, 🤗 HuggingFace Transformers and Google Research ```disentanglement_lib```. This codebase also support logging of pre-training and post-training through Weights & Biases @wandb. 
+This library contains ```DecVAEs``` and numerous utilities/scripts for pre-training, fine-tuning transfer learning and zero-shot transfer learning of ```DecVAEs```, evaluation of ```DecVAE``` representations through disentanglement and task-specific metrics, and latent analysis tools for interpretability.``` DecVAEs``` are built by adapting the 🤗 Wav2Vec2-encoder architecture to include VAE functionality for disentangled representation learning. We accommodate the analysis of 4 datasets: TIMIT, IEMOCAP, VOC-ALS and SimVowels, a custom simulated speech dataset. Paper figures can be generated using R (```visualize_R```). Implementation is based on PyTorch, 🤗 HuggingFace Transformers and Google Research ```disentanglement_lib```. This codebase also support logging of pre-training and post-training through Weights & Biases <img width="24" height="24" alt="image" src="https://github.com/user-attachments/assets/0e546e5a-a90d-4036-b439-7591abaa86a8" />
+ @wandb. 
 
 ## Method highlights
 
@@ -232,7 +233,7 @@ B. Lukas. Experiment Tracking with Weights and Biases, *Software available from 
 
 ## License 
 
-[Apache License 2.0][LICENSE] 
+[Apache License 2.0](LICENSE)
 
 
 
