@@ -141,6 +141,7 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
 
     assert isinstance(target, str) or (isinstance(target, (list, tuple)) and len(target) <= 2), "Target must be a string or a list/tuple of max length 2"
     if len(target) > 1 and isinstance(target, (list, tuple)):
+        "In case of stratified CV based on support variable"
         target_support = target[1]
         target = target[0]
     
@@ -1196,7 +1197,7 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
             }).reset_index()
         
         # Calculate 95% confidence intervals
-        n_samples = 5 * data_training_args.random_states  # random states * 5 folds
+        n_samples = data_training_args.classif_eval_cv_splits * data_training_args.random_states  # random states * 5 folds
         confidence_level = 0.95
         z_score = stats.norm.ppf((1 + confidence_level) / 2)
         

@@ -58,9 +58,9 @@ import time
 import warnings
 
 warnings.simplefilter("ignore")
-os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-os.environ["TORCH_USE_CUDA_DSA"] = "1"
-os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
+#os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+#os.environ["TORCH_USE_CUDA_DSA"] = "1"
+#os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 
 JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/sim_vowels/latent_evaluations/config_latent_anal_sim_vowels.json" #for debugging purposes only
 
@@ -193,9 +193,6 @@ def main():
             checkpoint_dir = os.path.join(data_training_args.parent_dir,
                 "snr" + str(data_training_args.sim_snr_db) \
                 + betas + "_NoC" + str(decomp_args.NoC) + "_" + data_training_args.input_type + "_" + model_type + "-bs" + str(data_training_args.per_device_train_batch_size))
-    elif "scRNA_seq" in data_training_args.dataset_name:
-        checkpoint_dir = os.path.join(data_training_args.parent_dir,
-            betas[1:] + "_NoC" + str(decomp_args.NoC) + "_" + data_training_args.input_type + "_" + model_type + "-bs" + str(data_training_args.per_device_train_batch_size))
 
     if data_training_args.experiment == "ssl_loss":
         checkpoint_dir += "_" + str(data_training_args.ssl_loss_frame_perc) +"percent_frames"
@@ -215,7 +212,7 @@ def main():
             if data_training_args.epoch_range_to_evaluate[1] == -1:
                 data_training_args.epoch_range_to_evaluate = checkpoint_files[data_training_args.epoch_range_to_evaluate[0]:]   
             else:
-                data_training_args.epoch_range_to_evaluate = checkpoint_files[data_training_args.epoch_range_to_evaluate[0]:data_training_args.epoch_range_to_evaluate[1]]  
+                data_training_args.epoch_range_to_evaluate = checkpoint_files[data_training_args.epoch_range_to_evaluate[0]:data_training_args.epoch_range_to_evaluate[1]+1]  
         elif len(data_training_args.epoch_range_to_evaluate) == 1:
             data_training_args.epoch_range_to_evaluate = [checkpoint_files[data_training_args.epoch_range_to_evaluate[0]]]
         else:
@@ -628,12 +625,7 @@ def main():
 
 
         "Now use train/val representations to get the evaluation metrics"
-        "1. Projection evaluation"
-        "2. Components evaluation separately (1st,2nd,3rd)"
-        
         "Linear/non-linear classification"
-        #Create combined labels - Speaker-vowel
-        #Comparisons inside speaker / inside vowel
         if data_training_args.classify:
             if "vowels" in data_training_args.dataset_name:
                 if config.dual_branched_latent or config.only_z_branch:
@@ -1277,75 +1269,75 @@ def main():
                                 checkpoint = ckp, latent_type="OCs_joint_emb",target = ["cat_emotion_seq", "speaker_seq"]
                             )
 
-                if "OCs_proj" in data_training_args.aggregations_to_use and config.project_OCs:
-                    "OCs projection <- f([OC1,OC2,...,OCn])"
-                    if "speaker_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
-                        "Check speakers in s"
-                        prediction_eval(data_training_args,config,
-                            X = mu_projections_s, X_test = None,
-                            y = speaker_id_seq, y_test = None,
-                            checkpoint = ckp, latent_type="OCs_proj",target = "speaker_seq"
-                        )
-                    if "emotion_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
-                        "Check emotion in s"
-                        prediction_eval(data_training_args,config,
-                            X = mu_projections_s, X_test = None,
-                            y = torch.stack((emotion_seq,speaker_id_seq), dim = 1), y_test = None,
-                            checkpoint = ckp, latent_type="OCs_proj",target = ["cat_emotion_seq", "speaker_seq"]
-                        )
-
-                if "all" in data_training_args.aggregations_to_use:
-                    "All - ([X,OC1,OC2,...,OCn])"
-                    if "speaker_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
-                        "Check speakers in s"
-                        prediction_eval(data_training_args,config,
-                            X = mu_all_s, X_test = None,
-                            y = speaker_id_seq, y_test = None,
-                            checkpoint = ckp, latent_type="all",target = "speaker_seq"
-                        )
-                    if "emotion_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
-                        "Check emotion in s"
-                        prediction_eval(data_training_args,config,
-                            X = mu_all_s, X_test = None,
-                            y = torch.stack((emotion_seq,speaker_id_seq), dim = 1), y_test = None,
-                            checkpoint = ckp, latent_type="all",target = ["cat_emotion_seq", "speaker_seq"]
-                        )
-
-                if "X" in data_training_args.aggregations_to_use:
-                    "Original X"
-                    if "speaker_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
-                        "Check speakers in s"
-                        prediction_eval(data_training_args,config,
-                            X = mu_originals_s, X_test = None,
-                            y = speaker_id_seq, y_test = None,
-                            checkpoint = ckp, latent_type="X",target = "speaker_seq"
-                        )
-                    if "emotion_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
-                        "Check emotion in s"
-                        prediction_eval(data_training_args,config,
-                            X = mu_originals_s, X_test = None,
-                            y = torch.stack((emotion_seq,speaker_id_seq), dim = 1), y_test = None,
-                            checkpoint = ckp, latent_type="X",target = ["cat_emotion_seq", "speaker_seq"]
-                        )
-
-                if "OCs" in data_training_args.aggregations_to_use:
-                    "Individual OCs"
-                    if "speaker_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
-                        "Check speakers in s"
-                        for i in range(decomp_args.NoC_seq):                    
+                    if "OCs_proj" in data_training_args.aggregations_to_use and config.project_OCs:
+                        "OCs projection <- f([OC1,OC2,...,OCn])"
+                        if "speaker_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
+                            "Check speakers in s"
                             prediction_eval(data_training_args,config,
-                                X = mu_components_s[i], X_test = None,
+                                X = mu_projections_s, X_test = None,
                                 y = speaker_id_seq, y_test = None,
-                                checkpoint = ckp, latent_type=f'OC{i+1}',target = "speaker_seq"
+                                checkpoint = ckp, latent_type="OCs_proj",target = "speaker_seq"
                             )
-                    if "emotion_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
-                        "Check emotion in s"
-                        for i in range(decomp_args.NoC_seq):
+                        if "emotion_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
+                            "Check emotion in s"
                             prediction_eval(data_training_args,config,
-                                X = mu_components_s[i], X_test = None,
+                                X = mu_projections_s, X_test = None,
                                 y = torch.stack((emotion_seq,speaker_id_seq), dim = 1), y_test = None,
-                                checkpoint = ckp, latent_type=f'OC{i+1}',target = ["cat_emotion_seq", "speaker_seq"]
+                                checkpoint = ckp, latent_type="OCs_proj",target = ["cat_emotion_seq", "speaker_seq"]
                             )
+
+                    if "all" in data_training_args.aggregations_to_use:
+                        "All - ([X,OC1,OC2,...,OCn])"
+                        if "speaker_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
+                            "Check speakers in s"
+                            prediction_eval(data_training_args,config,
+                                X = mu_all_s, X_test = None,
+                                y = speaker_id_seq, y_test = None,
+                                checkpoint = ckp, latent_type="all",target = "speaker_seq"
+                            )
+                        if "emotion_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
+                            "Check emotion in s"
+                            prediction_eval(data_training_args,config,
+                                X = mu_all_s, X_test = None,
+                                y = torch.stack((emotion_seq,speaker_id_seq), dim = 1), y_test = None,
+                                checkpoint = ckp, latent_type="all",target = ["cat_emotion_seq", "speaker_seq"]
+                            )
+
+                    if "X" in data_training_args.aggregations_to_use:
+                        "Original X"
+                        if "speaker_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
+                            "Check speakers in s"
+                            prediction_eval(data_training_args,config,
+                                X = mu_originals_s, X_test = None,
+                                y = speaker_id_seq, y_test = None,
+                                checkpoint = ckp, latent_type="X",target = "speaker_seq"
+                            )
+                        if "emotion_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
+                            "Check emotion in s"
+                            prediction_eval(data_training_args,config,
+                                X = mu_originals_s, X_test = None,
+                                y = torch.stack((emotion_seq,speaker_id_seq), dim = 1), y_test = None,
+                                checkpoint = ckp, latent_type="X",target = ["cat_emotion_seq", "speaker_seq"]
+                            )
+
+                    if "OCs" in data_training_args.aggregations_to_use:
+                        "Individual OCs"
+                        if "speaker_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
+                            "Check speakers in s"
+                            for i in range(decomp_args.NoC_seq):                    
+                                prediction_eval(data_training_args,config,
+                                    X = mu_components_s[i], X_test = None,
+                                    y = speaker_id_seq, y_test = None,
+                                    checkpoint = ckp, latent_type=f'OC{i+1}',target = "speaker_seq"
+                                )
+                        if "emotion_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
+                            "Check emotion in s"
+                            for i in range(decomp_args.NoC_seq):
+                                prediction_eval(data_training_args,config,
+                                    X = mu_components_s[i], X_test = None,
+                                    y = torch.stack((emotion_seq,speaker_id_seq), dim = 1), y_test = None,
+                                    checkpoint = ckp, latent_type=f'OC{i+1}',target = ["cat_emotion_seq", "speaker_seq"]
+                                )
         
 
         "Disentanglement evaluation"
