@@ -407,7 +407,7 @@ def main():
         destination_config = os.path.join(data_training_args.output_dir, JSON_FILE_NAME_MANUAL)
         shutil.copy(JSON_FILE_NAME_MANUAL, destination_config)
     else:
-        destination_config = os.path.join(data_training_args.output_dir,args.config_file) 
+        destination_config = os.path.join(data_training_args.output_dir,os.path.basename(args.config_file)) 
         shutil.copy(args.config_file,destination_config)
 
     for epoch in range(starting_epoch, data_training_args.num_train_epochs):
