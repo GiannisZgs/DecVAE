@@ -239,6 +239,9 @@ def main():
                                 **{"dev": data_training_args.dev_cache_file_name}
                                 }
         
+        "make the directory that will store the decomposition"
+        os.makedirs(os.path.dirname(cache_file_names['train']), exist_ok=True)
+
         "load audio files into numpy arrays"
         with accelerator.main_process_first():
 

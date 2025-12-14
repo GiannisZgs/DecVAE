@@ -72,6 +72,16 @@ All experiments are fully reproducible with the provided code and configurations
 - **Visualization utilities** for reproducing figures in the paper (```visualize_R``` and ```scripts/visualize```).
 - **Examples** for various use cases in ```examples/notebooks```.
 
+## Datasets
+
+We perform experiments on four datasets: SimVowels, TIMIT, VOC-ALS, and IEMOCAP.
+SimVowels is a simulated speech dataset of five vowels uttered by 60 speakers.
+
+The other three datasets can be downloaded from the below sources:
+- TIMIT: https://catalog.ldc.upenn.edu/LDC93S1
+- VOC-ALS: https://www.synapse.org/Synapse:syn53009474/wiki/624730
+- IEMOCAP: https://sail.usc.edu/iemocap/
+
 ## Example: Disentanglement of simulated speech data (SimVowels dataset) 
 
 ### SimVowels data generation

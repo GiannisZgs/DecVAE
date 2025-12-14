@@ -24,6 +24,7 @@ from sklearn.model_selection import train_test_split
 
 BASE_DIR = "../VOC-ALS" 
 OUTPUT_DIR = "../VOC-ALS_preprocessed"
+VOCAB_DIR = "./vocabularies"
 SPLIT_DATA = False  # Set to True to enable train/val/test split
 NUM_PARTS = 4
 TARGET_FS = 16000  # Target sample rate for audio files
@@ -296,7 +297,7 @@ def process_voc_als_data(base_dir, excel_file, output_file, split_data=False, te
     "Encode specific variables of interest to be in label format"
     excel_df, encoding_maps = encode_metadata_values(excel_df)
     print(f"Succesfully encoded clinical variables")
-    encodings_filename = os.path.join(OUTPUT_DIR, "encodings.json")
+    encodings_filename = os.path.join(VOCAB_DIR, "voc_als_encodings.json")
     with open(encodings_filename, 'w', encoding='utf-8') as f:
         json.dump(encoding_maps, f, indent=2)
     print(f"Saved encoding maps to {encodings_filename}")
@@ -571,6 +572,7 @@ def process_voc_als_data(base_dir, excel_file, output_file, split_data=False, te
 def main():
     excel_file = os.path.join(BASE_DIR, "VOC-ALS.xlsx")
     output_file = os.path.join(OUTPUT_DIR, "voc_als_data")
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     # Process data
     if SPLIT_DATA:
