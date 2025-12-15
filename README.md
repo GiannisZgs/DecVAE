@@ -70,7 +70,7 @@ All experiments are fully reproducible with the provided code and configurations
 - **Evaluation protocols** for assessing disentanglement and downstream performance.
 - **Analysis products** for reproducing figures (```figures```, ```supplementary_figures```) in the paper without the need of pre-training the models from scratch (```data```).
 - **Visualization utilities** for reproducing figures in the paper (```visualize_R``` and ```scripts/visualize```).
-- **Examples** for various use cases in ```examples/notebooks```.
+- **Examples** for various use cases in ```examples/notebooks```. We provide executable notebooks to reproduce the main results of the paper step-by-step.
 
 ## Datasets
 
