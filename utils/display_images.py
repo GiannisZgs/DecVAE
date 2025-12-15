@@ -1,5 +1,5 @@
 """
-Simple script to display an image.
+Simple script to display an image in notebook output.
 
 Usage from notebook:
     !python utils/display_images.py <image_path>
@@ -10,7 +10,8 @@ Example:
 
 import sys
 from pathlib import Path
-from PIL import Image
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
 
 def main():
@@ -25,9 +26,23 @@ def main():
         sys.exit(1)
     
     try:
-        img = Image.open(image_path)
-        img.show()
-        print(f"Displayed: {image_path}")
+        # Read and display the image
+        img = mpimg.imread(str(image_path))
+        
+        # Create figure with appropriate size
+        dpi = 100
+        height, width = img.shape[:2]
+        figsize = width / dpi, height / dpi
+        
+        fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+        ax.imshow(img)
+        ax.axis('off')
+        plt.tight_layout(pad=0)
+        
+        # Save to stdout as base64 so it displays in notebook
+        plt.savefig(sys.stdout.buffer, format='png', bbox_inches='tight', pad_inches=0)
+        plt.close()
+        
     except Exception as e:
         print(f"Error loading image: {e}")
         sys.exit(1)
