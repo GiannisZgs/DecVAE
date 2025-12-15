@@ -80,7 +80,7 @@ logger = get_logger(__name__)
 
 def main():
     "Parse the arguments"       
-    parser = HfArgumentParser((ModelArgumentsPost, TrainingObjectiveArguments, DecompositionArguments, DataTrainingArgumentsPost, VisualizationArguments))
+    parser = HfArgumentParser((ModelArgumentsPost, TrainingObjectiveArguments, DecompositionArguments, DataTrainingArgumentsPost, VisualizationsArguments))
     if debugger_is_active():
         model_args, training_obj_args, decomp_args, data_training_args, vis_args = parser.parse_json_file(json_file=JSON_FILE_NAME_MANUAL)
     else:
