@@ -168,7 +168,7 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
              int_to_vowel = {'0':'i','1':'I','2':'e','3':'ae','4':'a','5':'aw','6':'y','7':'u'}
         "Convert vowels to strings / categorical"
         if "vowel" in target:
-            if data_training_args.discard_vowel_overlaps:
+            if data_training_args.discard_label_overlaps:
                 vowels_categorical = [int_to_vowel[str(v.item())] for v in y if len(int_to_vowel[str(v.item())]) <= 2]
                 vowels_categorical_test = [int_to_vowel[str(v.item())] for v in y_test if len(int_to_vowel[str(v.item())]) <= 2]
                 corresp_inds = [i for i,v in enumerate(y) if len(int_to_vowel[str(v.item())]) <= 2]

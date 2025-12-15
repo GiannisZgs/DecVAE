@@ -322,9 +322,9 @@ class DataCollatorForDecVAE_SSL_FineTuning:
                         new_input_seq_values[:,o,f,:] = framed_sequence.clone()
                 batch["input_seq_values"] = new_input_seq_values.clone()
         
-            if self.model_args.num_feat_extract_layers == 7:
+            if len(self.model_args.conv_kernel) == 7:
                 assert self.data_training_args.mel_hops == 4
-            elif self.model_args.num_feat_extract_layers == 5:
+            elif len(self.model_args.conv_kernel) == 5:
                 assert self.data_training_args.mel_hops == 3
             for o in range(batch["input_values"].shape[1]):
                 batch["input_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
@@ -536,9 +536,9 @@ class DataCollatorForDecVAELatentPostAnalysis:
                         new_input_seq_values[:,o,f,:] = framed_sequence.clone()
                 batch["input_seq_values"] = new_input_seq_values.clone()
         
-            if self.model_args.num_feat_extract_layers == 7:
+            if len(self.model_args.conv_kernel) == 7:
                 assert self.data_training_args.mel_hops == 4
-            elif self.model_args.num_feat_extract_layers == 5:
+            elif len(self.model_args.conv_kernel) == 5:
                 assert self.data_training_args.mel_hops == 3
             for o in range(batch["input_values"].shape[1]):
                 batch["input_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
@@ -744,9 +744,9 @@ class DataCollatorForDecVAELatentDisentanglement:
                         new_input_seq_values[:,o,f,:] = framed_sequence.clone()
                 batch["input_seq_values"] = new_input_seq_values.clone()
         
-            if self.model_args.num_feat_extract_layers == 7:
+            if len(self.model_args.conv_kernel) == 7:
                 assert self.data_training_args.mel_hops == 4
-            elif self.model_args.num_feat_extract_layers == 5:
+            elif len(self.model_args.conv_kernel) == 5:
                 assert self.data_training_args.mel_hops == 3
             for o in range(batch["input_values"].shape[1]):
                 batch["input_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
@@ -960,9 +960,9 @@ class DataCollatorForDecVAELatentTraversals:
                         new_input_seq_values[:,o,f,:] = framed_sequence.clone()
                 batch["input_seq_values"] = new_input_seq_values.clone()
         
-            if self.model_args.num_feat_extract_layers == 7:
+            if len(self.model_args.conv_kernel) == 7:
                 assert self.data_training_args.mel_hops == 4
-            elif self.model_args.num_feat_extract_layers == 5:
+            elif len(self.model_args.conv_kernel) == 5:
                 assert self.data_training_args.mel_hops == 3
             for o in range(batch["input_values"].shape[1]):
                 if "vowels" in self.dataset_name:
@@ -1192,9 +1192,9 @@ class DataCollatorForDecVAELatentVisualization:
                         new_input_seq_values[:,o,f,:] = framed_sequence.clone()
                 batch["input_seq_values"] = new_input_seq_values.clone()
         
-            if self.model_args.num_feat_extract_layers == 7:
+            if len(self.model_args.conv_kernel) == 7:
                 assert self.data_training_args.mel_hops == 4
-            elif self.model_args.num_feat_extract_layers == 5:
+            elif len(self.model_args.conv_kernel) == 5:
                 assert self.data_training_args.mel_hops == 3
             for o in range(batch["input_values"].shape[1]):
                 batch["input_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
