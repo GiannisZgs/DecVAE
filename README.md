@@ -71,6 +71,7 @@ All experiments are fully reproducible with the provided code and configurations
 - **Analysis products** for reproducing figures (```figures```, ```supplementary_figures```) in the paper without the need of pre-training the models from scratch (```data```).
 - **Visualization utilities** for reproducing figures in the paper (```visualize_R``` and ```scripts/visualize```).
 - **Examples** for various use cases in ```examples/notebooks```. We provide executable notebooks to reproduce the main results of the paper step-by-step.
+- **Pre-trained models checkpoints** in .safetensors format, provided in https://drive.google.com/drive/folders/1wumm0zMK_PO-2kD-2vihAsvwBYNqs4jR?usp=sharing for download, as the pre-training process can be costly in limited resources with large datasets. 
 
 ## Datasets
 
