@@ -63,7 +63,7 @@ Rscript env_setup/setup.R
 
 ## Reproducibility
 
-All experiments are fully reproducible with the provided code and configurations. We provide:
+All experiments are reproducible with the provided code and configurations. We provide:
 
 - **Complete source code** for all model components and training procedures to reproduce the whole training process and evaluation of DecVAEs (```scripts```) .
 - **Configuration files** for reproducing experiments in the paper (```config_files```).
@@ -71,7 +71,9 @@ All experiments are fully reproducible with the provided code and configurations
 - **Analysis products** for reproducing figures (```figures```, ```supplementary_figures```) in the paper without the need of pre-training the models from scratch (```data```).
 - **Visualization utilities** for reproducing figures in the paper (```visualize_R``` and ```scripts/visualize```).
 - **Examples** for various use cases in ```examples/notebooks```. We provide executable notebooks to reproduce the main results of the paper step-by-step.
-- **Pre-trained models checkpoints** in .safetensors format, provided in https://drive.google.com/drive/folders/1wumm0zMK_PO-2kD-2vihAsvwBYNqs4jR?usp=sharing for download, as the pre-training process can be costly in limited resources with large datasets. 
+- **Pre-trained models checkpoints** in .safetensors format, provided in https://drive.google.com/drive/folders/1wumm0zMK_PO-2kD-2vihAsvwBYNqs4jR?usp=sharing for download, as the pre-training process can be costly in limited resources with large datasets.
+
+**Due to the numerous experiments and ablations performed, the complete reproduction of all results in the paper is quite time-consuming. Our computational resources allow reproduction of all experiments and measurements, with a rough estimate of about 1.5 GPU years when ran on a single GPU NVIDIA RTX 6000 Ada Generation.**
 
 ## Datasets
 
@@ -84,6 +86,8 @@ The other three datasets can be downloaded from the below sources:
 - IEMOCAP: https://sail.usc.edu/iemocap/
 
 ## Example: Disentanglement of simulated speech data (SimVowels dataset) 
+
+**See examples for a more detailed walkthrough**
 
 ### SimVowels data generation
 To generate the SimVowels dataset run the below after setting up the environment:
@@ -110,7 +114,7 @@ accelerate launch scripts/visualize/low_dim_vis_input.py --config_file config_fi
 For more details on setting crucial input visualization parameters, see ```args_configs/visualization_args```.
 
 ### Pre-training of a DecVAE
-Uses the ```accelerate``` library. ```accelerate``` can be configured to set the desired hardware to run on along with other settings (see ```accelerate config```).
+Uses the 🤗 ```accelerate``` library. ```accelerate``` can be configured to set the desired hardware to run on along with other settings (see ```accelerate config```).
 
 For single-GPU training:
 ```bash
@@ -129,11 +133,11 @@ Running the pre-training will yield:
 1) the decomposed inputs, saved in the directories specified by the ```train~validation~test_cache_file_name``` parameters.
 2) model ```.safetensors``` checkpoints that will be saved in the directory specified by the ```output_dir``` argument in the ```config_file```, along with the current ```config_file``` used.
 
-Some important DecVAE pre-training parameters include:
+Some important DecVAE pre-training parameters for the SimVowels dataset include:
 - ```with_wandb: bool``` : whether to use Weights & Biases logger to monitor training.
 - ```input_type = "mel"```: "mel" or "waveform", the type of inputs to the models (decomposition is always performed in the time domain, before feature extraction).
 - ```per_device_train_batch_size=16```: batch size (in utterances).
-- ```learning_rate=[8e-5,1e-4]```: learning rate for each time scale [frame,sequence]. 
+- ```learning_rate=[5e-5,1e-4]```: learning rate for each time scale [frame,sequence]. 
 - ```lr_scheduler_type=["constant_with_warmup","linear"]```: learning rate scheduler for each time scale [frame,sequence]. 
 - ```num_train_epochs=150```: maximum number of epochs.
 - ```early_stop_warmup_steps=28000```: warmup steps before applying early stop with a patience after no improvement in the validation loss, based on a threshold.
