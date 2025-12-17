@@ -98,7 +98,7 @@ python scripts/simulations/simulated_vowels.py
 
 or download SimVowels directly from https://drive.google.com/drive/folders/1VE4mkC3P1GEDrorThmRgL07NdEoLtyf9?usp=sharing.
 
-### Input visualization - 2D, 3D TSNE and/or UMAP manifolds, colored by generative factors and frequency 
+### Input visualization - 2D TSNE and/or UMAP manifolds, colored by generative factors and frequency 
 To visualize the inputs (frame-level) to the models:
 
 ```bash
