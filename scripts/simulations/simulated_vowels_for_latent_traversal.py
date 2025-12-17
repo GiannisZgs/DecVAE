@@ -279,6 +279,8 @@ def main():
             json.dump(fixed_speaker_free_extended_vowels, f)
         with gzip.open(fname_fixed_speakers_free_extended_vowels_test, "wt") as f:
             json.dump(fixed_speaker_free_extended_vowels, f)    
+    
+    print("Successfully generated simulated vowels data for latent traversal experiments and saved in " + SAVE_DIR + ".")
 
 
 if __name__ == "__main__":
