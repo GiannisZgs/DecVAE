@@ -923,10 +923,10 @@ class DataCollatorForDecVAELatentTraversals:
             group = [feature.pop("group") for feature in features]
         elif "vowels" in self.dataset_name:
             [feature.pop("overlap_mask") for feature in features]
-            [feature.pop("reconstruction_NRMSEs") for feature in features]
-            [feature.pop("reconstruction_NRMSE_seq") for feature in features]
-            [feature.pop("correlograms") for feature in features]
-            [feature.pop("correlogram_seq") for feature in features]
+            #[feature.pop("reconstruction_NRMSEs") for feature in features]
+            #[feature.pop("reconstruction_NRMSE_seq") for feature in features]
+            #[feature.pop("correlograms") for feature in features]
+            #[feature.pop("correlogram_seq") for feature in features]
             for feature in features:
                 feature["vowel_labels"] = [feature["vowel_labels"]]
                 feature["speaker_vt_factor"] = [feature["speaker_vt_factor"]]

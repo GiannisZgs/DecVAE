@@ -214,6 +214,8 @@ def save_latent_representation(latent_results, factors, fixed_factors, store_dir
     with gzip.open(fname, "wt") as f:
         json.dump(data_dict, f)
         
+    print(f"Saved latent representation {latent_name}_varying_{varying_factor}_fixed_{fixed_factor} to:", fname)
+    
     return fname
 
 def average_latent_representations(latent_spaces, factor_labels, experiment_type):

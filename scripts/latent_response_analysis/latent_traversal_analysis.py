@@ -424,7 +424,7 @@ def main():
     elif "vowels" in data_training_args.dataset_name:
         to_use = {
             'fixed_vowels': 'train', 
-            'fixed_speakers': 'validation', 
+            'fixed_speakers': 'train' #'validation', 
         }
 
     try:
@@ -550,7 +550,9 @@ def main():
                 f'{data_training_args.dataset_name}_{decomp_args.decomp_to_perform}_transfer_from_{data_training_args.transfer_from}_{data_training_args.experiment}',
                 betas[1:] + "_NoC" + str(decomp_args.NoC) + "_" + data_training_args.input_type + "_" + model_type,
                 checkpoint)
-    else:
+    elif "vowels" in data_training_args.dataset_name:
+        store_dir = os.path.join(data_training_args.output_dir,checkpoint)
+    elif "timit" in data_training_args.dataset_name:
         store_dir = os.path.join(data_training_args.output_dir,
                 f'{data_training_args.dataset_name}_{decomp_args.decomp_to_perform}_{data_training_args.experiment}',
                 betas[1:] + "_NoC" + str(decomp_args.NoC) + "_" + data_training_args.input_type + "_" + model_type,
