@@ -113,45 +113,51 @@ def prepare_traversal_dataset(batch, feature_extractor, data_training_args, deco
     elif "vowels" in data_training_args.dataset_name:
         #This is only correct for RFS/stride = 5/4
         vowels_list = batch["vowel"]
-        num_vowels = len(vowels_list)
-        vowel_sample_len = int(len(sample["array"]) / num_vowels)
-        vowel_dur = vowel_sample_len / sample["sampling_rate"]
-        #vowel_interp_factor = int(vowel_dur / decomp_args.receptive_field)
-        #start_vowels = [i*vowel_sample_len for i in range(num_vowels)]
-        stop_vowels = [i*vowel_sample_len + vowel_sample_len for i in range(num_vowels)]
-        vowels_interp = []
-        overlap_mask = []
-        c = 0 #step_phonemes
-        phoneme_just_ended = False
-        for i in range(mask_indices_seq_length):
-            frame_start = start_indices[i]
-            frame_stop = stop_indices[i]   
+        if type(vowels_list) == int:
+            num_vowels = 1
+            batch["vowel_labels"] = batch["vowel"]
+            batch["speaker_vt_factor"] = batch["speaker_vocal_tract_factor"]
+            batch['overlap_mask'] = np.array([False])
+        elif type(vowels_list) == list:
+            num_vowels = len(vowels_list)
+            vowel_sample_len = int(len(sample["array"]) / num_vowels)
+            vowel_dur = vowel_sample_len / sample["sampling_rate"]
+            #vowel_interp_factor = int(vowel_dur / decomp_args.receptive_field)
+            #start_vowels = [i*vowel_sample_len for i in range(num_vowels)]
+            stop_vowels = [i*vowel_sample_len + vowel_sample_len for i in range(num_vowels)]
+            vowels_interp = []
+            overlap_mask = []
+            c = 0 #step_phonemes
+            phoneme_just_ended = False
+            for i in range(mask_indices_seq_length):
+                frame_start = start_indices[i]
+                frame_stop = stop_indices[i]   
 
-            if frame_stop-frame_len/2 <= stop_vowels[c]: 
-                phoneme_just_ended = False
-                vowels_interp.append(vowels_list[c])
-            else:
-                "End of phoneme, phoneme changes"
-                phoneme_just_ended = True
-                c+=1
-                if c == len(vowels_list):
-                    "End of indices or end of utterance"
-                    vowels_interp.append(vowels_list[c-1])
-                    overlap_mask.append(False)
-                    break
-                else:
+                if frame_stop-frame_len/2 <= stop_vowels[c]: 
+                    phoneme_just_ended = False
                     vowels_interp.append(vowels_list[c])
-            if frame_stop >= stop_vowels[c]:
-                if vowels_list[c] == vowels_list[c+1]:
-                    overlap_mask.append(False)
                 else:
-                    overlap_mask.append(True)
-            else:
-                overlap_mask.append(False)
+                    "End of phoneme, phoneme changes"
+                    phoneme_just_ended = True
+                    c+=1
+                    if c == len(vowels_list):
+                        "End of indices or end of utterance"
+                        vowels_interp.append(vowels_list[c-1])
+                        overlap_mask.append(False)
+                        break
+                    else:
+                        vowels_interp.append(vowels_list[c])
+                if frame_stop >= stop_vowels[c]:
+                    if vowels_list[c] == vowels_list[c+1]:
+                        overlap_mask.append(False)
+                    else:
+                        overlap_mask.append(True)
+                else:
+                    overlap_mask.append(False)
 
-        batch["vowel_labels"] = np.array((vowels_interp))
-        batch["speaker_vt_factor"] = batch["speaker_vocal_tract_factor"]
-        batch['overlap_mask'] = np.array(overlap_mask)
+            batch["vowel_labels"] = np.array((vowels_interp))
+            batch["speaker_vt_factor"] = batch["speaker_vocal_tract_factor"]
+            batch['overlap_mask'] = np.array(overlap_mask)
     
     elif data_training_args.dataset_name == "VOC_ALS":
         "A single audio file has the same labels"
