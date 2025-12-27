@@ -45,9 +45,9 @@ plot_margin <- margin(8, 8, 8, 8)
 
 parent_save_dir <-  file.path('..','supplementary_figures','SI_fig_18_vowels_latent_traversals')
 experiment <- 'fixed_speakers_free_vowels_5' #fixed_vowels_5, fixed_speakers_free_vowels_5
-model <- 'vae1D_FC_mel' #'vae1D_FC_mel', 'ewt', 'vmd', 'filter', 'emd'
+model <- 'ewt' #'vae1D_FC_mel', 'ewt', 'vmd', 'filter', 'emd'
 beta <- '1'
-ckp <- 'training_ckp_epoch_109' 
+ckp <- 'training_ckp_epoch_110_min_val_loss' 
 latent <- 'X'
 
 if (grepl("fixed_speakers", experiment)) {

@@ -14,7 +14,7 @@ from args_configs.data_training_args import DataTrainingArguments, DataTrainingA
 from models.dec_vae import DecVAEForPreTraining
 from transformers.models.wav2vec2.modeling_wav2vec2 import _compute_mask_indices, _sample_negative_indices
 from feature_extraction import extract_mel_spectrogram, extract_fft_psd
-
+import numpy as np
 
 @dataclass
 class DataCollatorForDecVAEPretraining:
@@ -206,6 +206,225 @@ class DataCollatorForDecVAEPretraining:
         )
         batch["mask_time_indices"] = torch.tensor(mask_time_indices, dtype=torch.long, device=device)
         batch["sampled_negative_indices"] = torch.tensor(sampled_negative_indices, dtype=torch.long, device=device)
+
+        return batch
+
+
+@dataclass
+class DataCollatorForDecVAEPretraining_NoFeatureExtraction:
+    """
+    Data collator that will dynamically pad the inputs received, extract features, align them with labels and variables, 
+    and prepare masked indices for self-supervised pretraining of a Variational Decomposition Autoencoder.
+
+    Args:
+        model (:class:`~DecVAEForPreTraining`):
+            The DecVAE model used for pretraining. The data collator needs to have access
+            to config and ``_get_feat_extract_output_lengths`` function for correct padding.
+        feature_extractor (:class:`~transformers.Wav2Vec2FeatureExtractor`):
+            The processor used for proccessing the data - used to pad the data.
+        dataset_name (:obj:`str`): The name of the dataset being used.
+        model_args (:class:`~args_configs.model_args.ModelArguments`): The model arguments dictionary with necessary model-related parameters.
+        data_training_args (:class:`~args_configs.data_training_args.DataTrainingArguments`): The data training arguments dictionary 
+            with necessary data-related parameters.
+        config (:class:`~config_files.configuration_decVAE.DecVAEConfig`): The DecVAE configuration object.
+        model_name (:obj:`str`, `optional`, defaults to :obj:`"DecVAE"`): The name of the model being used.
+        input_type (:obj:`str`, `optional`, defaults to :obj:`"waveform"`): The type of input features - 
+            waveform, mel filterbank features, or fft features.
+        padding (:obj:`bool`, :obj:`str` or :class:`~transformers.tokenization_utils_base.PaddingStrategy`, `optional`, defaults to :obj:`True`):
+            Select a strategy to pad the returned sequences (according to the model's padding side and padding index)
+            among:
+            * :obj:`True` or :obj:`'longest'`: Pad to the longest sequence in the batch (or no padding if only a single
+              sequence if provided).
+            * :obj:`'max_length'`: Pad to a maximum length specified with the argument :obj:`max_length` or to the
+              maximum acceptable input length for the model if that argument is not provided.
+            * :obj:`False` or :obj:`'do_not_pad'` (default): No padding (i.e., can output a batch with sequences of
+              different lengths).
+        pad_to_multiple_of (:obj:`int`, `optional`):
+            If set will pad the sequence to a multiple of the provided value.
+            This is especially useful to enable the use of Tensor Cores on NVIDIA hardware with compute capability >=
+            7.5 (Volta).
+        mask_time_prob (:obj:`float`, `optional`, defaults to :obj:`0.65`):
+            Percentage (between 0 and 1) of all feature vectors along the time axis which will be masked for the contrastive task.
+            Note that overlap between masked sequences may decrease the actual percentage of masked vectors.
+            The default value is taken from the original wav2vec 2.0 article (https://arxiv.org/abs/2006.11477),
+            and results in about 49 percent of each sequence being masked on average.
+        mask_time_length (:obj:`int`, `optional`, defaults to :obj:`10`):
+            Length of each vector mask span to mask along the time axis in the contrastive task. The default value
+            originates from the original wav2vec 2.0 article and corresponds to the ``M`` variable mentioned there.
+    """
+
+    model: DecVAEForPreTraining
+    feature_extractor: Wav2Vec2FeatureExtractor
+    dataset_name: str 
+    model_args: ModelArguments
+    data_training_args: DataTrainingArguments
+    config: DecVAEConfig
+    model_name: str = "DecVAE"
+    input_type: str = "waveform"
+    padding: Union[bool, str] = "longest"
+    pad_to_multiple_of: Optional[int] = None
+    mask_time_prob: Optional[float] = 0.65
+    mask_time_length: Optional[int] = 10
+    
+    def __call__(self, features: List[Dict[str, Union[List[int], torch.Tensor]]]) -> Dict[str, torch.Tensor]:
+
+        if self.dataset_name in ["timit", "iemocap"]:
+            if self.dataset_name == "timit":
+                phonemes39 = [feature.pop("phonemes39") for feature in features]
+                phonemes48 = [feature.pop("phonemes48") for feature in features]
+            elif self.dataset_name == "iemocap":
+                phonemes = [feature.pop("phonemes") for feature in features]
+                emotions = [feature.pop("emotion_labels") for feature in features]
+            start_phonemes = [feature.pop("start_phonemes") for feature in features]
+            stop_phonemes = [feature.pop("stop_phonemes") for feature in features]
+            overlap_mask = [feature.pop("overlap_mask") for feature in features]
+            speaker_id = [feature.pop("speaker") for feature in features]
+            if self.dataset_name != "iemocap":
+                [feature.pop("words") for feature in features];
+
+        batch = self.feature_extractor.pad(
+            features,
+            padding=self.padding,
+            pad_to_multiple_of=self.pad_to_multiple_of,
+            return_tensors="pt",
+        )
+
+        device = batch["input_values"].device
+        batch_size = batch["input_values"].shape[0]
+                  
+        mask_indices_seq_length = batch["input_values"].shape[-2]
+        batch["attention_mask"] = batch["attention_mask"].squeeze(1)
+        
+        # make sure masked sequence length is a Python scalar
+        mask_indices_seq_length = int(mask_indices_seq_length) #length of z in embedding space after feature encoder
+
+        if self.dataset_name in ["timit", "iemocap"]:
+            "First pad to match length of largest phoneme vector"
+            "Then concatenate to match the length of the input"
+            if self.dataset_name == "timit":
+                batch["phonemes39"] = pad_sequence([torch.tensor(phone, dtype=torch.long, device=device) for phone in phonemes39],batch_first=True, padding_value=-100) 
+                batch["phonemes39"] = torch.cat(((batch["phonemes39"],-100*torch.ones((batch["phonemes39"].shape[0],mask_indices_seq_length-batch["phonemes39"].shape[1])))),dim=1)
+
+                batch["phonemes48"] = pad_sequence([torch.tensor(phone, dtype=torch.long, device=device) for phone in phonemes48],batch_first=True, padding_value=-100) 
+                batch["phonemes48"] = torch.cat(((batch["phonemes48"],-100*torch.ones((batch["phonemes48"].shape[0],mask_indices_seq_length-batch["phonemes48"].shape[1])))),dim=1)
+            elif self.dataset_name == "iemocap":
+                batch["phonemes"] = pad_sequence([torch.tensor(phone, dtype=torch.long, device=device) for phone in phonemes],batch_first=True, padding_value=-100) 
+                batch["phonemes"] = torch.cat(((batch["phonemes"],-100*torch.ones((batch["phonemes"].shape[0],mask_indices_seq_length-batch["phonemes"].shape[1])))),dim=1)
+
+                batch["emotion"] = torch.tensor(emotions, dtype=torch.long, device=device)
+            
+            batch["start_phonemes"] = pad_sequence([torch.tensor(phone, dtype=torch.long, device=device) for phone in start_phonemes],batch_first=True, padding_value=-100) 
+            batch["start_phonemes"] = torch.cat(((batch["start_phonemes"],-100*torch.ones((batch["start_phonemes"].shape[0],mask_indices_seq_length-batch["start_phonemes"].shape[1])))),dim=1)
+
+            batch["stop_phonemes"] = pad_sequence([torch.tensor(phone, dtype=torch.long, device=device) for phone in stop_phonemes],batch_first=True, padding_value=-100) 
+            batch["stop_phonemes"] = torch.cat(((batch["stop_phonemes"],-100*torch.ones((batch["stop_phonemes"].shape[0],mask_indices_seq_length-batch["stop_phonemes"].shape[1])))),dim=1)
+
+            batch["overlap_mask"] = pad_sequence([torch.tensor(phone, dtype=torch.long, device=device) for phone in overlap_mask],batch_first=True, padding_value=-100) 
+            batch["overlap_mask"] = torch.cat(((batch["overlap_mask"],-100*torch.ones((batch["overlap_mask"].shape[0],mask_indices_seq_length-batch["overlap_mask"].shape[1])))),dim=1)
+
+            batch["speaker_id"] = torch.tensor(speaker_id, dtype=torch.long, device=device)
+        
+
+        # make sure that no loss is computed on padded inputs
+        if batch.get("attention_mask") is not None:
+            # compute real output lengths according to convolution formula
+            batch["sub_attention_mask"] = self.model._get_feature_vector_attention_mask(
+                mask_indices_seq_length, batch["attention_mask"]
+            )
+
+        "If last frame is not whole, it will be discarded as per our convolution configuration"
+        if self.dataset_name == "iemocap":
+            for i in range(batch["phonemes"].shape[0]):
+                if (batch["phonemes"][i] != -100).sum() - batch["sub_attention_mask"][i].sum() == 1:
+                    batch['phonemes'][i, batch["sub_attention_mask"][i].sum()] = -100
+                    batch['overlap_mask'][i, batch["sub_attention_mask"][i].sum()] = -100
+            assert (batch["phonemes"] != -100).sum() - batch["sub_attention_mask"].sum() == 0, "The number of phonemes does not match the number of frames in the input sequence. Please check your data preprocessing."
+        #Sub-attention mask denotes the length of each segment in the batch - Useful in the case that the 
+        #inputs are not padded
+        features_shape = (batch_size, mask_indices_seq_length) #features in embedding space - z
+
+        # sample randomly masked indices
+        mask_time_indices = _compute_mask_indices(
+            features_shape,
+            self.mask_time_prob,
+            self.mask_time_length,
+            attention_mask=batch.get("sub_attention_mask"),
+        )
+
+        # sample negative indices
+        sampled_negative_indices = _sample_negative_indices(
+            features_shape,
+            self.model.config.num_negatives,
+            mask_time_indices=mask_time_indices,
+        )
+        batch["mask_time_indices"] = torch.tensor(mask_time_indices, dtype=torch.long, device=device)
+        batch["sampled_negative_indices"] = torch.tensor(sampled_negative_indices, dtype=torch.long, device=device)
+
+        "Normalize mel features"
+        if self.input_type == 'mel':
+            if self.data_training_args.mel_norm is None:
+                pass
+            else:
+                hop_length = int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops)
+                feature_length = batch["input_values"].shape[-1]
+                for o in range(batch["input_values"].shape[1]):
+                    if self.data_training_args.mel_norm == "global":
+                        "Global per component normalization"
+                        mean = np.mean(batch["input_values"][:,o,...])
+                        std = np.std(batch["input_values"][:,o,...]) + 1e-9
+                        batch["input_values"][:,o,...] = (batch["input_values"][:,o,...] - mean) / std
+                    elif self.data_training_args.mel_norm == 'minmax':
+                        # Global min-max scaling to [-1, 1]
+                        min_val = np.min(batch["input_values"][:,o,...])
+                        max_val = np.max(batch["input_values"][:,o,...])
+                        batch["input_values"][:,o,...] = 2 * (batch["input_values"][:,o,...] - min_val) / (max_val - min_val + 1e-9) - 1
+                    elif self.data_training_args.mel_norm == 'minmax0_1':
+                        # Global min-max scaling to [0, 1]
+                        min_val = np.min(batch["input_values"][:,o,...])
+                        max_val = np.max(batch["input_values"][:,o,...])
+                        batch["input_values"][:,o,...] = (batch["input_values"][:,o,...] - min_val) / (max_val - min_val + 1e-9)
+
+                    "Normalize and concatenate over time axis"
+                    if len(batch["input_values"][:,o,...].shape) == 2 and (batch["input_values"][:,o,...].shape[0] != self.data_training_args.n_mels and batch["input_values"][:,o,...].shape[1] != feature_length//hop_length):
+                        pass
+                        #batch["input_values"][:,o,...] = torch.from_numpy(batch["input_values"][:,o,...]).to(device)
+                    elif len(batch["input_values"][:,o,...].shape) == 2:
+                        pass                            
+                    else:
+                        #batch["input_values"][:,o,...] = torch.from_numpy(batch["input_values"][:,o,...]).reshape(batch["input_values"][:,o,...].shape[0],batch["input_values"][:,o,...].shape[1],-1).to(device)
+                        mel_spectrogram_db_flat = batch["input_values"][:,o,...].reshape(batch["input_values"][:,o,...].shape[0],-1)
+                        batch["input_values"][:,o,...] = (batch["input_values"][:,o,...] - torch.mean(mel_spectrogram_db_flat,axis=-1)[:,None,None]) / (torch.std(mel_spectrogram_db_flat,axis=-1) + 1e-9)[:,None,None]
+                        batch["input_values"][:,o,...] = batch["input_values"][..., :self.config.receptive_field*self.config.fs]
+
+
+                    if batch.get("input_seq_values") is not None:
+                        if self.data_training_args.mel_norm == "global":
+                            "Global per component normalization"
+                            mean = np.mean(batch["input_seq_values"][:,o,...])
+                            std = np.std(batch["input_seq_values"][:,o,...]) + 1e-9
+                            batch["input_seq_values"][:,o,...] = (batch["input_seq_values"][:,o,...] - mean) / std
+                        elif self.data_training_args.mel_norm == 'minmax':
+                            # Global min-max scaling to [-1, 1]
+                            min_val = np.min(batch["input_seq_values"][:,o,...])
+                            max_val = np.max(batch["input_seq_values"][:,o,...])
+                            batch["input_seq_values"][:,o,...] = 2 * (batch["input_seq_values"][:,o,...] - min_val) / (max_val - min_val + 1e-9) - 1
+                        elif self.data_training_args.mel_norm == 'minmax0_1':
+                            # Global min-max scaling to [0, 1]
+                            min_val = np.min(batch["input_seq_values"][:,o,...])
+                            max_val = np.max(batch["input_seq_values"][:,o,...])
+                            batch["input_seq_values"][:,o,...] = (batch["input_seq_values"][:,o,...] - min_val) / (max_val - min_val + 1e-9)
+
+                        "Normalize and concatenate over time axis"
+                        if len(batch["input_seq_values"][:,o,...].shape) == 2 and (batch["input_seq_values"][:,o,...].shape[0] != self.data_training_args.n_mels and batch["input_seq_values"][:,o,...].shape[1] != feature_length//hop_length):
+                            #batch["input_seq_values"][:,o,...] = torch.from_numpy(batch["input_seq_values"][:,o,...]).to(device)
+                            pass
+                        elif len(batch["input_seq_values"][:,o,...].shape) == 2:
+                            pass                            
+                        else:
+                            #batch["input_values"][:,o,...] = torch.from_numpy(batch["input_values"][:,o,...]).reshape(batch["input_values"][:,o,...].shape[0],batch["input_values"][:,o,...].shape[1],-1).to(device)
+                            mel_spectrogram_db_flat = batch["input_seq_values"][:,o,...].reshape(batch["input_seq_values"][:,o,...].shape[0],-1)
+                            batch["input_seq_values"][:,o,...] = (batch["input_seq_values"][:,o,...] - torch.mean(mel_spectrogram_db_flat,axis=-1)[:,None,None]) / (torch.std(mel_spectrogram_db_flat,axis=-1) + 1e-9)[:,None,None]
+                            batch["input_seq_values"][:,o,...] = batch["input_seq_values"][..., :self.config.receptive_field*self.config.fs]
 
         return batch
 

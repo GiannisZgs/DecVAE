@@ -16,4 +16,4 @@
 
 from .latent_traversal_preprocessing import prepare_traversal_dataset
 from .quality_assessment_preprocessing import prepare_data_for_quality_assessment
-from .pretraining_preprocessing import prepare_pretraining_dataset
+from .pretraining_preprocessing import prepare_pretraining_dataset, prepare_extract_features_pretraining_dataset

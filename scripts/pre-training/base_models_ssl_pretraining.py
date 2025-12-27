@@ -25,9 +25,9 @@ if project_root not in sys.path:
     print(f"Added {project_root} to Python path")
 
 from models import DecVAEForPreTraining
-from data_collation import DataCollatorForDecVAEPretraining
+from data_collation import DataCollatorForDecVAEPretraining#, DataCollatorForDecVAEPretraining_NoFeatureExtraction
 from config_files import DecVAEConfig
-from data_preprocessing import prepare_pretraining_dataset
+from data_preprocessing import prepare_pretraining_dataset, prepare_extract_features_pretraining_dataset
 from args_configs import ModelArguments, DataTrainingArguments, DecompositionArguments, TrainingObjectiveArguments
 from dataset_loading import load_timit, load_sim_vowels, load_iemocap, load_voc_als
 from utils import (
@@ -241,13 +241,13 @@ def main():
           
             vectorized_datasets = raw_datasets.map(
                 partial(
-                    prepare_pretraining_dataset,
+                    prepare_extract_features_pretraining_dataset,
                     feature_extractor=feature_extractor,
                     data_training_args=data_training_args,
                     decomp_args=decomp_args,
                     config=config,
                     max_length=max_length
-                ),
+                ),#prepare_pretraining_dataset
                 num_proc=data_training_args.preprocessing_num_workers,
                 remove_columns=raw_datasets["train"].column_names,
                 load_from_cache_file=True,
@@ -286,7 +286,7 @@ def main():
     mask_time_prob = config.mask_time_prob if model_args.mask_time_prob is None else model_args.mask_time_prob
     mask_time_length = config.mask_time_length if model_args.mask_time_length is None else model_args.mask_time_length
 
-    data_collator = DataCollatorForDecVAEPretraining(
+    data_collator = DataCollatorForDecVAEPretraining_NoFeatureExtraction(
         model=model,
         feature_extractor=feature_extractor,
         model_args=model_args,
@@ -297,7 +297,7 @@ def main():
         mask_time_prob=mask_time_prob,
         mask_time_length=mask_time_length,
         dataset_name = data_training_args.dataset_name,
-    )
+    ) #DataCollatorForDecVAEPretraining
 
     train_dataloader = DataLoader(
         vectorized_datasets['train'],

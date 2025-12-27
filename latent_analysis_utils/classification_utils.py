@@ -494,7 +494,7 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                         num_clusters, num_clusters, rs=rs,
                         feature_method='None', feat_params=feature_methods['None']
                     )
-                elif data_training_args.dataset_name in ["scRNA_seq", "VOC_ALS", "iemocap"]:
+                elif data_training_args.dataset_name in ["VOC_ALS", "iemocap"]:
                     if y_test is None:
                         results = _unsup_evaluation(
                             X, y[target], X_test, y_test, 
@@ -541,13 +541,13 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                         'Fit_Time': fit_time
                     })
 
-                    print(f"Random state {rs}: Train Acc.={train_accuracy:.4f}, Test Acc.={test_accuracy:.4f}")
-                    print(f"Random state {rs}: Train F1 Score= {train_f1_score:.4f}, Test F1 Score= {test_f1_score:.4f}")
-                    print(f"Random state {rs}: Train F1 Score Macro= {train_f1_score_macro:.4f}, Test F1 Score Macro= {test_f1_score_macro:.4f}")
+                    print(f"KMeans - Random state {rs}: Train Acc.={train_accuracy:.4f}, Test Acc.={test_accuracy:.4f}")
+                    print(f"KMeans - Random state {rs}: Train F1 Score= {train_f1_score:.4f}, Test F1 Score= {test_f1_score:.4f}")
+                    print(f"KMeans - Random state {rs}: Train F1 Score Macro= {train_f1_score_macro:.4f}, Test F1 Score Macro= {test_f1_score_macro:.4f}")
                     if 'emotion' in target:
                         all_results[-1]['Train_Unweighted_Accuracy'] = unweighted_train_accuracy
                         all_results[-1]['Test_Unweighted_Accuracy'] = unweighted_test_accuracy
-                        print(f"Random state {rs}: Train Unweighted Acc.={unweighted_train_accuracy:.4f}, Test Unweighted Acc.={unweighted_test_accuracy:.4f}")
+                        print(f"KMeans - Random state {rs}: Train Unweighted Acc.={unweighted_train_accuracy:.4f}, Test Unweighted Acc.={unweighted_test_accuracy:.4f}")
                 else:
                     all_results.append({
                         'Random_State': rs,
@@ -557,12 +557,12 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                         'Fit_Time': fit_time
                     })
 
-                    print(f"Random state {rs}: Train Acc.={train_accuracy:.4f}")
-                    print(f"Random state {rs}: Train F1 Score= {train_f1_score:.4f}")
-                    print(f"Random state {rs}: Train F1 Score Macro= {train_f1_score_macro:.4f}")
+                    print(f"KMeans - Random state {rs}: Train Acc.={train_accuracy:.4f}")
+                    print(f"KMeans - Random state {rs}: Train F1 Score= {train_f1_score:.4f}")
+                    print(f"KMeans - Random state {rs}: Train F1 Score Macro= {train_f1_score_macro:.4f}")
                     if 'emotion' in target:
                         all_results[-1]['Train_Unweighted_Accuracy'] = unweighted_train_accuracy
-                        print(f"Random state {rs}: Train Unweighted Acc.={unweighted_train_accuracy:.4f}")
+                        print(f"KMeans - Random state {rs}: Train Unweighted Acc.={unweighted_train_accuracy:.4f}")
             
             # Calculate statistics
             results_df = pd.DataFrame(all_results)
@@ -682,7 +682,6 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                 num_clusters_test = len(np.unique(y_test_unsup))
 
         "Perform unsupervised evaluation with multiple random states"
-        #data_training_args.random_states_unsup = 50
         if "timit" in data_training_args.dataset_name and 'phoneme48' in target:
             unsup_stats = perform_unsupervised_evaluation_with_multiple_seeds(
                 X, X_test, y_for_map, y_test_for_map, 

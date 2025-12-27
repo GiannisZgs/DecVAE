@@ -405,7 +405,10 @@ class DecVAELayerNormConvLayer(nn.Module):
         if (conv_features != conv_features).any():
             print("Nan in layer norm input")
 
-        conv_features = self.layer_norm(conv_features,mask_time_indices)
+        if self.config.stride == self.config.receptive_field:
+            conv_features = self.layer_norm(conv_features)
+        else:
+            conv_features = self.layer_norm(conv_features,mask_time_indices)
     
         if (conv_features != conv_features).any():
             print("Nan inside layer norm")
@@ -502,7 +505,7 @@ class DecVAEFeatureEncoder(nn.Module):
         elif config.feat_extract_norm == "layer" or config.feat_extract_norm == "batch":
             if config.stride == config.receptive_field:
                 conv_layers = [
-                    Wav2Vec2LayerNormConvLayer(config, layer_id=i) for i in range(config.num_feat_extract_layers)
+                    DecVAELayerNormConvLayer(config, layer_id=i) for i in range(config.num_feat_extract_layers)
                 ]
             else:
                 conv_layers = [
@@ -542,7 +545,7 @@ class DecVAEFeatureEncoder(nn.Module):
         
         for n in range(levels):
             if self.config.stride == self.config.receptive_field:
-                decomp_level = hidden_states[n,:,0,...][:,None]
+                decomp_level = hidden_states[n,:,0,...] #[:,None]
             else:
                 decomp_level = hidden_states[n,0,...]
             
@@ -589,8 +592,8 @@ class DecVAEFeatureEncoder(nn.Module):
             if 'new_hidden_states' not in locals():     
                 new_hidden_states = torch.zeros((hidden_states.shape[0],decomp_level.shape[0],decomp_level.shape[1],decomp_level.shape[2],1),dtype=hidden_states.dtype,device=hidden_states.device)
 
-            if self.config.stride == self.config.receptive_field:
-                decomp_level = decomp_level.unsqueeze(-1)
+            #if self.config.stride == self.config.receptive_field:
+            #    decomp_level = decomp_level.unsqueeze(-1)
             new_hidden_states[n,...] = decomp_level
 
         return new_hidden_states 
