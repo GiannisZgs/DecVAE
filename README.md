@@ -1,6 +1,7 @@
 # Variational Decomposition Autoencoders (DecVAE)
 
 **Codebase repository for paper: "Variational decomposition autoencoding improves disentanglement of latent representations"** 
+
 (Preprint at [https://arxiv.org/abs/2601.06844](https://arxiv.org/abs/2601.06844))
 
 Understanding the structure of complex, nonstationary, high-dimensional time-evolving signals is a central
