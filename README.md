@@ -225,7 +225,7 @@ The exact same process as above can be followed to pre-train and evaluate VAE-ba
 ## Citation
 If you use this codebase in your research, please cite our paper and this codebase:
 
-Ziogas I.N., Al Shehhi A., Khandoker A.H., and Hadjileontiadis L.J. Variational decomposition autoencoding improves disentanglement of latent representations. 
+Ziogas I.N., Al Shehhi A., Khandoker A.H., and Hadjileontiadis L.J. “Variational decomposition autoencoding improves disentanglement of latent representations”. Preprint at [https://arxiv.org/abs/2601.06844](https://arxiv.org/abs/2601.06844) (2026)
 
 Ziogas I.N., Al Shehhi A., Khandoker A.H., and Hadjileontiadis L.J. Variational decomposition autoencoding improves disentanglement of latent representations. *Zenodo* [![DOI](https://zenodo.org/badge/1094562708.svg)](https://doi.org/10.5281/zenodo.17773434)
 
