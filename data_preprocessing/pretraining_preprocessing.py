@@ -326,7 +326,7 @@ def prepare_extract_features_pretraining_dataset(batch, feature_extractor, data_
     apply processing steps to single sequences (batch) for preparing data for latent traversal visualization.
     This function loads the .arrow format data, interpolates labels to match the network output length,
     preprocesses the audio (normalization, resampling, truncation/padding), performs decomposition using the DecompositionModule,
-    and returns all necessary data in batched format per sample-sequence.
+    extracts mel filterbank or FFT features (optional), and returns all necessary data in batched format per sample-sequence.
 
     Args:
         batch: A single sample from the .arrow Dataset containing audio and labels.
