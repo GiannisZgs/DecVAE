@@ -14,6 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .latent_traversal_preprocessing import prepare_traversal_dataset
+from .latent_traversal_preprocessing import prepare_traversal_dataset, prepare_extract_features_traversal_dataset, prepare_extract_features_vae_traversal_dataset
 from .quality_assessment_preprocessing import prepare_data_for_quality_assessment
-from .pretraining_preprocessing import prepare_pretraining_dataset, prepare_extract_features_pretraining_dataset
+from .pretraining_preprocessing import prepare_pretraining_dataset, prepare_extract_features_pretraining_dataset, prepare_extract_features_vae_pretraining_dataset

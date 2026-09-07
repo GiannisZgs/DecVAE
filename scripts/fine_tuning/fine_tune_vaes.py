@@ -34,8 +34,8 @@ from transformers import (
 )
 
 from models import VAE_1D, VAE_1D_FC, DecompositionModule
-from data_collation import DataCollatorForVAE1D_SSL_FineTuning
-from data_preprocessing import prepare_pretraining_dataset
+from data_collation import DataCollatorForVAE1D_SSL_FineTuning_NoFeatureExtraction
+from data_preprocessing import prepare_extract_features_vae_pretraining_dataset
 from config_files import DecVAEConfig
 from utils import (
     parse_args, 
@@ -46,6 +46,7 @@ from utils import (
     EarlyStopping, 
     get_grad_norm
 )
+from utils.cache_utils import build_cache_file_names, build_map_cache_file_names
 
 from args_configs import ModelArguments, DataTrainingArguments, DecompositionArguments, TrainingObjectiveArguments
 from dataset_loading import load_librispeech, load_timit, load_sim_vowels, load_iemocap, load_voc_als, load_scRNA_seq
@@ -68,8 +69,6 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm.auto import tqdm
 import time
 import json
-from feature_extraction.mel_features import extract_mel_spectrogram
-from feature_extraction import extract_fft_psd
 
 #os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 #os.environ["TORCH_USE_CUDA_DSA"] = "1"
@@ -132,25 +131,7 @@ def main():
     accelerator.wait_for_everyone()
 
     "load cached preprocessed files"
-    if data_training_args.preprocessing_num_workers is not None and data_training_args.preprocessing_num_workers > 1:
-        cache_file_names = {"train": [data_training_args.train_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)],
-                "validation": [data_training_args.validation_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-        }
-        if data_training_args.test_cache_file_name is not None:
-            cache_file_names["test"] = [data_training_args.test_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-        if data_training_args.dev_cache_file_name is not None:
-            cache_file_names["dev"] = [data_training_args.dev_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-    elif data_training_args.preprocessing_num_workers == 1 or data_training_args.preprocessing_num_workers is None:
-        cache_file_names = {"train": [data_training_args.train_cache_file_name],
-                "validation": [data_training_args.validation_cache_file_name]
-        }
-        if data_training_args.test_cache_file_name is not None:
-            cache_file_names["test"] = [data_training_args.test_cache_file_name]
-        if data_training_args.dev_cache_file_name is not None:
-            cache_file_names["dev"] = [data_training_args.dev_cache_file_name]
-    else:
-        cache_file_names = {"train": None,
-                            "validation":None}
+    cache_file_names = build_cache_file_names(data_training_args, model_args.vae_input_type)
     
     "preprocess the datasets including loading the audio, resampling and normalization"
     feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(model_args.model_name_or_path)
@@ -219,25 +200,7 @@ def main():
         min_length = int(data_training_args.min_duration_in_seconds * feature_extractor.sampling_rate)
 
         "load via mapped files via path"
-        cache_file_names = None 
-        if data_training_args.dataset_name == "VOC_ALS" and not data_training_args.train_val_test_split:
-            cache_file_names = {"train": data_training_args.train_cache_file_name,
-                                "validation": data_training_args.validation_cache_file_name,
-                                "dev": data_training_args.dev_cache_file_name,
-                                "test": data_training_args.test_cache_file_name
-                            }
-        else:
-            if data_training_args.train_cache_file_name is not None:
-                cache_file_names = {"train": data_training_args.train_cache_file_name, 
-                                    "validation": data_training_args.validation_cache_file_name}
-            if data_training_args.test_cache_file_name is not None:
-                cache_file_names = {**cache_file_names,
-                                **{"test": data_training_args.test_cache_file_name}
-                                }
-            if data_training_args.dev_cache_file_name is not None:
-                cache_file_names = {**cache_file_names,
-                                **{"dev": data_training_args.dev_cache_file_name}
-                                }
+        cache_file_names = build_map_cache_file_names(data_training_args, model_args.vae_input_type)
         
         "make the directory that will store the decomposition"
         os.makedirs(os.path.dirname(cache_file_names['train']), exist_ok=True)
@@ -247,8 +210,9 @@ def main():
 
             vectorized_datasets = raw_datasets.map(
                 partial(
-                    prepare_pretraining_dataset,
+                    prepare_extract_features_vae_pretraining_dataset,
                     feature_extractor=feature_extractor,
+                    model_args=model_args,
                     data_training_args=data_training_args,
                     decomp_args=decomp_args,
                     config=config,
@@ -401,10 +365,11 @@ def main():
     mask_time_prob = config.mask_time_prob if model_args.mask_time_prob is None else model_args.mask_time_prob
     mask_time_length = config.mask_time_length if model_args.mask_time_length is None else model_args.mask_time_length
 
-    data_collator = DataCollatorForVAE1D_SSL_FineTuning(
+    data_collator = DataCollatorForVAE1D_SSL_FineTuning_NoFeatureExtraction(
         model=model,
         model_name=model_args.vae_type,
         feature_extractor=feature_extractor,
+        model_args=model_args,
         pad_to_multiple_of=data_training_args.pad_to_multiple_of,
         mask_time_prob=mask_time_prob,
         mask_time_length=mask_time_length,
@@ -538,45 +503,7 @@ def main():
             "Forward pass"
 
             if model_args.vae_type == "VAE_1D_FC":
-                if model_args.vae_input_type == "waveform":
-                    batch["input_values"] = batch["input_values"][:,0,:,:]
-                elif model_args.vae_input_type == "mel":
-                    batch["input_values"], _ = extract_mel_spectrogram(batch["input_values"][:,0,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
-                elif model_args.vae_input_type == "fft":              
-                    "Apply fft using welch's power spectral density estimation"
-                    batch["input_values"], _ = extract_fft_psd(
-                        batch, 
-                        normalize=True, #self.data_training_args.mel_norm,
-                        device=batch["input_values"].device
-                    )
-
                 batch["attention_mask"] = sub_attention_mask
-            elif model_args.vae_type == "VAE_1D_FC_seq":
-                "If input will be mel filterbank features, split sequence in frames"
-                if model_args.vae_input_type == 'mel':
-                    frame_len = int(batch["input_values"].shape[-1]/10) #int(config.receptive_field*config.fs)
-                    frames = batch["input_values"].shape[-1]/frame_len
-                    new_input_seq_values = torch.zeros((batch_size,int(frames),frame_len),device = batch["input_values"].device)
-                    for o in range(batch_size):
-                        sequence = batch["input_values"][o,:].clone()
-                        for f in range(int(frames)):
-                            framed_sequence = sequence[f*frame_len:(f+1)*frame_len]
-                            new_input_seq_values[o,f,:] = framed_sequence.clone()
-                    batch["input_values"] = new_input_seq_values.clone()
-
-                    for o in range(batch_size):
-                        batch["input_values"][o,...], _ = extract_mel_spectrogram(batch["input_values"][o,...].unsqueeze(0),config.fs,n_mels=data_training_args.n_mels, n_fft=int(data_training_args.mel_hops*config.receptive_field*config.fs), hop_length=int(((config.receptive_field*config.fs) + 1)/data_training_args.mel_hops), normalize=data_training_args.mel_norm, feature_length=frame_len)
-                       
-                    "Flatten sequence - Reverse framing"
-                    batch["input_values"] = batch["input_values"].reshape(batch["input_values"].shape[0],-1)
-                
-                elif model_args.vae_input_type == "fft":              
-                    "Apply fft using welch's power spectral density estimation"
-                    batch["input_values"], _ = extract_fft_psd(
-                        batch, 
-                        normalize=True, #self.data_training_args.mel_norm,
-                        device=batch["input_values"].device
-                    )
 
             outputs = model(**batch)
             z_mean, z_logvar, z, recon_x, vae_loss, recon_loss, kld_loss = outputs
@@ -759,44 +686,6 @@ def main():
                 batch["global_step"] = completed_steps
                 num_losses = batch["mask_time_indices"].sum()
 
-                if model_args.vae_type == "VAE_1D_FC":
-                    if model_args.vae_input_type == "waveform":
-                        batch["input_values"] = batch["input_values"][:,0,:,:]
-                    elif model_args.vae_input_type == "mel":
-                        batch["input_values"], _ = extract_mel_spectrogram(batch["input_values"][:,0,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
-                    elif model_args.vae_input_type == "fft": 
-                        "Apply fft using welch's power spectral density estimation"      
-                        batch["input_values"], _ = extract_fft_psd(
-                            batch, 
-                            normalize=True, #self.data_training_args.mel_norm,
-                            device=batch["input_values"].device
-                        )
-                elif model_args.vae_type == "VAE_1D_FC_seq":
-                    "If input will be mel filterbank features, split sequence in frames"
-                    if model_args.vae_input_type == 'mel':
-                        frame_len = int(batch["input_values"].shape[-1]/10) #int(config.receptive_field*config.fs)
-                        frames = batch["input_values"].shape[-1]/frame_len
-                        new_input_seq_values = torch.zeros((batch_size,int(frames),frame_len),device = batch["input_values"].device)
-                        for o in range(batch_size):
-                            sequence = batch["input_values"][o,:].clone()
-                            for f in range(int(frames)):
-                                framed_sequence = sequence[f*frame_len:(f+1)*frame_len]
-                                new_input_seq_values[o,f,:] = framed_sequence.clone()
-                        batch["input_values"] = new_input_seq_values.clone()
-
-                        for o in range(batch_size):
-                            batch["input_values"][o,...], _ = extract_mel_spectrogram(batch["input_values"][o,...].unsqueeze(0),config.fs,n_mels=data_training_args.n_mels, n_fft=int(data_training_args.mel_hops*config.receptive_field*config.fs), hop_length=int(((config.receptive_field*config.fs) + 1)/data_training_args.mel_hops), normalize=data_training_args.mel_norm, feature_length=frame_len)
-                        
-                        "Flatten sequence - Reverse framing"
-                        batch["input_values"] = batch["input_values"].reshape(batch["input_values"].shape[0],-1)
-                    elif model_args.vae_input_type == "fft": 
-                        "Apply fft using welch's power spectral density estimation"      
-                        batch["input_values"], _ = extract_fft_psd(
-                            batch, 
-                            normalize=True, #self.data_training_args.mel_norm,
-                            device=batch["input_values"].device
-                        )
-                        
                 outputs = model(**batch)
                 z_mean, z_logvar, z, recon_x, vae_loss, recon_loss, kld_loss = outputs
                 attention_mask = batch["attention_mask"]

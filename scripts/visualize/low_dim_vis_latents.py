@@ -39,9 +39,10 @@ if project_root not in sys.path:
 
 from models import DecVAEForPreTraining
 from config_files import DecVAEConfig
-from data_collation import DataCollatorForDecVAELatentVisualization
+from data_collation import DataCollatorForDecVAELatentVisualization_NoFeatureExtraction
 from args_configs import ModelArgumentsPost, DataTrainingArgumentsPost, DecompositionArguments, TrainingObjectiveArguments, VisualizationsArguments
 from utils.misc import parse_args, debugger_is_active, extract_epoch
+from utils.cache_utils import build_cache_file_names
 
 import transformers
 from transformers import (
@@ -124,22 +125,7 @@ def main():
     if data_training_args.train_cache_file_name is None or data_training_args.validation_cache_file_name is None:
         raise ValueError("cache_file_names is not defined. Please define it in the config file.") 
     else:
-        if data_training_args.preprocessing_num_workers is None or data_training_args.preprocessing_num_workers == 1:
-            cache_file_names = {"train": [data_training_args.train_cache_file_name],
-                "validation": [data_training_args.validation_cache_file_name]
-            }
-            if data_training_args.test_cache_file_name is not None:
-                cache_file_names["test"] = [data_training_args.test_cache_file_name]
-            if data_training_args.dev_cache_file_name is not None:
-                cache_file_names["dev"] = [data_training_args.dev_cache_file_name]
-        else:   
-            cache_file_names = {"train": [data_training_args.train_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)],
-                    "validation": [data_training_args.validation_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-            }
-            if data_training_args.test_cache_file_name is not None:
-                cache_file_names["test"] = [data_training_args.test_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-            if data_training_args.dev_cache_file_name is not None:
-                cache_file_names["dev"] = [data_training_args.dev_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
+        cache_file_names = build_cache_file_names(data_training_args, data_training_args.input_type)
     
     "Load model with hyperparameters"    
     model_args.max_duration_in_seconds = data_training_args.max_duration_in_seconds 
@@ -262,7 +248,7 @@ def main():
         mask_time_prob = config.mask_time_prob if model_args.mask_time_prob is None else model_args.mask_time_prob
         mask_time_length = config.mask_time_length if model_args.mask_time_length is None else model_args.mask_time_length
 
-        data_collator = DataCollatorForDecVAELatentVisualization(
+        data_collator = DataCollatorForDecVAELatentVisualization_NoFeatureExtraction(
             model=representation_function,
             feature_extractor=feature_extractor,
             model_args=model_args,

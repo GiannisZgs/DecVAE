@@ -30,12 +30,13 @@ if project_root not in sys.path:
     print(f"Added {project_root} to Python path")
     
 from models import VAE_1D, VAE_1D_FC, DecompositionModule
-from data_collation import DataCollatorForVAE1DLatentTraversals
-from data_preprocessing import prepare_traversal_dataset
+from data_collation import DataCollatorForVAE1DLatentTraversals_NoFeatureExtraction
+from data_preprocessing import prepare_extract_features_vae_traversal_dataset
 from config_files import DecVAEConfig
 from args_configs import ModelArgumentsPost, DataTrainingArgumentsPost, DecompositionArguments, TrainingObjectiveArguments
 from dataset_loading import load_traversal_subset_timit, load_sim_vowels, load_traversal_subset_iemocap, load_traversal_subset_voc_als
 from utils import parse_args, debugger_is_active, extract_epoch
+from utils.cache_utils import build_cache_file_names
 from latent_analysis_utils import (
     calculate_variance_dimensions,
     save_latent_representation,
@@ -148,45 +149,7 @@ def main():
     min_length = int(data_training_args.min_duration_in_seconds * feature_extractor.sampling_rate)
 
     "load cached preprocessed files"
-    if data_training_args.preprocessing_num_workers is not None and data_training_args.preprocessing_num_workers > 1:
-        if 'iemocap' in data_training_args.dataset_name:
-            cache_file_names = {"fixed_emotion_phoneme_speaker": [data_training_args.train_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)],
-                    "fixed_phoneme_emotion": [data_training_args.validation_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)],
-                    "fixed_speaker_emotion": [data_training_args.dev_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)],
-                    "fixed_nonverbal_emotion": [data_training_args.test_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-            }
-        else:
-            if "vowels" in data_training_args.dataset_name:
-                cache_file_names = {"train": [data_training_args.train_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]}
-            else:
-                cache_file_names = {"train": [data_training_args.train_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)],
-                        "validation": [data_training_args.validation_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-                }
-            if data_training_args.test_cache_file_name is not None:
-                cache_file_names["test"] = [data_training_args.test_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-            if data_training_args.dev_cache_file_name is not None:
-                cache_file_names["dev"] = [data_training_args.dev_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-    elif data_training_args.preprocessing_num_workers == 1 or data_training_args.preprocessing_num_workers is None:
-        if 'iemocap' in data_training_args.dataset_name:
-            cache_file_names = {"fixed_emotion_phoneme_speaker": [data_training_args.train_cache_file_name],
-                    "fixed_phoneme_emotion": [data_training_args.validation_cache_file_name],
-                    "fixed_speaker_emotion": [data_training_args.dev_cache_file_name],
-                    "fixed_nonverbal_emotion": [data_training_args.test_cache_file_name]
-            }
-        else:
-            if "vowels" in data_training_args.dataset_name:
-                cache_file_names = {"train": [data_training_args.train_cache_file_name]}
-            else: 
-                cache_file_names = {"train": [data_training_args.train_cache_file_name],
-                        "validation": [data_training_args.validation_cache_file_name]
-                }
-            if data_training_args.test_cache_file_name is not None:
-                cache_file_names["test"] = [data_training_args.test_cache_file_name]
-            if data_training_args.dev_cache_file_name is not None:
-                cache_file_names["dev"] = [data_training_args.dev_cache_file_name]
-    else:
-        cache_file_names = {"train": None,
-                            "validation":None}
+    cache_file_names = build_cache_file_names(data_training_args, model_args.vae_input_type)
 
     "Load model with hyperparameters" 
     model_args.max_duration_in_seconds = data_training_args.max_duration_in_seconds   
@@ -298,7 +261,8 @@ def main():
 
             vectorized_datasets = raw_datasets.map(
                 partial(
-                    prepare_traversal_dataset,
+                    prepare_extract_features_vae_traversal_dataset,
+                    model_args=model_args,
                     feature_extractor=feature_extractor,
                     data_training_args=data_training_args,
                     decomp_args=decomp_args,
@@ -360,9 +324,6 @@ def main():
 
     if data_training_args.experiment == "z_size":
         checkpoint_dir += "_z" + str(model_args.vae_z_dim)
-
-    "Make sure to obtain all the samples in the dataset"
-    assert config.max_frames_per_batch == "all"
 
     checkpoint_files = [f for f in os.listdir(checkpoint_dir) if 'config' not in f]
     checkpoint_files.append('epoch_-01')
@@ -436,10 +397,11 @@ def main():
     mask_time_prob = config.mask_time_prob if model_args.mask_time_prob is None else model_args.mask_time_prob
     mask_time_length = config.mask_time_length if model_args.mask_time_length is None else model_args.mask_time_length
 
-    data_collator = DataCollatorForVAE1DLatentTraversals(
+    data_collator = DataCollatorForVAE1DLatentTraversals_NoFeatureExtraction(
         model=representation_function,
         model_name=model_args.vae_type,
         feature_extractor=feature_extractor,
+        model_args=model_args,
         dataset_name = data_training_args.dataset_name,
         pad_to_multiple_of=data_training_args.pad_to_multiple_of,
         mask_time_prob=mask_time_prob,

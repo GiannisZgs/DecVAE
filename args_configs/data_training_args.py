@@ -341,6 +341,10 @@ class DataTrainingArgumentsPost:
         default=None,
         metadata={"help": "Path to the data directory."},
     )
+    train_val_test_split: bool = field(
+        default=False,
+        metadata={"help": "Whether the dataset is split into train, validation and test files."},
+    )
     cache_dir: Optional[str] = field(
         default=None,
         metadata={"help": "Where do you want to store the downloaded datasets."},

@@ -25,7 +25,7 @@ if project_root not in sys.path:
     print(f"Added {project_root} to Python path")
 
 from models import DecVAEForPreTraining
-from data_collation import DataCollatorForDecVAEPretraining#, DataCollatorForDecVAEPretraining_NoFeatureExtraction
+from data_collation import DataCollatorForDecVAEPretraining, DataCollatorForDecVAEPretraining_NoFeatureExtraction
 from config_files import DecVAEConfig
 from data_preprocessing import prepare_pretraining_dataset, prepare_extract_features_pretraining_dataset
 from args_configs import ModelArguments, DataTrainingArguments, DecompositionArguments, TrainingObjectiveArguments
@@ -38,6 +38,7 @@ from utils import (
     EarlyStopping, 
     get_grad_norm
 )
+from utils.cache_utils import build_cache_file_names, build_map_cache_file_names
 import transformers
 from transformers import (
     AdamW,
@@ -125,25 +126,7 @@ def main():
     accelerator.wait_for_everyone()
 
     "load cached preprocessed files"
-    if data_training_args.preprocessing_num_workers is not None and data_training_args.preprocessing_num_workers > 1:
-        cache_file_names = {"train": [data_training_args.train_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)],
-                "validation": [data_training_args.validation_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-        }
-        if data_training_args.test_cache_file_name is not None:
-            cache_file_names["test"] = [data_training_args.test_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-        if data_training_args.dev_cache_file_name is not None:
-            cache_file_names["dev"] = [data_training_args.dev_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-    elif data_training_args.preprocessing_num_workers == 1 or data_training_args.preprocessing_num_workers is None:
-        cache_file_names = {"train": [data_training_args.train_cache_file_name],
-                "validation": [data_training_args.validation_cache_file_name]
-        }
-        if data_training_args.test_cache_file_name is not None:
-            cache_file_names["test"] = [data_training_args.test_cache_file_name]
-        if data_training_args.dev_cache_file_name is not None:
-            cache_file_names["dev"] = [data_training_args.dev_cache_file_name]
-    else:
-        cache_file_names = {"train": None,
-                            "validation":None}
+    cache_file_names = build_cache_file_names(data_training_args, data_training_args.input_type)
     
     "preprocess the datasets including loading the audio, resampling and normalization"
     feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(model_args.model_name_or_path)
@@ -213,25 +196,7 @@ def main():
         min_length = int(data_training_args.min_duration_in_seconds * feature_extractor.sampling_rate)
 
         "load via mapped files via path"
-        cache_file_names = None 
-        if data_training_args.dataset_name == "VOC_ALS" and not data_training_args.train_val_test_split:
-            cache_file_names = {"train": data_training_args.train_cache_file_name,
-                                "validation": data_training_args.validation_cache_file_name,
-                                "dev": data_training_args.dev_cache_file_name,
-                                "test": data_training_args.test_cache_file_name
-                            }
-        else:
-            if data_training_args.train_cache_file_name is not None:
-                cache_file_names = {"train": data_training_args.train_cache_file_name, 
-                                    "validation": data_training_args.validation_cache_file_name}
-            if data_training_args.test_cache_file_name is not None:
-                cache_file_names = {**cache_file_names,
-                                **{"test": data_training_args.test_cache_file_name}
-                                }
-            if data_training_args.dev_cache_file_name is not None:
-                cache_file_names = {**cache_file_names,
-                                **{"dev": data_training_args.dev_cache_file_name}
-                                }
+        cache_file_names = build_map_cache_file_names(data_training_args, data_training_args.input_type)
 
         "make the directory that will store the decomposition"
         os.makedirs(os.path.dirname(cache_file_names['train']), exist_ok=True)
@@ -252,7 +217,7 @@ def main():
                 remove_columns=raw_datasets["train"].column_names,
                 load_from_cache_file=True,
                 cache_file_names=cache_file_names,
-            )
+            ) #prepare_pretraining_dataset
 
             if min_length > 0.0:
                 vectorized_datasets = vectorized_datasets.filter(
@@ -297,7 +262,7 @@ def main():
         mask_time_prob=mask_time_prob,
         mask_time_length=mask_time_length,
         dataset_name = data_training_args.dataset_name,
-    ) #DataCollatorForDecVAEPretraining
+    ) #DataCollatorForDecVAEPretraining 
 
     train_dataloader = DataLoader(
         vectorized_datasets['train'],
@@ -405,7 +370,11 @@ def main():
     "save config with all parameters for the model + the run"
     if debugger_is_active():
         destination_config = os.path.join(data_training_args.output_dir, JSON_FILE_NAME_MANUAL)
-        shutil.copy(JSON_FILE_NAME_MANUAL, destination_config)
+        try:
+            shutil.copy(JSON_FILE_NAME_MANUAL, destination_config)
+        except FileNotFoundError:
+            destination_config = os.path.join(data_training_args.output_dir, os.path.basename(JSON_FILE_NAME_MANUAL))
+            shutil.copy(JSON_FILE_NAME_MANUAL, destination_config)
     else:
         destination_config = os.path.join(data_training_args.output_dir,os.path.basename(args.config_file)) 
         shutil.copy(args.config_file,destination_config)

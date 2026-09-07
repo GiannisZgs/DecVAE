@@ -132,8 +132,10 @@ Running the pre-training requires:
 - The raw dataset.
 
 Running the pre-training will yield:
-1) the decomposed inputs, saved in the directories specified by the ```train~validation~test_cache_file_name``` parameters.
+1) the decomposed inputs together with the extracted input features (mel or FFT), saved in the directories specified by the ```train~validation~test_cache_file_name``` parameters.
 2) model ```.safetensors``` checkpoints that will be saved in the directory specified by the ```output_dir``` argument in the ```config_file```, along with the current ```config_file``` used.
+
+Feature extraction happens once, at the preprocessing step, and the features are cached along with the decomposition; normalization is applied afterwards in the data collator, where the whole batch is visible. Because the cached features depend on the feature extraction parameters, DecVAE and VAE-based models write to **separate** cache directories - the VAE configs point at the ```*_for_vae``` variants (e.g. ```../vowels_decomposed_for_vae/```). Deleting a cache directory forces the decomposition and feature extraction to be recomputed.
 
 Some important DecVAE pre-training parameters for the SimVowels dataset include:
 - ```with_wandb: bool``` : whether to use Weights & Biases logger to monitor training.
@@ -223,6 +225,8 @@ Use the calculated results to create figures with R through the scripts at ```vi
 
 ### Benchmarks and more datasets
 The exact same process as above can be followed to pre-train and evaluate VAE-based models and ICA/PCA/kPCA, as well as DecVAE models for the other 3 supported datasets (TIMIT, VOC-ALS, IEMOCAP). The exact same scripts and config_files exist for VAEs. For details and parameters check ```args_configs``` and ```examples```.
+
+VAE-based models extract their mel features with their own settings (```n_mels_vae```, ```mel_norm_vae```), which differ from the DecVAE ones (```n_mels```, ```mel_hops```, ```mel_norm```). Their cache directories are therefore kept separate from the DecVAE ones, as described in the pre-training section above.
 
 ## Citation
 If you use this codebase in your research, please cite our paper and this codebase:

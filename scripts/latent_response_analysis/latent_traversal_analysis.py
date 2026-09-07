@@ -32,12 +32,13 @@ if project_root not in sys.path:
 
 from models import DecVAEForPreTraining, DecompositionModule
 from config_files import DecVAEConfig
-from data_collation import DataCollatorForDecVAELatentTraversals
-from data_preprocessing import prepare_traversal_dataset
+from data_collation import DataCollatorForDecVAELatentTraversals_NoFeatureExtraction
+from data_preprocessing import prepare_extract_features_traversal_dataset
 
 from args_configs import ModelArgumentsPost, DataTrainingArgumentsPost, DecompositionArguments, TrainingObjectiveArguments
 from dataset_loading import load_traversal_subset_timit, load_sim_vowels, load_traversal_subset_iemocap, load_traversal_subset_voc_als
 from utils import parse_args, debugger_is_active, extract_epoch
+from utils.cache_utils import build_cache_file_names
 from latent_analysis_utils import (
     calculate_variance_dimensions,
     save_latent_representation,
@@ -138,31 +139,7 @@ def main():
     accelerator.wait_for_everyone()
     
     "load cached preprocessed files"
-    if data_training_args.preprocessing_num_workers is not None and data_training_args.preprocessing_num_workers > 1:
-        if "vowels" in data_training_args.dataset_name:
-            cache_file_names = {"train": [data_training_args.train_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]}
-        else:
-            cache_file_names = {"train": [data_training_args.train_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)],
-                    "validation": [data_training_args.validation_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-            }
-        if data_training_args.test_cache_file_name is not None:
-            cache_file_names["test"] = [data_training_args.test_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-        if data_training_args.dev_cache_file_name is not None:
-            cache_file_names["dev"] = [data_training_args.dev_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-    elif data_training_args.preprocessing_num_workers == 1 or data_training_args.preprocessing_num_workers is None:
-        if "vowels" in data_training_args.dataset_name:
-            cache_file_names = {"train": [data_training_args.train_cache_file_name]}
-        else: 
-            cache_file_names = {"train": [data_training_args.train_cache_file_name],
-                    "validation": [data_training_args.validation_cache_file_name]
-            }
-        if data_training_args.test_cache_file_name is not None:
-            cache_file_names["test"] = [data_training_args.test_cache_file_name]
-        if data_training_args.dev_cache_file_name is not None:
-            cache_file_names["dev"] = [data_training_args.dev_cache_file_name]
-    else:
-        cache_file_names = {"train": None,
-                            "validation":None}
+    cache_file_names = build_cache_file_names(data_training_args, data_training_args.input_type)
     
     "preprocess the datasets including loading the audio, resampling and normalization"
     feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(model_args.model_name_or_path)
@@ -282,7 +259,7 @@ def main():
 
             vectorized_datasets = raw_datasets.map(
                 partial(
-                    prepare_traversal_dataset,
+                    prepare_extract_features_traversal_dataset,
                     feature_extractor=feature_extractor,
                     data_training_args=data_training_args,
                     decomp_args=decomp_args,
@@ -391,7 +368,7 @@ def main():
     mask_time_prob = config.mask_time_prob if model_args.mask_time_prob is None else model_args.mask_time_prob
     mask_time_length = config.mask_time_length if model_args.mask_time_length is None else model_args.mask_time_length
 
-    data_collator = DataCollatorForDecVAELatentTraversals(
+    data_collator = DataCollatorForDecVAELatentTraversals_NoFeatureExtraction(
         model=representation_function,
         feature_extractor=feature_extractor,
         model_args=model_args,

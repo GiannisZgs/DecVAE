@@ -19,6 +19,7 @@ from data_preprocessing import prepare_data_for_quality_assessment
 from args_configs import ModelArguments, DataTrainingArguments, DecompositionArguments, TrainingObjectiveArguments
 from dataset_loading import load_timit, load_sim_vowels
 from utils.misc import parse_args, debugger_is_active
+from utils.cache_utils import build_cache_file_names, build_map_cache_file_names
 from utils.audio_handling import find_speaker_gender
 
 import transformers
@@ -104,25 +105,7 @@ def main():
     accelerator.wait_for_everyone()
 
     "load cached preprocessed files"
-    if data_training_args.preprocessing_num_workers is not None and data_training_args.preprocessing_num_workers > 1:
-        cache_file_names = {"train": [data_training_args.train_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)],
-                "validation": [data_training_args.validation_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-        }
-        if data_training_args.test_cache_file_name is not None:
-            cache_file_names["test"] = [data_training_args.test_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-        if data_training_args.dev_cache_file_name is not None:
-            cache_file_names["dev"] = [data_training_args.dev_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-    elif data_training_args.preprocessing_num_workers == 1 or data_training_args.preprocessing_num_workers is None:
-        cache_file_names = {"train": [data_training_args.train_cache_file_name],
-                "validation": [data_training_args.validation_cache_file_name]
-        }
-        if data_training_args.test_cache_file_name is not None:
-            cache_file_names["test"] = [data_training_args.test_cache_file_name]
-        if data_training_args.dev_cache_file_name is not None:
-            cache_file_names["dev"] = [data_training_args.dev_cache_file_name]
-    else:
-        cache_file_names = {"train": None,
-                            "validation":None}
+    cache_file_names = build_cache_file_names(data_training_args, data_training_args.input_type)
     
     "preprocess the datasets including loading the audio, resampling and normalization"
     feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(model_args.model_name_or_path)
@@ -192,18 +175,7 @@ def main():
         min_length = int(data_training_args.min_duration_in_seconds * feature_extractor.sampling_rate)
 
         "load via mapped files via path"
-        cache_file_names = None 
-        if data_training_args.train_cache_file_name is not None:
-            cache_file_names = {"train": data_training_args.train_cache_file_name, 
-                                "validation": data_training_args.validation_cache_file_name}
-        if data_training_args.test_cache_file_name is not None:
-            cache_file_names = {**cache_file_names,
-                            **{"test": data_training_args.test_cache_file_name}
-                            }
-        if data_training_args.dev_cache_file_name is not None:
-            cache_file_names = {**cache_file_names,
-                            **{"dev": data_training_args.dev_cache_file_name}
-                            }
+        cache_file_names = build_map_cache_file_names(data_training_args, data_training_args.input_type)
 
         "load audio files into numpy arrays"
         with accelerator.main_process_first():

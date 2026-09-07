@@ -26,8 +26,8 @@ if project_root not in sys.path:
     
 from models import DecVAEForPreTraining
 from config_files import DecVAEConfig
-from data_collation import DataCollatorForDecVAE_SSL_FineTuning
-from data_preprocessing import prepare_pretraining_dataset
+from data_collation import DataCollatorForDecVAE_SSL_FineTuning_NoFeatureExtraction
+from data_preprocessing import prepare_extract_features_pretraining_dataset
 from args_configs import ModelArguments, DataTrainingArguments, DecompositionArguments, TrainingObjectiveArguments
 from dataset_loading import load_timit, load_sim_vowels, load_iemocap, load_voc_als
 from utils import (
@@ -39,6 +39,7 @@ from utils import (
     EarlyStopping, 
     get_grad_norm
 )
+from utils.cache_utils import build_cache_file_names, build_map_cache_file_names
 import transformers
 from transformers import (
     AdamW,
@@ -125,25 +126,7 @@ def main():
     accelerator.wait_for_everyone()
 
     "load cached preprocessed files"
-    if data_training_args.preprocessing_num_workers is not None and data_training_args.preprocessing_num_workers > 1:
-        cache_file_names = {"train": [data_training_args.train_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)],
-                "validation": [data_training_args.validation_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-        }
-        if data_training_args.test_cache_file_name is not None:
-            cache_file_names["test"] = [data_training_args.test_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-        if data_training_args.dev_cache_file_name is not None:
-            cache_file_names["dev"] = [data_training_args.dev_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-    elif data_training_args.preprocessing_num_workers == 1 or data_training_args.preprocessing_num_workers is None:
-        cache_file_names = {"train": [data_training_args.train_cache_file_name],
-                "validation": [data_training_args.validation_cache_file_name]
-        }
-        if data_training_args.test_cache_file_name is not None:
-            cache_file_names["test"] = [data_training_args.test_cache_file_name]
-        if data_training_args.dev_cache_file_name is not None:
-            cache_file_names["dev"] = [data_training_args.dev_cache_file_name]
-    else:
-        cache_file_names = {"train": None,
-                            "validation":None}
+    cache_file_names = build_cache_file_names(data_training_args, data_training_args.input_type)
     
     "preprocess the datasets including loading the audio, resampling and normalization"
     feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(model_args.model_name_or_path)
@@ -212,25 +195,7 @@ def main():
         min_length = int(data_training_args.min_duration_in_seconds * feature_extractor.sampling_rate)
 
         "load via mapped files via path"
-        cache_file_names = None 
-        if data_training_args.dataset_name == "VOC_ALS" and not data_training_args.train_val_test_split:
-            cache_file_names = {"train": data_training_args.train_cache_file_name,
-                                "validation": data_training_args.validation_cache_file_name,
-                                "dev": data_training_args.dev_cache_file_name,
-                                "test": data_training_args.test_cache_file_name
-                            }
-        else:
-            if data_training_args.train_cache_file_name is not None:
-                cache_file_names = {"train": data_training_args.train_cache_file_name, 
-                                    "validation": data_training_args.validation_cache_file_name}
-            if data_training_args.test_cache_file_name is not None:
-                cache_file_names = {**cache_file_names,
-                                **{"test": data_training_args.test_cache_file_name}
-                                }
-            if data_training_args.dev_cache_file_name is not None:
-                cache_file_names = {**cache_file_names,
-                                **{"dev": data_training_args.dev_cache_file_name}
-                                }
+        cache_file_names = build_map_cache_file_names(data_training_args, data_training_args.input_type)
 
         "make the directory that will store the decomposition"
         os.makedirs(os.path.dirname(cache_file_names['train']), exist_ok=True)
@@ -240,7 +205,7 @@ def main():
 
             vectorized_datasets = raw_datasets.map(
                 partial(
-                    prepare_pretraining_dataset,
+                    prepare_extract_features_pretraining_dataset,
                     feature_extractor=feature_extractor,
                     data_training_args=data_training_args,
                     decomp_args=decomp_args,
@@ -344,7 +309,7 @@ def main():
     mask_time_prob = config.mask_time_prob if model_args.mask_time_prob is None else model_args.mask_time_prob
     mask_time_length = config.mask_time_length if model_args.mask_time_length is None else model_args.mask_time_length
 
-    data_collator = DataCollatorForDecVAE_SSL_FineTuning(
+    data_collator = DataCollatorForDecVAE_SSL_FineTuning_NoFeatureExtraction(
         model=model,
         feature_extractor=feature_extractor,
         model_args=model_args,

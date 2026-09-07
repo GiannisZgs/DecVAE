@@ -30,10 +30,11 @@ if project_root not in sys.path:
     print(f"Added {project_root} to Python path")
 
 from models import VAE_1D, VAE_1D_FC
-from data_collation import DataCollatorForVAE1DLatentPostAnalysis
+from data_collation import DataCollatorForVAE1DLatentPostAnalysis_NoFeatureExtraction
 from config_files import DecVAEConfig
 from args_configs import ModelArgumentsPost, DataTrainingArgumentsPost, DecompositionArguments, TrainingObjectiveArguments, VisualizationsArguments
 from utils.misc import parse_args, debugger_is_active, extract_epoch
+from utils.cache_utils import build_cache_file_names
 from feature_extraction import extract_mel_spectrogram
 
 import transformers
@@ -76,7 +77,7 @@ logger = get_logger(__name__)
 
 def main():
     "Parse the arguments"       
-    parser = HfArgumentParser((ModelArgumentsPost, TrainingObjectiveArguments, DecompositionArguments, DataTrainingArgumentsPost))
+    parser = HfArgumentParser((ModelArgumentsPost, TrainingObjectiveArguments, DecompositionArguments, DataTrainingArgumentsPost, VisualizationsArguments))
     if debugger_is_active():
         model_args, training_obj_args, decomp_args, data_training_args, vis_args = parser.parse_json_file(json_file=JSON_FILE_NAME_MANUAL)
     else:
@@ -122,22 +123,7 @@ def main():
     if data_training_args.train_cache_file_name is None or data_training_args.validation_cache_file_name is None:
         raise ValueError("cache_file_names is not defined. Please define it in the config file.") 
     else:
-        if data_training_args.preprocessing_num_workers is None or data_training_args.preprocessing_num_workers == 1:
-            cache_file_names = {"train": [data_training_args.train_cache_file_name],
-                "validation": [data_training_args.validation_cache_file_name]
-            }
-            if data_training_args.test_cache_file_name is not None:
-                cache_file_names["test"] = [data_training_args.test_cache_file_name]
-            if data_training_args.dev_cache_file_name is not None:
-                cache_file_names["dev"] = [data_training_args.dev_cache_file_name]
-        else:   
-            cache_file_names = {"train": [data_training_args.train_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)],
-                    "validation": [data_training_args.validation_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-            }
-            if data_training_args.test_cache_file_name is not None:
-                cache_file_names["test"] = [data_training_args.test_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
-            if data_training_args.dev_cache_file_name is not None:
-                cache_file_names["dev"] = [data_training_args.dev_cache_file_name[:-6] + "_0000"+str(i)+"_of_0000"+str(data_training_args.preprocessing_num_workers)+".arrow" for i in range(data_training_args.preprocessing_num_workers)]
+        cache_file_names = build_cache_file_names(data_training_args, model_args.vae_input_type)
     
     "Load model with hyperparameters"    
     model_args.max_duration_in_seconds = data_training_args.max_duration_in_seconds 
@@ -210,9 +196,6 @@ def main():
         os.makedirs(projection_dir, exist_ok=True)
 
     BETAS = beta[1:]
-
-    "Make sure to obtain all the samples in the dataset"
-    assert config.max_frames_per_batch == "all"
 
     checkpoint_files = [f for f in os.listdir(checkpoint_dir) if 'config' not in f]
     checkpoint_files.append('epoch_-01')
@@ -313,10 +296,11 @@ def main():
         mask_time_prob = config.mask_time_prob if model_args.mask_time_prob is None else model_args.mask_time_prob
         mask_time_length = config.mask_time_length if model_args.mask_time_length is None else model_args.mask_time_length
 
-        data_collator = DataCollatorForVAE1DLatentPostAnalysis(
+        data_collator = DataCollatorForVAE1DLatentPostAnalysis_NoFeatureExtraction(
             model=representation_function,
             model_name=model_args.vae_type,
             feature_extractor=feature_extractor,
+            model_args=model_args,
             dataset_name = data_training_args.dataset_name,
             pad_to_multiple_of=data_training_args.pad_to_multiple_of,
             mask_time_prob=mask_time_prob,
@@ -438,32 +422,38 @@ def main():
                                 raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with waveform_all input type")
                         elif model_args.vae_input_type == "mel_ocs":
                             if model_args.raw_mels:
-                                new_input_values = torch.zeros((batch["input_values"].shape[0],batch["input_values"].shape[1]-1,batch["input_values"].shape[2],model_args.n_mels_vae),dtype=batch["input_values"].dtype,device=batch["input_values"].device)
-                                for i in range(1,config.NoC+1):
-                                    new_input_values[:,i-1,...], _ = extract_mel_spectrogram(batch["input_values"][:,i,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
+                                "Features were extracted at preprocessing and normalized in the collator - take the components without the original signal"
+                                new_input_values = batch["input_values"][:,1:,...]
                                 batch["input_values"] = new_input_values.transpose(1,2).reshape(batch_size,new_input_values.shape[2],-1)
                             else:
                                 raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with mel_ocs input type")
                         elif model_args.vae_input_type == "mel_all":
                             if model_args.raw_mels:
-                                new_input_values = torch.zeros((batch["input_values"].shape[0],batch["input_values"].shape[1],batch["input_values"].shape[2],model_args.n_mels_vae),dtype=batch["input_values"].dtype,device=batch["input_values"].device)
-                                for i in range(0,config.NoC+1):
-                                    new_input_values[:,i,...], _ = extract_mel_spectrogram(batch["input_values"][:,i,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
+                                "Features were extracted at preprocessing and normalized in the collator - take the components including the original signal"
+                                new_input_values = batch["input_values"]
                                 batch["input_values"] = new_input_values.transpose(1,2).reshape(batch_size,new_input_values.shape[2],-1)
                             else:
                                 raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with mel_all input type")
                         elif model_args.vae_input_type == "waveform":
                             batch["input_values"] = batch["input_values"][:,0,:,:]
                         elif model_args.vae_input_type == "mel":
-                            batch["input_values"], _ = extract_mel_spectrogram(batch["input_values"][:,0,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
+                            batch["input_values"] = batch["input_values"][:,0,:,:]
 
                         batch["attention_mask"] = sub_attention_mask
                     
                     if model_args.raw_mels and not model_args.vae_type == "VAE_1D_FC":
                         if model_args.vae_input_type == "mel":
-                            batch["input_values"] = extract_mel_spectrogram(batch["input_values"],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs)+1, normalize=model_args.mel_norm_vae)
+                            "Extracted here, unlike the VAE_1D_FC branch above: pre-training has no mel path for the"
+                            "non-fully-connected models - their in_size is max_length and the training loop has no"
+                            "branch for them - so no mel features exist in the cache to reuse. Safe because raw_mels"
+                            "means the model is never called."
+                            batch["input_values"], _ = extract_mel_spectrogram(batch["input_values"],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs)+1, normalize=model_args.mel_norm_vae)
                         elif model_args.vae_input_type == "waveform":
-                            batch["input_values"] = batch["input_values"][:,0,:,:]
+                            "The collator already selected the signal for the non-VAE_1D_FC models - it hands over"
+                            "the sequence of component 0, so there is no component axis left to index here."
+                            "This previously read: batch['input_values'] = batch['input_values'][:,0,:,:] , which was"
+                            "copy-pasted from the VAE_1D_FC branch above and indexes a 4D tensor that is only 2D here."
+                            pass
                         batch["attention_mask"] = sub_attention_mask
 
                     if not model_args.raw_mels:
@@ -600,32 +590,38 @@ def main():
                                 raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with waveform_all input type")
                         elif model_args.vae_input_type == "mel_ocs":
                             if model_args.raw_mels:
-                                new_input_values = torch.zeros((batch["input_values"].shape[0],batch["input_values"].shape[1]-1,batch["input_values"].shape[2],model_args.n_mels_vae),dtype=batch["input_values"].dtype,device=batch["input_values"].device)
-                                for i in range(1,config.NoC+1):
-                                    new_input_values[:,i-1,...], _ = extract_mel_spectrogram(batch["input_values"][:,i,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
+                                "Features were extracted at preprocessing and normalized in the collator - take the components without the original signal"
+                                new_input_values = batch["input_values"][:,1:,...]
                                 batch["input_values"] = new_input_values.transpose(1,2).reshape(batch_size,new_input_values.shape[2],-1)
                             else:
                                 raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with mel_ocs input type")
                         elif model_args.vae_input_type == "mel_all":
                             if model_args.raw_mels:
-                                new_input_values = torch.zeros((batch["input_values"].shape[0],batch["input_values"].shape[1],batch["input_values"].shape[2],model_args.n_mels_vae),dtype=batch["input_values"].dtype,device=batch["input_values"].device)
-                                for i in range(0,config.NoC+1):
-                                    new_input_values[:,i,...], _ = extract_mel_spectrogram(batch["input_values"][:,i,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
+                                "Features were extracted at preprocessing and normalized in the collator - take the components including the original signal"
+                                new_input_values = batch["input_values"]
                                 batch["input_values"] = new_input_values.transpose(1,2).reshape(batch_size,new_input_values.shape[2],-1)
                             else:
                                 raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with mel_all input type")
                         elif model_args.vae_input_type == "waveform":
                             batch["input_values"] = batch["input_values"][:,0,:,:]
                         elif model_args.vae_input_type == "mel":
-                            batch["input_values"], _ = extract_mel_spectrogram(batch["input_values"][:,0,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
+                            batch["input_values"] = batch["input_values"][:,0,:,:]
 
                         batch["attention_mask"] = sub_attention_mask
                     
                     if model_args.raw_mels and not model_args.vae_type == "VAE_1D_FC":
                         if model_args.vae_input_type == "mel":
-                            batch["input_values"] = extract_mel_spectrogram(batch["input_values"],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs)+1, normalize=model_args.mel_norm_vae)
+                            "Extracted here, unlike the VAE_1D_FC branch above: pre-training has no mel path for the"
+                            "non-fully-connected models - their in_size is max_length and the training loop has no"
+                            "branch for them - so no mel features exist in the cache to reuse. Safe because raw_mels"
+                            "means the model is never called."
+                            batch["input_values"], _ = extract_mel_spectrogram(batch["input_values"],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs)+1, normalize=model_args.mel_norm_vae)
                         elif model_args.vae_input_type == "waveform":
-                            batch["input_values"] = batch["input_values"][:,0,:,:]
+                            "The collator already selected the signal for the non-VAE_1D_FC models - it hands over"
+                            "the sequence of component 0, so there is no component axis left to index here."
+                            "This previously read: batch['input_values'] = batch['input_values'][:,0,:,:] , which was"
+                            "copy-pasted from the VAE_1D_FC branch above and indexes a 4D tensor that is only 2D here."
+                            pass
                         batch["attention_mask"] = sub_attention_mask
 
                     if not model_args.raw_mels:
@@ -827,31 +823,37 @@ def main():
                                     raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with waveform_all input type")
                             elif model_args.vae_input_type == "mel_ocs":
                                 if model_args.raw_mels:
-                                    new_input_values = torch.zeros((batch["input_values"].shape[0],batch["input_values"].shape[1]-1,batch["input_values"].shape[2],model_args.n_mels_vae),dtype=batch["input_values"].dtype,device=batch["input_values"].device)
-                                    for i in range(1,config.NoC+1):
-                                        new_input_values[:,i-1,...], _ = extract_mel_spectrogram(batch["input_values"][:,i,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
+                                    "Features were extracted at preprocessing and normalized in the collator - take the components without the original signal"
+                                    new_input_values = batch["input_values"][:,1:,...]
                                     batch["input_values"] = new_input_values.transpose(1,2).reshape(batch_size,new_input_values.shape[2],-1)
                                 else:
                                     raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with mel_ocs input type")
                             elif model_args.vae_input_type == "mel_all":
                                 if model_args.raw_mels:
-                                    new_input_values = torch.zeros((batch["input_values"].shape[0],batch["input_values"].shape[1],batch["input_values"].shape[2],model_args.n_mels_vae),dtype=batch["input_values"].dtype,device=batch["input_values"].device)
-                                    for i in range(0,config.NoC+1):
-                                        new_input_values[:,i,...], _ = extract_mel_spectrogram(batch["input_values"][:,i,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
+                                    "Features were extracted at preprocessing and normalized in the collator - take the components including the original signal"
+                                    new_input_values = batch["input_values"]
                                     batch["input_values"] = new_input_values.transpose(1,2).reshape(batch_size,new_input_values.shape[2],-1)
                                 else:
                                     raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with mel_all input type")
                             elif model_args.vae_input_type == "mel":
-                                batch["input_values"], _ = extract_mel_spectrogram(batch["input_values"][:,0,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
+                                batch["input_values"] = batch["input_values"][:,0,:,:]
                             elif model_args.vae_input_type == "waveform":
                                 batch["input_values"] = batch["input_values"][:,0,:,:]
                             batch["attention_mask"] = sub_attention_mask
                         
                         if model_args.raw_mels and not model_args.vae_type == "VAE_1D_FC":
                             if model_args.vae_input_type == "mel":
-                                batch["input_values"] = extract_mel_spectrogram(batch["input_values"],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs), normalize=model_args.mel_norm_vae)
+                                "Extracted here, unlike the VAE_1D_FC branch above: pre-training has no mel path for the"
+                                "non-fully-connected models - their in_size is max_length and the training loop has no"
+                                "branch for them - so no mel features exist in the cache to reuse. Safe because raw_mels"
+                                "means the model is never called."
+                                batch["input_values"], _ = extract_mel_spectrogram(batch["input_values"],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
                             elif model_args.vae_input_type == "waveform":
-                                batch["input_values"] = batch["input_values"][:,0,:,:]
+                                "The collator already selected the signal for the non-VAE_1D_FC models - it hands over"
+                                "the sequence of component 0, so there is no component axis left to index here."
+                                "This previously read: batch['input_values'] = batch['input_values'][:,0,:,:] , which was"
+                                "copy-pasted from the VAE_1D_FC branch above and indexes a 4D tensor that is only 2D here."
+                                pass
                             batch["attention_mask"] = sub_attention_mask
 
                         if not model_args.raw_mels:
@@ -1002,31 +1004,37 @@ def main():
                                     raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with waveform_all input type")
                             elif model_args.vae_input_type == "mel_ocs":
                                 if model_args.raw_mels:
-                                    new_input_values = torch.zeros((batch["input_values"].shape[0],batch["input_values"].shape[1]-1,batch["input_values"].shape[2],model_args.n_mels_vae),dtype=batch["input_values"].dtype,device=batch["input_values"].device)
-                                    for i in range(1,config.NoC+1):
-                                        new_input_values[:,i-1,...], _ = extract_mel_spectrogram(batch["input_values"][:,i,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
+                                    "Features were extracted at preprocessing and normalized in the collator - take the components without the original signal"
+                                    new_input_values = batch["input_values"][:,1:,...]
                                     batch["input_values"] = new_input_values.transpose(1,2).reshape(batch_size,new_input_values.shape[2],-1)
                                 else:
                                     raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with mel_ocs input type")
                             elif model_args.vae_input_type == "mel_all":
                                 if model_args.raw_mels:
-                                    new_input_values = torch.zeros((batch["input_values"].shape[0],batch["input_values"].shape[1],batch["input_values"].shape[2],model_args.n_mels_vae),dtype=batch["input_values"].dtype,device=batch["input_values"].device)
-                                    for i in range(0,config.NoC+1):
-                                        new_input_values[:,i,...], _ = extract_mel_spectrogram(batch["input_values"][:,i,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
+                                    "Features were extracted at preprocessing and normalized in the collator - take the components including the original signal"
+                                    new_input_values = batch["input_values"]
                                     batch["input_values"] = new_input_values.transpose(1,2).reshape(batch_size,new_input_values.shape[2],-1)
                                 else:
                                     raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with mel_all input type")
                             elif model_args.vae_input_type == "mel":
-                                batch["input_values"], _ = extract_mel_spectrogram(batch["input_values"][:,0,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
+                                batch["input_values"] = batch["input_values"][:,0,:,:]
                             elif model_args.vae_input_type == "waveform":
                                 batch["input_values"] = batch["input_values"][:,0,:,:]
                             batch["attention_mask"] = sub_attention_mask
                         
                         if model_args.raw_mels and not model_args.vae_type == "VAE_1D_FC":
                             if model_args.vae_input_type == "mel":
-                                batch["input_values"] = extract_mel_spectrogram(batch["input_values"],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs), normalize=model_args.mel_norm_vae)
+                                "Extracted here, unlike the VAE_1D_FC branch above: pre-training has no mel path for the"
+                                "non-fully-connected models - their in_size is max_length and the training loop has no"
+                                "branch for them - so no mel features exist in the cache to reuse. Safe because raw_mels"
+                                "means the model is never called."
+                                batch["input_values"], _ = extract_mel_spectrogram(batch["input_values"],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
                             elif model_args.vae_input_type == "waveform":
-                                batch["input_values"] = batch["input_values"][:,0,:,:]
+                                "The collator already selected the signal for the non-VAE_1D_FC models - it hands over"
+                                "the sequence of component 0, so there is no component axis left to index here."
+                                "This previously read: batch['input_values'] = batch['input_values'][:,0,:,:] , which was"
+                                "copy-pasted from the VAE_1D_FC branch above and indexes a 4D tensor that is only 2D here."
+                                pass
                             batch["attention_mask"] = sub_attention_mask
 
                         if not model_args.raw_mels:
@@ -1177,31 +1185,37 @@ def main():
                                     raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with waveform_all input type")
                             elif model_args.vae_input_type == "mel_ocs":
                                 if model_args.raw_mels:
-                                    new_input_values = torch.zeros((batch["input_values"].shape[0],batch["input_values"].shape[1]-1,batch["input_values"].shape[2],model_args.n_mels_vae),dtype=batch["input_values"].dtype,device=batch["input_values"].device)
-                                    for i in range(1,config.NoC+1):
-                                        new_input_values[:,i-1,...], _ = extract_mel_spectrogram(batch["input_values"][:,i,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
+                                    "Features were extracted at preprocessing and normalized in the collator - take the components without the original signal"
+                                    new_input_values = batch["input_values"][:,1:,...]
                                     batch["input_values"] = new_input_values.transpose(1,2).reshape(batch_size,new_input_values.shape[2],-1)
                                 else:
                                     raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with mel_ocs input type")
                             elif model_args.vae_input_type == "mel_all":
                                 if model_args.raw_mels:
-                                    new_input_values = torch.zeros((batch["input_values"].shape[0],batch["input_values"].shape[1],batch["input_values"].shape[2],model_args.n_mels_vae),dtype=batch["input_values"].dtype,device=batch["input_values"].device)
-                                    for i in range(0,config.NoC+1):
-                                        new_input_values[:,i,...], _ = extract_mel_spectrogram(batch["input_values"][:,i,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
+                                    "Features were extracted at preprocessing and normalized in the collator - take the components including the original signal"
+                                    new_input_values = batch["input_values"]
                                     batch["input_values"] = new_input_values.transpose(1,2).reshape(batch_size,new_input_values.shape[2],-1)
                                 else:
                                     raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with mel_all input type")
                             elif model_args.vae_input_type == "mel":
-                                batch["input_values"], _ = extract_mel_spectrogram(batch["input_values"][:,0,:,:],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
+                                batch["input_values"] = batch["input_values"][:,0,:,:]
                             elif model_args.vae_input_type == "waveform":
                                 batch["input_values"] = batch["input_values"][:,0,:,:]
                             batch["attention_mask"] = sub_attention_mask
                         
                         if model_args.raw_mels and not model_args.vae_type == "VAE_1D_FC":
                             if model_args.vae_input_type == "mel":
-                                batch["input_values"] = extract_mel_spectrogram(batch["input_values"],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs), normalize=model_args.mel_norm_vae)
+                                "Extracted here, unlike the VAE_1D_FC branch above: pre-training has no mel path for the"
+                                "non-fully-connected models - their in_size is max_length and the training loop has no"
+                                "branch for them - so no mel features exist in the cache to reuse. Safe because raw_mels"
+                                "means the model is never called."
+                                batch["input_values"], _ = extract_mel_spectrogram(batch["input_values"],config.fs,n_mels=model_args.n_mels_vae, n_fft=int(config.receptive_field*config.fs), hop_length=int(config.receptive_field*config.fs) + 1, normalize=model_args.mel_norm_vae)
                             elif model_args.vae_input_type == "waveform":
-                                batch["input_values"] = batch["input_values"][:,0,:,:]
+                                "The collator already selected the signal for the non-VAE_1D_FC models - it hands over"
+                                "the sequence of component 0, so there is no component axis left to index here."
+                                "This previously read: batch['input_values'] = batch['input_values'][:,0,:,:] , which was"
+                                "copy-pasted from the VAE_1D_FC branch above and indexes a 4D tensor that is only 2D here."
+                                pass
                             batch["attention_mask"] = sub_attention_mask
 
                         if not model_args.raw_mels:

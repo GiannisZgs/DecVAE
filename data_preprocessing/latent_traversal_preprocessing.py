@@ -2,6 +2,7 @@ from models import DecompositionModule
 import numpy as np
 import json
 import torch
+from feature_extraction import extract_mel_spectrogram, extract_fft_psd
 
 def prepare_traversal_dataset(batch, feature_extractor, data_training_args, decomp_args, config, max_length):
     """ 
@@ -328,5 +329,146 @@ def prepare_traversal_dataset(batch, feature_extractor, data_training_args, deco
         batch["input_seq_values"] = seq_decomp.squeeze(-2)
     batch["input_length"] = max_length 
     batch["attention_mask"] = attention_mask
+
+    return batch
+
+
+def prepare_extract_features_traversal_dataset(batch, feature_extractor, data_training_args, decomp_args, config, max_length):
+    """
+    To be used for Apache Arrow processing in the Dataset.map() function, for DecVAE latent traversals.
+    Performs the same steps as prepare_traversal_dataset and additionally extracts the input features,
+    which used to be extracted in the collator. The features are left un-normalized here; the
+    normalization is done in the collator, where the whole batch is visible.
+
+    Args:
+        batch: A single sample from the .arrow Dataset containing audio and labels.
+        feature_extractor (:class:`~transformers.Wav2Vec2FeatureExtractor`):
+            The processor used for proccessing the data - used to pad the data.
+        data_training_args (:class:`~args_configs.data_training_args.DataTrainingArguments`): The data training arguments dictionary
+            with necessary data-related parameters.
+        decomp_args (:class:`~args_configs.decomp_args.DecompositionArguments`): The decomposition arguments dictionary
+            with necessary decomposition model-related parameters.
+        config (:class:`~config_files.configuration_decVAE.DecVAEConfig`): The DecVAE configuration object.
+        max_length (int): The maximum length of the audio sequences after preprocessing (in number of samples).
+    """
+
+    batch = prepare_traversal_dataset(batch, feature_extractor, data_training_args, decomp_args, config, max_length)
+
+    if data_training_args.input_type == 'mel':
+        frame_len = batch["input_values"].shape[-1]
+        if batch.get("input_seq_values") is not None:
+            "Split sequence in frames, as the collator used to do before extracting"
+            frames = int(batch["input_seq_values"].shape[-1]/frame_len)
+            new_input_seq_values = torch.zeros(
+                (batch["input_seq_values"].shape[0], frames, frame_len),
+                device=batch["input_seq_values"].device
+            )
+            for o in range(batch["input_seq_values"].shape[0]):
+                sequence = batch["input_seq_values"][o,:].clone()
+                for f in range(frames):
+                    new_input_seq_values[o,f,:] = sequence[f*frame_len:(f+1)*frame_len].clone()
+            batch["input_seq_values"] = new_input_seq_values.clone()
+
+        if len(config.conv_kernel) == 7:
+            assert data_training_args.mel_hops == 4
+        elif len(config.conv_kernel) == 5:
+            assert data_training_args.mel_hops == 3
+
+        "Store the per-utterance peaks unclamped, so the collator can restore the batch reference"
+        components, mel_spec_max = [], []
+        for o in range(batch["input_values"].shape[0]):
+            feats, spec_max = extract_mel_spectrogram(
+                batch["input_values"][o].unsqueeze(0),
+                config.fs,
+                n_mels=data_training_args.n_mels,
+                n_fft=int(data_training_args.mel_hops*config.receptive_field*config.fs),
+                hop_length=int(((config.receptive_field*config.fs) + 1)/data_training_args.mel_hops),
+                normalize=None,
+                feature_length=frame_len,
+                top_db=None
+            )
+            components.append(feats.squeeze(0))
+            mel_spec_max.append(float(spec_max))
+        batch["input_values"] = torch.stack(components)
+        batch["mel_spec_max"] = np.array(mel_spec_max, dtype=np.float32)
+
+        if batch.get("input_seq_values") is not None:
+            seq_components, mel_seq_spec_max = [], []
+            for o in range(batch["input_seq_values"].shape[0]):
+                feats, spec_max = extract_mel_spectrogram(
+                    batch["input_seq_values"][o].unsqueeze(0),
+                    config.fs,
+                    n_mels=data_training_args.n_mels,
+                    n_fft=int(data_training_args.mel_hops*config.receptive_field*config.fs),
+                    hop_length=int(((config.receptive_field*config.fs) + 1)/data_training_args.mel_hops),
+                    normalize=None,
+                    feature_length=frame_len,
+                    top_db=None
+                )
+                seq_components.append(feats.squeeze(0).reshape(-1))
+                mel_seq_spec_max.append(float(spec_max))
+            "Flatten sequence - Reverse framing"
+            batch["input_seq_values"] = torch.stack(seq_components)
+            batch["mel_seq_spec_max"] = np.array(mel_seq_spec_max, dtype=np.float32)
+
+    elif data_training_args.input_type == 'fft':
+        # Apply fft using welch's power spectral density estimation
+        fft_batch = {"input_values": batch["input_values"].unsqueeze(0)}
+        if batch.get("input_seq_values") is not None:
+            fft_batch["input_seq_values"] = batch["input_seq_values"].unsqueeze(0)
+        values, seq_values = extract_fft_psd(fft_batch, normalize=True, device=fft_batch["input_values"].device)
+        batch["input_values"] = values.squeeze(0)
+        if seq_values is not None:
+            batch["input_seq_values"] = seq_values.squeeze(0)
+
+    return batch
+
+
+def prepare_extract_features_vae_traversal_dataset(batch, feature_extractor, model_args, data_training_args, decomp_args, config, max_length):
+    """
+    To be used for Apache Arrow processing in the Dataset.map() function, for VAE latent traversals.
+    Performs the same steps as prepare_traversal_dataset and additionally extracts the mel features
+    that used to be extracted in the script. Every decomposition component is kept, because the
+    ICA/PCA evaluations select components themselves. The features are left un-normalized here;
+    the normalization is done in the collator, where the whole batch is visible.
+
+    Args:
+        batch: A single sample from the .arrow Dataset containing audio and labels.
+        feature_extractor (:class:`~transformers.Wav2Vec2FeatureExtractor`):
+            The processor used for proccessing the data - used to pad the data.
+        model_args (:class:`~args_configs.model_args.ModelArguments`): The model arguments dictionary;
+            the VAE type and its mel settings (n_mels_vae, mel_norm_vae) are needed here.
+        data_training_args (:class:`~args_configs.data_training_args.DataTrainingArguments`): The data training arguments dictionary
+            with necessary data-related parameters.
+        decomp_args (:class:`~args_configs.decomp_args.DecompositionArguments`): The decomposition arguments dictionary
+            with necessary decomposition model-related parameters.
+        config (:class:`~config_files.configuration_decVAE.DecVAEConfig`): The DecVAE configuration object.
+        max_length (int): The maximum length of the audio sequences after preprocessing (in number of samples).
+    """
+
+    batch = prepare_traversal_dataset(batch, feature_extractor, data_training_args, decomp_args, config, max_length)
+
+    "Only the fully connected frame model reads features here; the sequence models consume the raw"
+    "sequence, exactly as they did when the extraction lived in the script"
+    if not model_args.vae_input_type.startswith('mel') or model_args.vae_type != "VAE_1D_FC":
+        return batch
+
+    frame_len = batch["input_values"].shape[-1]
+    components, mel_spec_max = [], []
+    for o in range(batch["input_values"].shape[0]):
+        feats, spec_max = extract_mel_spectrogram(
+            batch["input_values"][o].unsqueeze(0),
+            config.fs,
+            n_mels=model_args.n_mels_vae,
+            n_fft=int(config.receptive_field*config.fs),
+            hop_length=int(config.receptive_field*config.fs) + 1,
+            normalize=None,
+            feature_length=frame_len,
+            top_db=None
+        )
+        components.append(feats.squeeze(0))
+        mel_spec_max.append(float(spec_max))
+    batch["input_values"] = torch.stack(components)
+    batch["mel_spec_max"] = np.array(mel_spec_max, dtype=np.float32)
 
     return batch
