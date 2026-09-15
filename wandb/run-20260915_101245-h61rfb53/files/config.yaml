@@ -1,0 +1,67 @@
+_wandb:
+    value:
+        cli_version: 0.21.1
+        e:
+            tyq6x4llb0divdh97erqykmuyept0o3n:
+                args:
+                    - --config_file
+                    - config_files/baselines/hubert/timit/latent_evaluations/config_hubert_latent_anal_timit.json
+                codePath: scripts\post-training\latents_post_analysis_frozen_ssl.py
+                codePathLocal: scripts\post-training\latents_post_analysis_frozen_ssl.py
+                cpu_count: 14
+                cpu_count_logical: 20
+                cudaVersion: "13.2"
+                disk:
+                    /:
+                        total: "999280340992"
+                        used: "348190257152"
+                email: ziogioan@ieee.org
+                executable: C:\Users\Dell\anaconda3\envs\DecSSL\python.exe
+                git:
+                    commit: b3333a5aa77f58a32ba8df0198d3f5da8158212c
+                    remote: https://github.com/GiannisZgs/DecVAE.git
+                gpu: NVIDIA GeForce RTX 3080 Ti Laptop GPU
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Ampere
+                      cudaCores: 7424
+                      memoryTotal: "17179869184"
+                      name: NVIDIA GeForce RTX 3080 Ti Laptop GPU
+                      uuid: GPU-e8b15464-86ef-08bf-2a91-1c281e2e3c47
+                host: DESKTOP-J2L77LC
+                memory:
+                    total: "34029162496"
+                os: Windows-10-10.0.26200-SP0
+                program: C:\Users\Dell\Files\DecVAE\scripts\post-training\latents_post_analysis_frozen_ssl.py
+                python: CPython 3.11.9
+                root: C:\Users\Dell\Files\DecVAE
+                startedAt: "2026-09-15T07:12:45.710409Z"
+                writerId: tyq6x4llb0divdh97erqykmuyept0o3n
+        m: []
+        python_version: 3.11.9
+        t:
+            "1":
+                - 1
+                - 5
+                - 11
+                - 41
+                - 49
+                - 51
+                - 53
+                - 71
+            "2":
+                - 1
+                - 5
+                - 11
+                - 41
+                - 49
+                - 51
+                - 53
+                - 71
+            "4": 3.11.9
+            "5": 0.21.1
+            "6": 4.49.0
+            "8":
+                - 3
+            "12": 0.21.1
+            "13": windows-amd64

@@ -24,13 +24,14 @@ import numpy as np
 import scipy
 from sklearn import ensemble
 
-def compute_dci(mus_train, ys_train, mus_test, ys_test):
+def compute_dci(mus_train, ys_train, mus_test, ys_test, random_state=None):
   """Computes the DCI scores on a fixed set of representations and labels.
 
   Args:
     mus: Observations on which to compute the score. Observations have
       shape (z_dim,num_observations).
     ys: Observed factors of variations.
+    random_state: Seed of the gradient boosted trees.
 
   Returns:
     DCI score.
@@ -40,7 +41,7 @@ def compute_dci(mus_train, ys_train, mus_test, ys_test):
   assert ys_train.shape[1] == mus_train.shape[1], "Wrong labels shape."
   scores = {}
   importance_matrix, train_err, test_err = compute_importance_gbt(
-      mus_train, ys_train, mus_test, ys_test)
+      mus_train, ys_train, mus_test, ys_test, random_state=random_state)
   assert importance_matrix.shape[0] == mus_train.shape[0]
   assert importance_matrix.shape[1] == ys_train.shape[0]
   scores["informativeness_train"] = train_err
@@ -50,7 +51,7 @@ def compute_dci(mus_train, ys_train, mus_test, ys_test):
   return scores
 
 
-def compute_importance_gbt(x_train, y_train, x_test, y_test):
+def compute_importance_gbt(x_train, y_train, x_test, y_test, random_state=None):
   """Compute importance based on gradient boosted trees."""
   num_factors = y_train.shape[0]
   num_codes = x_train.shape[0]
@@ -59,7 +60,7 @@ def compute_importance_gbt(x_train, y_train, x_test, y_test):
   train_loss = []
   test_loss = []
   for i in range(num_factors):
-    model = ensemble.GradientBoostingClassifier() #HistGradientBoostingClassifier
+    model = ensemble.GradientBoostingClassifier(random_state=random_state) #HistGradientBoostingClassifier
     model.fit(x_train.T, y_train[i, :])
     importance_matrix[:, i] = np.abs(model.feature_importances_)
     train_loss.append(np.mean(model.predict(x_train.T) == y_train[i, :]))

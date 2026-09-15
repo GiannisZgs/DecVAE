@@ -67,9 +67,33 @@ import time
 #os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 #os.environ["TORCH_USE_CUDA_DSA"] = "1"
 
-JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/sim_vowels/pre-training/config_pretraining_sim_vowels_NoC3.json" #for debugging purposes only
+JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/timit/pre-training/config_pretraining_timit_NoC4.json" #for debugging purposes only
+#JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/sim_vowels/pre-training/config_pretraining_sim_vowels_NoC3.json" #for debugging purposes only
 
 logger = get_logger(__name__)
+
+"Hardcoded intervention: keep only this fraction of every TIMIT split. Set to None for the full dataset"
+TIMIT_SUBSET_FRACTION = 0.05
+
+
+def redirect_subset_outputs(data_training_args, fraction):
+    "Point the cache files and output_dir of a subset run away from the full-dataset ones"
+    suffix = f"_subset{fraction * 100:g}pct"
+    for attr in ("train_cache_file_name", "validation_cache_file_name", "test_cache_file_name", "dev_cache_file_name"):
+        path = getattr(data_training_args, attr, None)
+        if path is not None:
+            stem = path[:-len(".arrow")] if path.endswith(".arrow") else path
+            setattr(data_training_args, attr, stem + suffix + ".arrow")
+    if data_training_args.output_dir is not None:
+        data_training_args.output_dir = data_training_args.output_dir.rstrip("/\\") + suffix
+
+
+def subset_raw_datasets(raw_datasets, fraction, seed):
+    "Keep a seeded random fraction of every split, at least one example each"
+    for split in raw_datasets:
+        n_keep = max(1, int(raw_datasets[split].num_rows * fraction))
+        raw_datasets[split] = raw_datasets[split].shuffle(seed=seed).select(range(n_keep))
+    return raw_datasets
 
 
 def main():
@@ -83,6 +107,12 @@ def main():
     delattr(model_args,"comment_model_args")
     delattr(training_obj_args,"comment_tr_obj_args")
     delattr(decomp_args,"comment_decomp_args")
+
+    use_timit_subset = "timit" in data_training_args.dataset_name and TIMIT_SUBSET_FRACTION is not None
+    if use_timit_subset:
+        "A subset run must neither load nor overwrite the full-dataset cache and checkpoints"
+        redirect_subset_outputs(data_training_args, TIMIT_SUBSET_FRACTION)
+        print(f"TIMIT subset of {TIMIT_SUBSET_FRACTION:.2%}: cache and output_dir redirected to {data_training_args.output_dir}")
     
     "Initialize the accelerator. Accelerator handles device placement for us"
     kwargs = DDPK(find_unused_parameters=True)
@@ -168,6 +198,10 @@ def main():
 
         if "timit" in data_training_args.dataset_name:
             raw_datasets = load_timit(data_training_args)
+            if use_timit_subset:
+                raw_datasets = subset_raw_datasets(raw_datasets, TIMIT_SUBSET_FRACTION,
+                                                   seed=data_training_args.seed if data_training_args.seed is not None else 0)
+                print("TIMIT subset sizes:", {split: raw_datasets[split].num_rows for split in raw_datasets})
 
         elif "sim_vowels" in data_training_args.dataset_name:
             raw_datasets = load_sim_vowels(data_training_args)
@@ -180,10 +214,9 @@ def main():
 
         "Call .map to pre-process columns first"
         if "timit" in data_training_args.dataset_name:
-            # make sure that dataset decodes audio with correct sampling rate
-            raw_datasets = raw_datasets.cast_column(
-                data_training_args.audio_column_name, datasets.features.Audio(sampling_rate=feature_extractor.sampling_rate)
-            )
+            # load_timit decodes the audio at TIMIT's native 16 kHz, so there is nothing to resample
+            if feature_extractor.sampling_rate != 16000:
+                raise ValueError(f"TIMIT audio is 16 kHz, but the feature extractor expects {feature_extractor.sampling_rate} Hz")
 
         "only normalized-inputs-training is supported"
         if not feature_extractor.do_normalize:

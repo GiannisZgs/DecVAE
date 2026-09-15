@@ -202,10 +202,9 @@ def main():
         
         "Call .map to pre-process columns first"
         if "timit" in data_training_args.dataset_name:
-            # make sure that dataset decodes audio with correct sampling rate
-            raw_datasets = raw_datasets.cast_column(
-                data_training_args.audio_column_name, datasets.features.Audio(sampling_rate=feature_extractor.sampling_rate)
-            )
+            # load_timit decodes the audio at TIMIT's native 16 kHz, so there is nothing to resample
+            if feature_extractor.sampling_rate != 16000:
+                raise ValueError(f"TIMIT audio is 16 kHz, but the feature extractor expects {feature_extractor.sampling_rate} Hz")
 
         "only normalized-inputs-training is supported"
         if not feature_extractor.do_normalize:

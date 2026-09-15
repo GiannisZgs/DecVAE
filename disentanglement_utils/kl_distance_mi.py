@@ -20,7 +20,7 @@ import numpy as np
 import scipy
 
 
-def unsupervised_metrics(mus_train,total_corr = True,wass_corr = True):
+def unsupervised_metrics(mus_train,total_corr = True,wass_corr = True,n_jobs = 1):
   """Computes unsupervised scores based on covariance and mutual information.
 
   Args:
@@ -55,7 +55,7 @@ def unsupervised_metrics(mus_train,total_corr = True,wass_corr = True):
 
   # Compute average mutual information between different factors.
   mus_discrete = disentanglement_eval.histogram_discretize(mus_train,num_bins=30)
-  mutual_info_matrix = disentanglement_eval.discrete_mutual_info(mus_discrete, mus_discrete)
+  mutual_info_matrix = disentanglement_eval.discrete_mutual_info(mus_discrete, mus_discrete, n_jobs=n_jobs)
   np.fill_diagonal(mutual_info_matrix, 0)
   mutual_info_score = np.sum(mutual_info_matrix) / (num_codes**2 - num_codes)
   scores["mutual_info_score"] = mutual_info_score

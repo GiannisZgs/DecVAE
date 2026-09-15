@@ -6,10 +6,112 @@ Also contains necessary functions for TIMIT dataset loading and processing.
 from datasets import load_dataset, Dataset, DatasetDict, concatenate_datasets
 import os
 import json
+from datasets import Features, Sequence, Value
+from pathlib import Path
+import soundfile as sf
 
 SEL_PHONEMES_LIST = ['iy','ey','ay','aw','ow','uh','f','l','s'] # 'b','d','uw', 'k'
 MIN_ACCEPTABLE_LENGTH = 2000 
 TARGET_EXAMPLES_PER_COMBINATION = 3
+
+
+TIMIT_SAMPLING_RATE = 16000
+
+_TIMIT_ASR_FEATURES = Features(
+    {
+        "file": Value("string"),
+        "audio": {"path": Value("string"), "array": Sequence(Value("float32")), "sampling_rate": Value("int64")},
+        "text": Value("string"),
+        "phonetic_detail": Sequence({"start": Value("int64"), "stop": Value("int64"), "utterance": Value("string")}),
+        "word_detail": Sequence({"start": Value("int64"), "stop": Value("int64"), "utterance": Value("string")}),
+        "dialect_region": Value("string"),
+        "sentence_type": Value("string"),
+        "speaker_id": Value("string"),
+        "id": Value("string"),
+    }
+)
+
+
+def _with_case_insensitive_suffix(path, suffix):
+    path = path.with_suffix(suffix.lower())
+    return path if path.exists() else path.with_suffix(suffix.upper())
+
+
+def _generate_timit_asr_examples(split, data_dir):
+    """
+    The example generator of the Hub timit_asr loading script, which datasets>=4.0 no longer runs.
+    Parsing is kept verbatim. Audio is decoded here with soundfile, as datasets<4.0 did on access.
+    """
+    wav_paths = sorted(Path(data_dir).glob(f"**/{split}/**/*.wav"))
+    wav_paths = wav_paths if wav_paths else sorted(Path(data_dir).glob(f"**/{split.upper()}/**/*.WAV"))
+    for wav_path in wav_paths:
+
+        txt_path = _with_case_insensitive_suffix(wav_path, ".txt")
+        with txt_path.open(encoding="utf-8") as op:
+            transcript = " ".join(op.readlines()[0].split()[2:])  # first two items are sample number
+
+        phn_path = _with_case_insensitive_suffix(wav_path, ".phn")
+        with phn_path.open(encoding="utf-8") as op:
+            phonemes = [
+                {
+                    "start": i.split(" ")[0],
+                    "stop": i.split(" ")[1],
+                    "utterance": " ".join(i.split(" ")[2:]).strip(),
+                }
+                for i in op.readlines()
+            ]
+
+        wrd_path = _with_case_insensitive_suffix(wav_path, ".wrd")
+        with wrd_path.open(encoding="utf-8") as op:
+            words = [
+                {
+                    "start": i.split(" ")[0],
+                    "stop": i.split(" ")[1],
+                    "utterance": " ".join(i.split(" ")[2:]).strip(),
+                }
+                for i in op.readlines()
+            ]
+
+        array, sampling_rate = sf.read(str(wav_path))
+        if sampling_rate != TIMIT_SAMPLING_RATE:
+            raise ValueError(f"{wav_path} is sampled at {sampling_rate} Hz, TIMIT is expected at {TIMIT_SAMPLING_RATE} Hz")
+
+        # datasets<4.0 turned these lists of dicts into dicts of lists itself; 4.0 expects them already converted
+        yield {
+            "file": str(wav_path),
+            "audio": {"path": str(wav_path), "array": array, "sampling_rate": sampling_rate},
+            "text": transcript,
+            "phonetic_detail": {k: [p[k] for p in phonemes] for k in ("start", "stop", "utterance")},
+            "word_detail": {k: [w[k] for w in words] for k in ("start", "stop", "utterance")},
+            "dialect_region": wav_path.parents[1].name,
+            "sentence_type": wav_path.name[0:2],
+            "speaker_id": wav_path.parents[0].name[1:],
+            "id": wav_path.stem,
+        }
+
+
+def _load_timit_asr(data_dir):
+    """
+    Local replacement for load_dataset("timit_asr", data_dir=data_dir).
+
+    Args:
+        data_dir (str): Folder holding the extracted TIMIT corpus.
+    Returns:
+        DatasetDict with "train" and "test" splits, laid out as the timit_asr script produced them.
+    """
+    data_dir = os.path.abspath(os.path.expanduser(data_dir))
+    if not os.path.exists(data_dir):
+        raise FileNotFoundError(f"{data_dir} does not exist. Point data_dir at the folder holding the extracted TIMIT corpus.")
+
+    return DatasetDict({
+        split: Dataset.from_generator(
+            _generate_timit_asr_examples,
+            gen_kwargs={"split": split, "data_dir": data_dir},
+            features=_TIMIT_ASR_FEATURES,
+        )
+        for split in ("train", "test")
+    })
+
 
 def load_timit(data_training_args):
     train_datasets_splits = []
@@ -22,7 +124,7 @@ def load_timit(data_training_args):
     global unique_speaker_ids
     global speaker_id_to_id
 
-    timit = load_dataset("timit_asr",data_dir=data_training_args.data_dir)
+    timit = _load_timit_asr(data_training_args.data_dir)
 
     "Remove SA sentences"
     timit['train'] = timit['train'].filter(lambda example: 'SA' not in example['file'])
@@ -145,7 +247,7 @@ def load_traversal_subset_timit(data_training_args):
     max_segment_length = 0
     segment_lengths = []
 
-    timit = load_dataset("timit_asr", data_dir=data_training_args.data_dir)
+    timit = _load_timit_asr(data_training_args.data_dir)
 
     "Remove SA sentences"
     timit['train'] = timit['train'].filter(lambda example: 'SA' not in example['file'])
