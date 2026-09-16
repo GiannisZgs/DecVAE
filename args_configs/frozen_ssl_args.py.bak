@@ -37,13 +37,6 @@ class FrozenSSLArguments:
         default=True,
         metadata={"help": "Whether to pass the sample-level attention mask to the frozen encoder."},
     )
-    ssl_seq_pooling: str = field(
-        default=None,
-        metadata={"help": "How the frame embeddings of an utterance are pooled into one sequence-level embedding, "
-                          "for the '*_seq' classification targets. None skips them. 'mean' averages over every "
-                          "frame of the padded sequence, which is what DecVAE's SequenceAggregator does, so the "
-                          "two stay comparable."},
-    )
     ssl_pca_components: int = field(
         default=None,
         metadata={"help": "Number of PCA components to reduce the collected embeddings to. None or 0 keeps "
