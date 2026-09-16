@@ -73,7 +73,7 @@ JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/timit/pre-training/config_pretrain
 logger = get_logger(__name__)
 
 "Hardcoded intervention: keep only this fraction of every TIMIT split. Set to None for the full dataset"
-TIMIT_SUBSET_FRACTION = 0.05
+TIMIT_SUBSET_FRACTION = None
 
 
 def redirect_subset_outputs(data_training_args, fraction):

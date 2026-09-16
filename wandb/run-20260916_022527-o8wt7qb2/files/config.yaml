@@ -1,0 +1,80 @@
+_wandb:
+    value:
+        cli_version: 0.21.1
+        e:
+            wn9t0l3qe99h93fafl227forxfymd427:
+                args:
+                    - --config_file
+                    - config_files/baselines/wav2vec2/sim_vowels/latent_evaluations/config_wav2vec2_latent_anal_sim_vowels.json
+                codePath: scripts/post-training/latents_post_analysis_frozen_ssl.py
+                codePathLocal: scripts/post-training/latents_post_analysis_frozen_ssl.py
+                cpu_count: 64
+                cpu_count_logical: 128
+                cudaVersion: "12.4"
+                disk:
+                    /:
+                        total: "1967317549056"
+                        used: "1762100932608"
+                email: ziogioan@ieee.org
+                executable: /home/student3/anaconda3/envs/GiannisZgs/bin/python
+                git:
+                    commit: e1fe38e60205367b33a345da9051180ef6e1788c
+                    remote: https://github.com/GiannisZgs/DecVAE.git
+                gpu: NVIDIA RTX 6000 Ada Generation
+                gpu_count: 4
+                gpu_nvidia:
+                    - architecture: Ada
+                      cudaCores: 18176
+                      memoryTotal: "51527024640"
+                      name: NVIDIA RTX 6000 Ada Generation
+                      uuid: GPU-89231e01-3e91-1453-2cb8-c315664addfd
+                    - architecture: Ada
+                      cudaCores: 18176
+                      memoryTotal: "51527024640"
+                      name: NVIDIA RTX 6000 Ada Generation
+                      uuid: GPU-8bb72349-6d26-ae45-b73e-bf014bf9a419
+                    - architecture: Ada
+                      cudaCores: 18176
+                      memoryTotal: "51527024640"
+                      name: NVIDIA RTX 6000 Ada Generation
+                      uuid: GPU-f6aaa3c2-e61f-55f8-c15b-d2ecd96a590f
+                    - architecture: Ada
+                      cudaCores: 18176
+                      memoryTotal: "51527024640"
+                      name: NVIDIA RTX 6000 Ada Generation
+                      uuid: GPU-40d8831e-3fee-e784-fd90-cfa0b197e288
+                host: ku
+                memory:
+                    total: "540613918720"
+                os: Linux-6.8.0-138-generic-x86_64-with-glibc2.35
+                program: /home/student3/Documents/IoannisZiogas/DecVAE/scripts/post-training/latents_post_analysis_frozen_ssl.py
+                python: CPython 3.11.8
+                root: /home/student3/Documents/IoannisZiogas/DecVAE
+                startedAt: "2026-09-15T22:25:27.870446Z"
+                writerId: wn9t0l3qe99h93fafl227forxfymd427
+        m: []
+        python_version: 3.11.8
+        t:
+            "1":
+                - 1
+                - 5
+                - 11
+                - 41
+                - 49
+                - 51
+                - 53
+                - 71
+            "2":
+                - 1
+                - 5
+                - 11
+                - 41
+                - 49
+                - 51
+                - 53
+                - 71
+            "4": 3.11.8
+            "5": 0.21.1
+            "6": 4.49.0
+            "12": 0.21.1
+            "13": linux-x86_64
