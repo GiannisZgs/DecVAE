@@ -69,20 +69,37 @@ from datasets import DatasetDict, concatenate_datasets, Dataset
 from torch.utils.data.dataloader import DataLoader
 import time
 
-JSON_FILE_NAME_MANUAL = "config_files/baselines/wav2vec2/timit/latent_evaluations/config_wav2vec2_latent_anal_timit.json"
+JSON_FILE_NAME_MANUAL = "config_files/baselines/wav2vec2/sim_vowels/latent_evaluations/config_wav2vec2_latent_anal_sim_vowels.json"
 
 logger = get_logger(__name__)
 
 SUPPORTED_DATASETS = ["sim_vowels", "timit", "iemocap"]
 
 
+def _common_device(*values):
+    """
+    Device of the tensors found in values, which may be nested lists of them.
+
+    Returns None when none of them is a tensor, so torch keeps its default, and raises when they
+    disagree - labels built on different devices cannot be concatenated later on.
+    """
+    devices = set()
+    pending = list(values)
+    while pending:
+        value = pending.pop()
+        if isinstance(value, torch.Tensor):
+            devices.add(value.device)
+        elif isinstance(value, (list, tuple)):
+            pending.extend(value)
+    if len(devices) > 1:
+        raise ValueError(f"The labels and the overlap mask are on different devices: {sorted(str(d) for d in devices)}")
+    return next(iter(devices)) if devices else None
+
+
 def _expand_to_frames(seq_values, overlap_mask_batch):
     "Repeat an utterance-level factor once per kept frame of that utterance"
     # torch.tensor builds on the CPU by default, so place the result on the inputs' device
-    devices = {v.device for v in [*seq_values, overlap_mask_batch] if isinstance(v, torch.Tensor)}
-    if len(devices) > 1:
-        raise ValueError(f"The utterance-level factors and the overlap mask are on different devices: {sorted(str(d) for d in devices)}")
-    device = next(iter(devices)) if devices else None
+    device = _common_device(seq_values, overlap_mask_batch)
     return torch.cat([
         torch.tensor([factor for _ in range(int((~overlap_mask_batch[i]).sum()))], device=device)
         for i, factor in enumerate(seq_values)
@@ -185,7 +202,8 @@ def gather_split(dataloader, representation_function, data_training_args):
 
             "Gather labels for evaluations"
             if dataset_name == "sim_vowels":
-                append("vowel", torch.cat([torch.tensor(v) for v in vowel_labels_batch]))
+                vowel_device = _common_device(vowel_labels_batch, overlap_mask_batch)
+                append("vowel", torch.cat([torch.tensor(v, device=vowel_device) for v in vowel_labels_batch]))
                 append("speaker_frame", _expand_to_frames(speaker_vt_factor_batch, overlap_mask_batch))
                 append("speaker_seq", speaker_vt_factor_batch.clone())
             elif dataset_name == "timit":
