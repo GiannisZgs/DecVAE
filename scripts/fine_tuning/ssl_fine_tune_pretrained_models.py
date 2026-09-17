@@ -69,9 +69,32 @@ import time
 #os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 #os.environ["TORCH_USE_CUDA_DSA"] = "1"
 
-JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/iemocap/fine-tuning/config_finetune_iemocap_NoC4.json" #for debugging purposes only
+JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/iemocap/fine_tuning/config_finetune_iemocap_NoC4.json" #for debugging purposes only
 
 logger = get_logger(__name__)
+
+"Hardcoded intervention: keep only this fraction of every IEMOCAP split. Set to None for the full dataset"
+IEMOCAP_SUBSET_FRACTION = 0.05
+
+
+def redirect_subset_outputs(data_training_args, fraction):
+    "Point the cache files and output_dir of a subset run away from the full-dataset ones"
+    suffix = f"_subset{fraction * 100:g}pct"
+    for attr in ("train_cache_file_name", "validation_cache_file_name", "test_cache_file_name", "dev_cache_file_name"):
+        path = getattr(data_training_args, attr, None)
+        if path is not None:
+            stem = path[:-len(".arrow")] if path.endswith(".arrow") else path
+            setattr(data_training_args, attr, stem + suffix + ".arrow")
+    if data_training_args.output_dir is not None:
+        data_training_args.output_dir = data_training_args.output_dir.rstrip("/\\") + suffix
+
+
+def subset_raw_datasets(raw_datasets, fraction, seed):
+    "Keep a seeded random fraction of every split, at least one example each"
+    for split in raw_datasets:
+        n_keep = max(1, int(raw_datasets[split].num_rows * fraction))
+        raw_datasets[split] = raw_datasets[split].shuffle(seed=seed).select(range(n_keep))
+    return raw_datasets
 
 def main():
     "Parse the arguments"       
@@ -84,6 +107,12 @@ def main():
     delattr(model_args,"comment_model_args")
     delattr(training_obj_args,"comment_tr_obj_args")
     delattr(decomp_args,"comment_decomp_args")
+
+    use_iemocap_subset = "iemocap" in data_training_args.dataset_name and IEMOCAP_SUBSET_FRACTION is not None
+    if use_iemocap_subset:
+        "A subset run must neither load nor overwrite the full-dataset cache and checkpoints"
+        redirect_subset_outputs(data_training_args, IEMOCAP_SUBSET_FRACTION)
+        print(f"IEMOCAP subset of {IEMOCAP_SUBSET_FRACTION:.2%}: cache and output_dir redirected to {data_training_args.output_dir}")
     
     "Initialize the accelerator. Accelerator handles device placement for us"
     kwargs = DDPK(find_unused_parameters=True)
@@ -176,6 +205,10 @@ def main():
         
         elif "iemocap" in data_training_args.dataset_name:
             raw_datasets = load_iemocap(data_training_args)
+            if use_iemocap_subset:
+                raw_datasets = subset_raw_datasets(raw_datasets, IEMOCAP_SUBSET_FRACTION,
+                                                   seed=data_training_args.seed if data_training_args.seed is not None else 0)
+                print("IEMOCAP subset sizes:", {split: raw_datasets[split].num_rows for split in raw_datasets})
 
         "Call .map to pre-process columns first"
         if "timit" in data_training_args.dataset_name:
