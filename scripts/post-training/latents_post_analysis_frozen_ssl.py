@@ -69,7 +69,7 @@ from datasets import DatasetDict, concatenate_datasets, Dataset
 from torch.utils.data.dataloader import DataLoader
 import time
 
-JSON_FILE_NAME_MANUAL = "config_files/baselines/wav2vec2/sim_vowels/latent_evaluations/config_wav2vec2_latent_anal_sim_vowels.json"
+JSON_FILE_NAME_MANUAL = "config_files/baselines/hubert/iemocap/latent_evaluations/config_hubert_latent_anal_iemocap.json"
 
 logger = get_logger(__name__)
 
@@ -139,7 +139,7 @@ def fit_pca(z_fit, frozen_ssl_args, projection_path):
     return pca
 
 
-def gather_split(dataloader, representation_function, data_training_args):
+def gather_split(dataloader, representation_function, data_training_args, frozen_ssl_args):
     """
     Run the frozen encoder over a split and collect frame-level embeddings with their labels.
 
@@ -147,12 +147,19 @@ def gather_split(dataloader, representation_function, data_training_args):
         dataloader: The dataloader of the split.
         representation_function: The frozen SSL encoder.
         data_training_args: Data and training related arguments.
+        frozen_ssl_args (:class:`~args_configs.frozen_ssl_args.FrozenSSLArguments`)
     Returns:
         z (torch.Tensor): (frames, hidden) embeddings of every kept frame.
-        labels (dict): Label name -> tensor, aligned with z along the frame axis.
+        z_seq (torch.Tensor): (utterances, hidden) pooled embeddings, or None when pooling is off.
+        labels (dict): Label name -> tensor. The frame-level entries are aligned with z, the '*_seq'
+            ones with z_seq.
     """
     dataset_name = data_training_args.dataset_name
+    seq_pooling = frozen_ssl_args.ssl_seq_pooling
+    if seq_pooling not in (None, "mean"):
+        raise ValueError(f"ssl_seq_pooling must be None or 'mean', got '{seq_pooling}'.")
     z = None
+    z_seq = None
     labels = {}
 
     def append(name, value):
@@ -215,6 +222,7 @@ def gather_split(dataloader, representation_function, data_training_args):
                 append("phoneme", phonemes_batch.clone())
                 append("speaker_frame", _expand_to_frames(speaker_id_batch, overlap_mask_batch))
                 append("emotion_frame", _expand_to_frames(emotion_batch, overlap_mask_batch))
+                append("speaker_seq", torch.stack(speaker_id_batch))
                 append("emotion_seq", torch.stack(emotion_batch))
 
             "Gather latents for evaluations - the encoder emits every frame, including the padded ones"
@@ -223,7 +231,13 @@ def gather_split(dataloader, representation_function, data_training_args):
             ).reshape(-1, outputs[0].shape[-1])
             z = z_batch.detach().cpu() if step == 0 else torch.cat((z, z_batch.detach().cpu()), dim=0)
 
-    return z, labels
+            "One embedding per utterance for the sequence-level targets. The average runs over every"
+            "frame of the padded sequence, matching DecVAE's SequenceAggregator, which masks nothing"
+            if seq_pooling == "mean":
+                z_seq_batch = outputs[0].mean(dim=1).detach().cpu()
+                z_seq = z_seq_batch if step == 0 else torch.cat((z_seq, z_seq_batch), dim=0)
+
+    return z, z_seq, labels
 
 
 def main():
@@ -392,11 +406,11 @@ def main():
     "Measure total loading time"
     start_time = time.time()
     "Get the representations"
-    z, labels = gather_split(eval_dataloader, representation_function, data_training_args)
+    z, z_seq, labels = gather_split(eval_dataloader, representation_function, data_training_args, frozen_ssl_args)
     if data_training_args.dataset_name == "iemocap":
-        z_test, labels_test = None, {}
+        z_test, z_seq_test, labels_test = None, None, {}
     else:
-        z_test, labels_test = gather_split(test_dataloader, representation_function, data_training_args)
+        z_test, z_seq_test, labels_test = gather_split(test_dataloader, representation_function, data_training_args, frozen_ssl_args)
     print(f"Total loading time: {time.time() - start_time: .4f} seconds")
 
     if use_pca:
@@ -404,13 +418,18 @@ def main():
             "Every split is already in the single evaluation set - fit on a sample of it"
             z_fit = z
         else:
-            z_fit, _ = gather_split(train_dataloader, representation_function, data_training_args)
+            z_fit, _, _ = gather_split(train_dataloader, representation_function, data_training_args, frozen_ssl_args)
         pca = fit_pca(z_fit, frozen_ssl_args, projection_path)
         del z_fit
 
         z = torch.tensor(pca.transform(z), dtype=torch.float32)
         if z_test is not None:
             z_test = torch.tensor(pca.transform(z_test), dtype=torch.float32)
+        "The projection is affine, so transforming the pooled vectors equals pooling the transformed frames"
+        if z_seq is not None:
+            z_seq = torch.tensor(pca.transform(z_seq), dtype=torch.float32)
+        if z_seq_test is not None:
+            z_seq_test = torch.tensor(pca.transform(z_seq_test), dtype=torch.float32)
 
     "Now use train/val representations to get the evaluation metrics"
     "Linear/non-linear classification"
@@ -429,14 +448,44 @@ def main():
                              ("speaker_frame", "speaker_frame", "speaker_frame"),
                              ("emotion_frame", ["cat_emotion_frame", "speaker_frame"], "emotion_frame")]
 
+        def stack_support(y, y_test, target, labels, labels_test):
+            "A two-name target asks for a grouped CV split, which reads the group off the second column"
+            if not isinstance(target, (list, tuple)):
+                return y, y_test
+            y = torch.stack((y, labels[target[1]]), dim=1)
+            if y_test is not None:
+                y_test = torch.stack((y_test, labels_test[target[1]]), dim=1)
+            return y, y_test
+
         for label_name, target, task in frame_targets:
             if task not in tasks and "all" not in tasks:
                 continue
+            y, y_test = stack_support(labels[label_name], labels_test.get(label_name),
+                                      target, labels, labels_test)
             prediction_eval(data_training_args, config,
                 X=z, X_test=z_test,
-                y=labels[label_name], y_test=labels_test.get(label_name),
+                y=y, y_test=y_test,
                 checkpoint=ckp, latent_type="ssl", target=target
             )
+
+        "Sequence-level targets, read off the pooled embeddings"
+        if z_seq is not None:
+            if data_training_args.dataset_name == "iemocap":
+                seq_targets = [("speaker_seq", "speaker_seq", "speaker_seq"),
+                               ("emotion_seq", ["cat_emotion_seq", "speaker_seq"], "emotion_seq")]
+            else:
+                seq_targets = [("speaker_seq", "speaker_seq", "speaker_seq")]
+
+            for label_name, target, task in seq_targets:
+                if task not in tasks and "all" not in tasks:
+                    continue
+                y, y_test = stack_support(labels[label_name], labels_test.get(label_name),
+                                          target, labels, labels_test)
+                prediction_eval(data_training_args, config,
+                    X=z_seq, X_test=z_seq_test,
+                    y=y, y_test=y_test,
+                    checkpoint=ckp, latent_type="ssl", target=target
+                )
 
     "Disentanglement metrics"
     if data_training_args.measure_disentanglement:
@@ -462,6 +511,30 @@ def main():
             latent_type="ssl", mu_train=z, y_train=y_frame_train,
             mu_test=z_test, y_test=y_frame_test, target=columns
         )
+
+        "Sequence-level disentanglement, read off the pooled embeddings. IEMOCAP is the dataset with"
+        "two utterance-level factors, so emotion against speaker is evaluated here the way"
+        "latents_post_analysis.py evaluates it for the DecVAE models"
+        if data_training_args.dataset_name == "iemocap":
+            if z_seq is None:
+                print("Skipping the sequence-level disentanglement - ssl_seq_pooling is not set, so "
+                      "there are no pooled embeddings to evaluate")
+            else:
+                seq_columns = ["speaker_seq", "cat_emotion_seq"]
+                seq_names = ["speaker_seq", "emotion_seq"]
+
+                y_seq_train = torch.cat([labels[n].reshape(-1, 1) for n in seq_names], dim=1)
+                y_seq_train = pd.DataFrame(y_seq_train.cpu().numpy(), columns=seq_columns)
+                if z_seq_test is not None:
+                    y_seq_test = torch.cat([labels_test[n].reshape(-1, 1) for n in seq_names], dim=1)
+                    y_seq_test = pd.DataFrame(y_seq_test.cpu().numpy(), columns=seq_columns)
+                else:
+                    y_seq_test = None
+
+                compute_disentanglement_metrics(data_training_args, config, checkpoint=ckp,
+                    latent_type="ssl", mu_train=z_seq, y_train=y_seq_train,
+                    mu_test=z_seq_test, y_test=y_seq_test, target=seq_columns
+                )
 
 
 if __name__ == "__main__":
