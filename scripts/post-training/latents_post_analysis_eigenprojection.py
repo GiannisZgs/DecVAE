@@ -1,0 +1,661 @@
+# coding=utf-8
+# Copyright 2025 Ioannis Ziogas <ziogioan@ieee.org>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""This script handles all latent evaluations (classification, disentanglement) for the eigenprojection
+baselines - PCA, ICA, kernel PCA and SFA. These learn a projection of the input frames directly, so
+there is no encoder to train and no checkpoints to iterate over: the projection is fitted on the train
+split and applied to the evaluation splits.
+
+Frames are kept in their sequence structure while they are gathered, one group of frames per utterance.
+SFA reads one-step differences along that axis, so a flat concatenation would take differences across
+utterance boundaries. PCA, ICA and kernel PCA ignore the structure and see the frames as a set.
+Supported for SimVowels, TIMIT and IEMOCAP.
+
+Decomposition of inputs is not supported here so if it's not already calculated then another script
+like vaes_pretraining.py should be ran first."""
+
+import os
+import sys
+# Add project root to Python path for module resolution
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+    print(f"Added {project_root} to Python path")
+
+from models import FrameGeometry
+from data_collation import DataCollatorForVAE1DLatentPostAnalysis_NoFeatureExtraction
+from config_files import DecVAEConfig
+from args_configs import (
+    ModelArgumentsPost,
+    DataTrainingArgumentsPost,
+    DecompositionArguments,
+    TrainingObjectiveArguments,
+    EigenprojectionArguments,
+)
+from utils import parse_args, debugger_is_active
+from utils.cache_utils import build_cache_file_names
+from latent_analysis_utils import prediction_eval
+from disentanglement_utils import compute_disentanglement_metrics
+from sklearn.decomposition import PCA, FastICA, KernelPCA
+from sksfa import SFA
+import joblib
+import numpy as np
+
+import transformers
+from transformers import (
+    Wav2Vec2FeatureExtractor,
+    is_wandb_available,
+    set_seed,
+    HfArgumentParser,
+)
+
+import pandas as pd
+import datasets
+import torch
+from accelerate import Accelerator
+from accelerate.logging import get_logger
+from accelerate import DistributedDataParallelKwargs as DDPK
+from datasets import DatasetDict, concatenate_datasets, Dataset
+from torch.utils.data.dataloader import DataLoader
+import time
+
+JSON_FILE_NAME_MANUAL = "config_files/baselines/sfa/sim_vowels/latent_evaluations/config_sfa_latent_anal_sim_vowels.json"
+
+logger = get_logger(__name__)
+
+SUPPORTED_DATASETS = ["sim_vowels", "timit", "iemocap"]
+SUPPORTED_METHODS = ["pca", "ica", "kpca-rbf", "kpca-poly", "kpca-sigmoid", "sfa"]
+
+"Dimensionality each input type was projected to in latents_post_analysis_vae1D.py, used when"
+"projection_components is not set"
+DEFAULT_COMPONENTS = {
+    "mel": 20,
+    "mel_ocs": 30,
+    "mel_all": 35,
+    "waveform": 50,
+    "waveform_ocs": 65,
+    "waveform_all": 70,
+}
+
+
+def _common_device(*values):
+    """
+    Device of the tensors found in values, which may be nested lists of them.
+
+    Returns None when none of them is a tensor, so torch keeps its default, and raises when they
+    disagree - labels built on different devices cannot be concatenated later on.
+    """
+    devices = set()
+    pending = list(values)
+    while pending:
+        value = pending.pop()
+        if isinstance(value, torch.Tensor):
+            devices.add(value.device)
+        elif isinstance(value, (list, tuple)):
+            pending.extend(value)
+    if len(devices) > 1:
+        raise ValueError(f"The labels and the overlap mask are on different devices: {sorted(str(d) for d in devices)}")
+    return next(iter(devices)) if devices else None
+
+
+def _expand_to_frames(seq_values, overlap_mask_batch):
+    "Repeat an utterance-level factor once per kept frame of that utterance"
+    # torch.tensor builds on the CPU by default, so place the result on the inputs' device
+    device = _common_device(seq_values, overlap_mask_batch)
+    return torch.cat([
+        torch.tensor([factor for _ in range(int((~overlap_mask_batch[i]).sum()))], device=device)
+        for i, factor in enumerate(seq_values)
+    ])
+
+
+def resolve_components(eigenprojection_args):
+    "Projection dimensionality, falling back to the per-input-type defaults of the VAE script"
+    if eigenprojection_args.projection_components is not None:
+        return eigenprojection_args.projection_components
+    input_type = eigenprojection_args.projection_input_type
+    if input_type not in DEFAULT_COMPONENTS:
+        raise ValueError(
+            f"No default number of components for input type '{input_type}'. Set "
+            f"projection_components in the config file."
+        )
+    return DEFAULT_COMPONENTS[input_type]
+
+
+def resolve_fit_fraction(eigenprojection_args):
+    "Fitting sample size, falling back to the fractions the VAE script used"
+    if eigenprojection_args.projection_fit_fraction is not None:
+        return eigenprojection_args.projection_fit_fraction
+    "Those fractions sample frames. SFA samples whole utterances, so the same number would cut the"
+    "frame count far harder, and it needs more frames than features to whiten"
+    if eigenprojection_args.projection_method == "sfa":
+        return 1.0
+    if "kpca-" in eigenprojection_args.projection_method:
+        return 0.01
+    if eigenprojection_args.projection_input_type in ("waveform_all", "waveform_ocs"):
+        return 0.2
+    return 1.0
+
+
+def build_projection(eigenprojection_args, n_components):
+    "The estimator implementing the requested method"
+    method = eigenprojection_args.projection_method
+    gamma = eigenprojection_args.projection_kernel_gamma
+    if method == "pca":
+        return PCA(n_components=n_components, random_state=0)
+    elif method == "ica":
+        return FastICA(n_components=n_components, random_state=0, whiten='unit-variance')
+    elif method == "kpca-rbf":
+        return KernelPCA(n_components=n_components, kernel='rbf', gamma=gamma, random_state=0)
+    elif method == "kpca-poly":
+        return KernelPCA(n_components=n_components, kernel='poly', gamma=gamma, random_state=0)
+    elif method == "kpca-sigmoid":
+        return KernelPCA(n_components=n_components, kernel='sigmoid', gamma=gamma, random_state=0)
+    elif method == "sfa":
+        return SFA(n_components=n_components)
+    raise ValueError(f"projection_method must be one of {SUPPORTED_METHODS}, got '{method}'.")
+
+
+def select_features(batch, input_type, batch_size):
+    """
+    Pick the decomposition components the projection is fitted on and flatten them per frame.
+
+    Mirrors the input selection latents_post_analysis_vae1D.py performs for VAE_1D_FC, so the frames
+    reaching the projection are the same ones. Preprocessing stores each utterance with a leading
+    singleton axis, which is dropped first so that component 0 is the original signal, as it is
+    everywhere else in the project.
+
+    Args:
+        batch (dict): The collated batch, holding (batch, 1, components, frames, samples)
+            input_values, or (batch, components, frames, samples) without the singleton.
+        input_type (str): One of the keys of DEFAULT_COMPONENTS.
+        batch_size (int): Utterances in the batch.
+    Returns:
+        torch.Tensor: (batch, frames, features)
+    """
+    values = batch["input_values"]
+    if values.dim() == 5 and values.shape[1] == 1:
+        values = values.squeeze(1)
+    if values.dim() != 4:
+        raise ValueError(
+            f"input_values should carry a component axis - expected 4 or 5 dimensions, got "
+            f"{tuple(batch['input_values'].shape)}."
+        )
+    if input_type in ("waveform", "mel"):
+        "The original signal alone"
+        return values[:, 0, :, :]
+    elif input_type in ("waveform_ocs", "mel_ocs"):
+        "Every component but the original signal"
+        values = values[:, 1:, ...]
+    elif input_type in ("waveform_all", "mel_all"):
+        pass
+    else:
+        raise ValueError(f"projection_input_type '{input_type}' is not supported.")
+    return values.transpose(1, 2).reshape(batch_size, values.shape[2], -1)
+
+
+def iter_segments(z, seq_lengths, indices=None):
+    """
+    Cut gathered frames back into one group per utterance.
+
+    The groups are slices of z, so they are views and the sequence structure costs no extra memory -
+    holding a separate tensor per utterance as well as the flat matrix would double a split that
+    already runs to several GB for the '*_all' input types.
+
+    Args:
+        z (torch.Tensor): (frames, features) gathered frames.
+        seq_lengths (list): Frames per utterance, in order.
+        indices (list or None): Which utterances to yield. None yields all of them.
+    Yields:
+        torch.Tensor: (frames of this utterance, features)
+    """
+    offsets = np.cumsum([0] + list(seq_lengths))
+    for i in (range(len(seq_lengths)) if indices is None else indices):
+        yield z[offsets[i]:offsets[i + 1]]
+
+
+def fit_projection(z_fit, seq_lengths_fit, eigenprojection_args, n_components, projection_path):
+    """
+    Fit the projection on the train split, or load one fitted earlier.
+
+    Args:
+        z_fit (torch.Tensor): (frames, features) every training frame, in order.
+        seq_lengths_fit (list): Frames per utterance, for the methods that read the time axis.
+        eigenprojection_args (:class:`~args_configs.eigenprojection_args.EigenprojectionArguments`)
+        n_components (int): Dimensionality of the learned representation.
+        projection_path (str): Where the fitted projection is cached.
+    Returns:
+        The fitted estimator.
+    """
+    if os.path.exists(projection_path):
+        print(f"Loading the fitted {eigenprojection_args.projection_method} from {projection_path}")
+        return joblib.load(projection_path)
+
+    method = eigenprojection_args.projection_method
+    fraction = resolve_fit_fraction(eigenprojection_args)
+    projection = build_projection(eigenprojection_args, n_components)
+
+    if method == "sfa":
+        "SFA is fitted one utterance at a time. Every call adds that utterance's covariance and the"
+        "covariance of its one-step differences to the running totals, and differences are never"
+        "taken between two utterances, which is what a flat concatenation would do"
+        n_utterances = len(seq_lengths_fit)
+        if fraction < 1.0:
+            rng = np.random.default_rng(seed=eigenprojection_args.projection_seed)
+            n_fit = max(int(n_utterances * fraction), 1)
+            selected = sorted(rng.choice(n_utterances, size=n_fit, replace=False))
+        else:
+            selected = None
+        print(f"Fitting SFA to {n_components} slow features on "
+              f"{n_utterances if selected is None else len(selected)} of {n_utterances} utterances")
+
+        n_used = 0
+        n_frames = 0
+        for segment in iter_segments(z_fit, seq_lengths_fit, selected):
+            "A single frame carries no difference, so it would only contribute to the covariance"
+            if segment.shape[0] < 2:
+                continue
+            projection.partial(segment.numpy().astype(np.float64))
+            n_used += 1
+            n_frames += segment.shape[0]
+        if n_used == 0:
+            raise ValueError("No utterance had the two frames SFA needs to form a difference.")
+        "SFA whitens against the covariance of the fitting frames, which is singular when they are"
+        "fewer than the features - scipy then fails inside the generalized eigenproblem"
+        if n_frames <= z_fit.shape[1]:
+            raise ValueError(
+                f"SFA was given {n_frames} frames of {z_fit.shape[1]} features to fit on, so their "
+                f"covariance is singular. Raise projection_fit_fraction (currently {fraction}), use "
+                f"more data, or pick an input type with fewer features than "
+                f"'{eigenprojection_args.projection_input_type}'."
+            )
+
+        "partial() only accumulates - the eigenproblem is solved on the first transform, so the"
+        "estimator is not usable, or worth caching, until that has happened"
+        projection.transform(z_fit[:2].numpy().astype(np.float64))
+        slowness = getattr(projection, "_partial_eigenvalues", None)
+        if slowness is not None:
+            print(f"Slowness of the retained features: {np.round(slowness[:n_components], 5)}")
+    else:
+        if fraction >= 1.0:
+            print(f"Fitting {method} to {n_components} components on all {z_fit.shape[0]} frames")
+            projection.fit(z_fit)
+        else:
+            rng = np.random.default_rng(seed=eigenprojection_args.projection_seed)
+            n_fit = int(z_fit.shape[0] * fraction)
+            indices = rng.choice(z_fit.shape[0], size=n_fit, replace=False)
+            print(f"Fitting {method} to {n_components} components on {n_fit} of {z_fit.shape[0]} frames")
+            projection.fit(z_fit[indices])
+        if method == "pca":
+            print(f"Explained variance ratio, summed: {projection.explained_variance_ratio_.sum(): .4f}")
+
+    os.makedirs(os.path.dirname(projection_path), exist_ok=True)
+    joblib.dump(projection, projection_path)
+    return projection
+
+
+def transform_z(projection, z, method):
+    "Project gathered frames, or pass through when there are none"
+    if z is None:
+        return None
+    if method == "sfa":
+        "The generalized eigenvectors are solved in double precision, so feed them the same"
+        return torch.tensor(projection.transform(z.numpy().astype(np.float64)), dtype=torch.float32)
+    return torch.tensor(projection.transform(z))
+
+
+def gather_split(dataloader, data_training_args, eigenprojection_args):
+    """
+    Read a split and collect frame-level inputs with their labels, keeping the sequence structure.
+
+    Args:
+        dataloader: The dataloader of the split.
+        data_training_args: Data and training related arguments.
+        eigenprojection_args (:class:`~args_configs.eigenprojection_args.EigenprojectionArguments`)
+    Returns:
+        z (torch.Tensor): (frames, features) every kept frame of the split, in order.
+        seq_lengths (list): Frames each utterance contributed to z, in the same order. Utterances
+            whose frames were all discarded are left out. iter_segments cuts z back up with these.
+        labels (dict): Label name -> tensor, aligned with z.
+    """
+    dataset_name = data_training_args.dataset_name
+    input_type = eigenprojection_args.projection_input_type
+    collected = []
+    seq_lengths = []
+    labels = {}
+
+    def append(name, value):
+        labels[name] = value if name not in labels else torch.cat((labels[name], value), dim=0)
+
+    with torch.no_grad():
+        for step, batch in enumerate(dataloader):
+            batch_size = batch["input_values"].shape[0]
+            sub_attention_mask = batch.pop("sub_attention_mask", None)
+            overlap_mask_batch = batch.pop("overlap_mask", None)
+
+            assert overlap_mask_batch is not None if dataset_name in ["timit", "iemocap"] else True
+            if overlap_mask_batch is None or not data_training_args.discard_label_overlaps:
+                overlap_mask_batch = torch.zeros_like(sub_attention_mask, dtype=torch.bool)
+            else:
+                "Frames corresponding to padding are set as True in the overlap and discarded"
+                padded = sub_attention_mask.sum(dim=-1)
+                for b in range(batch_size):
+                    overlap_mask_batch[b, padded[b]:] = 1
+                overlap_mask_batch = overlap_mask_batch.bool()
+
+            if dataset_name == "sim_vowels":
+                vowel_labels_batch = batch.pop("vowel_labels", None)
+                speaker_vt_factor_batch = batch.pop("speaker_vt_factor", None)
+                vowel_labels_batch = [
+                    [ph for i, ph in enumerate(utt) if not overlap_mask_batch[j, i]]
+                    for j, utt in enumerate(vowel_labels_batch)
+                ]
+            elif dataset_name == "timit":
+                phonemes39_batch = batch.pop("phonemes39", None)[~overlap_mask_batch]
+                phonemes48_batch = batch.pop("phonemes48", None)[~overlap_mask_batch]
+                batch.pop("start_phonemes", None)
+                batch.pop("stop_phonemes", None)
+                speaker_id_batch = list(batch.pop("speaker_id", None))
+            elif dataset_name == "iemocap":
+                phonemes_batch = batch.pop("phonemes", None)[~overlap_mask_batch]
+                emotion_batch = list(batch.pop("emotion", None))
+                batch.pop("start_phonemes", None)
+                batch.pop("stop_phonemes", None)
+                speaker_id_batch = list(batch.pop("speaker_id", None))
+
+            "There is no encoder here - the selected components are the representation"
+            frames = select_features(batch, input_type, batch_size)
+            del batch
+
+            "Gather labels for evaluations"
+            if dataset_name == "sim_vowels":
+                vowel_device = _common_device(vowel_labels_batch, overlap_mask_batch)
+                append("vowel", torch.cat([torch.tensor(v, device=vowel_device) for v in vowel_labels_batch]))
+                append("speaker_frame", _expand_to_frames(speaker_vt_factor_batch, overlap_mask_batch))
+                append("speaker_seq", speaker_vt_factor_batch.clone())
+            elif dataset_name == "timit":
+                append("phoneme39", phonemes39_batch.clone())
+                append("phoneme48", phonemes48_batch.clone())
+                append("speaker_frame", _expand_to_frames(speaker_id_batch, overlap_mask_batch))
+                append("speaker_seq", torch.stack(speaker_id_batch))
+            elif dataset_name == "iemocap":
+                append("phoneme", phonemes_batch.clone())
+                append("speaker_frame", _expand_to_frames(speaker_id_batch, overlap_mask_batch))
+                append("emotion_frame", _expand_to_frames(emotion_batch, overlap_mask_batch))
+                append("speaker_seq", torch.stack(speaker_id_batch))
+                append("emotion_seq", torch.stack(emotion_batch))
+
+            if dataset_name == "sim_vowels":
+                overlap_mask_batch = overlap_mask_batch[sub_attention_mask].view(batch_size, -1)
+
+            "Keep the frames of each utterance together and record how many it kept, so the time axis"
+            "inside an utterance survives. Concatenating them in order reproduces the flat frame"
+            "matrix the other post-analysis scripts build with masked_select"
+            for b in range(batch_size):
+                kept = frames[b][~overlap_mask_batch[b]]
+                if kept.shape[0] > 0:
+                    collected.append(kept.detach().cpu())
+                    seq_lengths.append(int(kept.shape[0]))
+
+    z = torch.cat(collected, dim=0) if collected else None
+    return z, seq_lengths, labels
+
+
+def main():
+    "Parse the arguments"
+    parser = HfArgumentParser((ModelArgumentsPost, DataTrainingArgumentsPost, TrainingObjectiveArguments,
+                               DecompositionArguments, EigenprojectionArguments))
+    if debugger_is_active() or ('TERM_PROGRAM' in os.environ.keys() and os.environ['TERM_PROGRAM'] == 'vscode'):
+        model_args, data_training_args, training_obj_args, decomp_args, eigenprojection_args = parser.parse_json_file(json_file=JSON_FILE_NAME_MANUAL)
+    else:
+        args = parse_args()
+        model_args, data_training_args, training_obj_args, decomp_args, eigenprojection_args = parser.parse_json_file(json_file=args.config_file)
+    delattr(model_args, "comment_model_args")
+    delattr(data_training_args, "comment_data_args")
+    delattr(training_obj_args, "comment_tr_obj_args")
+    delattr(decomp_args, "comment_decomp_args")
+    delattr(eigenprojection_args, "comment_eigenprojection_args")
+
+    if data_training_args.dataset_name not in SUPPORTED_DATASETS:
+        raise ValueError(
+            f"The eigenprojection baselines are set up for {SUPPORTED_DATASETS}, got "
+            f"'{data_training_args.dataset_name}'."
+        )
+    if eigenprojection_args.projection_method not in SUPPORTED_METHODS:
+        raise ValueError(
+            f"projection_method must be one of {SUPPORTED_METHODS}, got "
+            f"'{eigenprojection_args.projection_method}'."
+        )
+
+    "Initialize the accelerator. Accelerator handles device placement for us"
+    kwargs = DDPK(find_unused_parameters=True)
+    accelerator = Accelerator(kwargs_handlers=[kwargs])
+    logger.info(accelerator.state, main_process_only=False)
+    if accelerator.is_local_main_process:
+        datasets.utils.logging.set_verbosity_warning()
+        transformers.utils.logging.set_verbosity_info()
+
+        # set up weights and biases if available
+        if is_wandb_available() and data_training_args.with_wandb:
+            import wandb
+
+            wandb.init(project=data_training_args.wandb_project, group=data_training_args.wandb_group)
+    else:
+        datasets.utils.logging.set_verbosity_error()
+        transformers.utils.logging.set_verbosity_error()
+
+    "If passed along, set the training seed now."
+    if data_training_args.seed is not None:
+        set_seed(data_training_args.seed)
+
+    accelerator.wait_for_everyone()
+
+    "preprocess the datasets including loading the audio, resampling and normalization"
+    feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(model_args.model_name_or_path)
+
+    "set max & min audio length in number of samples"
+    max_length = int(data_training_args.max_duration_in_seconds * feature_extractor.sampling_rate)
+    min_length = int(data_training_args.min_duration_in_seconds * feature_extractor.sampling_rate)
+
+    "load cached preprocessed files"
+    if data_training_args.train_cache_file_name is None or data_training_args.validation_cache_file_name is None:
+        raise ValueError("cache_file_names is not defined. Please define it in the config file.")
+    else:
+        cache_file_names = build_cache_file_names(data_training_args, data_training_args.input_type)
+
+    "Load model with hyperparameters"
+    model_args.max_duration_in_seconds = data_training_args.max_duration_in_seconds
+    config = DecVAEConfig(**{**model_args.__dict__, **training_obj_args.__dict__, **decomp_args.__dict__})
+
+    "The collator reads the feature settings off the VAE fields it was written against. The method is"
+    "configured through its own arguments, so hand them over here rather than in the config file"
+    model_args.vae_input_type = eigenprojection_args.projection_input_type
+    model_args.n_mels_vae = eigenprojection_args.projection_n_mels
+    model_args.mel_norm_vae = eigenprojection_args.projection_mel_norm
+
+    "load audio files into numpy arrays"
+    with accelerator.main_process_first():
+
+        vectorized_datasets = DatasetDict()
+        vectorized_datasets["train"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["train"]])
+        if data_training_args.dataset_name == "timit":
+            vectorized_datasets["validation"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["dev"]])
+        else:
+            vectorized_datasets["validation"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["validation"]])
+        vectorized_datasets["test"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["test"]])
+
+        if min_length > 0.0:
+            vectorized_datasets = vectorized_datasets.filter(
+                lambda x: x > min_length,
+                num_proc=data_training_args.preprocessing_num_workers,
+                input_columns=["input_length"],
+            )
+        vectorized_datasets = vectorized_datasets.remove_columns("input_length")
+
+    "Make sure to obtain all the samples in the dataset"
+    assert config.max_frames_per_batch == "all"
+
+    "There is nothing to load - the projection is fitted here. The run is named after the method and"
+    "its settings so that results from different projections do not overwrite each other"
+    n_components = resolve_components(eigenprojection_args)
+    ckp = eigenprojection_args.projection_method + "_" + eigenprojection_args.projection_input_type \
+        + "_c" + str(n_components)
+    projection_path = os.path.join(data_training_args.parent_dir, "eigenprojections", ckp + "_model.joblib")
+    print(f"Evaluating the {eigenprojection_args.projection_method} projection of "
+          f"{eigenprojection_args.projection_input_type} frames onto {n_components} components")
+
+    "data collator. The frame grid comes from the conv geometry the rest of the project shares -"
+    "there is no encoder here, and the collator only asks a model for that geometry"
+    representation_function = FrameGeometry(config.conv_kernel, config.conv_stride)
+    mask_time_prob = config.mask_time_prob if model_args.mask_time_prob is None else model_args.mask_time_prob
+    mask_time_length = config.mask_time_length if model_args.mask_time_length is None else model_args.mask_time_length
+
+    data_collator = DataCollatorForVAE1DLatentPostAnalysis_NoFeatureExtraction(
+        model=representation_function,
+        model_name="VAE_1D_FC",
+        feature_extractor=feature_extractor,
+        model_args=model_args,
+        dataset_name=data_training_args.dataset_name,
+        pad_to_multiple_of=data_training_args.pad_to_multiple_of,
+        mask_time_prob=mask_time_prob,
+        mask_time_length=mask_time_length,
+    )
+
+    "The baselines are evaluated on ordered frames"
+    if data_training_args.dataset_name == "iemocap":
+        eval_dataset = concatenate_datasets([vectorized_datasets["train"], vectorized_datasets["validation"], vectorized_datasets["test"]])
+        eval_dataloader = DataLoader(
+            eval_dataset,
+            shuffle=False,
+            collate_fn=data_collator,
+            batch_size=data_training_args.per_device_train_batch_size
+        )
+    else:
+        train_dataloader = DataLoader(
+            vectorized_datasets["train"],
+            shuffle=False,
+            collate_fn=data_collator,
+            batch_size=data_training_args.per_device_train_batch_size,
+        )
+        eval_dataloader = DataLoader(
+            vectorized_datasets["validation"],
+            shuffle=False,
+            collate_fn=data_collator,
+            batch_size=data_training_args.per_device_eval_batch_size
+        )
+        test_dataloader = DataLoader(
+            vectorized_datasets["test"],
+            shuffle=False,
+            collate_fn=data_collator,
+            batch_size=data_training_args.per_device_eval_batch_size
+        )
+
+    "Prepare everything with HF accelerator. FrameGeometry holds no parameters and is never called"
+    "for a forward pass, so only the dataloaders are prepared"
+    if data_training_args.dataset_name == "iemocap":
+        "Evaluates on a single set"
+        eval_dataloader = accelerator.prepare(eval_dataloader)
+    else:
+        train_dataloader, eval_dataloader, test_dataloader = accelerator.prepare(
+            train_dataloader, eval_dataloader, test_dataloader
+        )
+
+    "Measure total loading time"
+    start_time = time.time()
+    "Get the representations"
+    z, seq_lengths, labels = gather_split(eval_dataloader, data_training_args, eigenprojection_args)
+    if data_training_args.dataset_name == "iemocap":
+        z_test, labels_test = None, {}
+    else:
+        z_test, _, labels_test = gather_split(test_dataloader, data_training_args, eigenprojection_args)
+    print(f"Total loading time: {time.time() - start_time: .4f} seconds")
+
+    "Fit the projection on the train split and apply it to the evaluation splits"
+    if data_training_args.dataset_name == "iemocap":
+        "Every split is already in the single evaluation set - fit on it"
+        z_fit, seq_lengths_fit = z, seq_lengths
+    else:
+        z_fit, seq_lengths_fit, _ = gather_split(train_dataloader, data_training_args, eigenprojection_args)
+    projection = fit_projection(z_fit, seq_lengths_fit, eigenprojection_args, n_components, projection_path)
+    if data_training_args.dataset_name != "iemocap":
+        del z_fit, seq_lengths_fit
+
+    z = transform_z(projection, z, eigenprojection_args.projection_method)
+    z_test = transform_z(projection, z_test, eigenprojection_args.projection_method)
+
+    "Now use train/val representations to get the evaluation metrics"
+    "Linear/non-linear classification"
+    tasks = data_training_args.classification_tasks
+    if data_training_args.classify:
+        "Label to gather, target name to record it under, and the task that switches it on -"
+        "the three differ, following the naming latents_post_analysis.py already uses"
+        if data_training_args.dataset_name == "sim_vowels":
+            frame_targets = [("vowel", "vowel", "vowel"),
+                             ("speaker_frame", "speaker_frame", "speaker_frame")]
+        elif data_training_args.dataset_name == "timit":
+            frame_targets = [("phoneme48", "phoneme48", "phoneme"),
+                             ("speaker_frame", "speaker_frame", "speaker_frame")]
+        else:
+            frame_targets = [("phoneme", "phoneme_frame", "phoneme"),
+                             ("speaker_frame", "speaker_frame", "speaker_frame"),
+                             ("emotion_frame", ["cat_emotion_frame", "speaker_frame"], "emotion_frame")]
+
+        def stack_support(y, y_test, target, labels, labels_test):
+            "A two-name target asks for a grouped CV split, which reads the group off the second column"
+            if not isinstance(target, (list, tuple)):
+                return y, y_test
+            y = torch.stack((y, labels[target[1]]), dim=1)
+            if y_test is not None:
+                y_test = torch.stack((y_test, labels_test[target[1]]), dim=1)
+            return y, y_test
+
+        for label_name, target, task in frame_targets:
+            if task not in tasks and "all" not in tasks:
+                continue
+            y, y_test = stack_support(labels[label_name], labels_test.get(label_name),
+                                      target, labels, labels_test)
+            prediction_eval(data_training_args, config,
+                X=z, X_test=z_test,
+                y=y, y_test=y_test,
+                checkpoint=ckp, latent_type="z", target=target
+            )
+
+    "Disentanglement metrics"
+    if data_training_args.measure_disentanglement:
+        if data_training_args.dataset_name == "sim_vowels":
+            columns = ["vowel", "speaker_frame"]
+            names = ["vowel", "speaker_frame"]
+        elif data_training_args.dataset_name == "timit":
+            columns = ["phoneme", "speaker_frame"]
+            names = ["phoneme39", "speaker_frame"]
+        else:
+            columns = ["phoneme", "speaker_frame", "cat_emotion_frame"]
+            names = ["phoneme", "speaker_frame", "emotion_frame"]
+
+        y_frame_train = torch.cat([labels[n].reshape(-1, 1) for n in names], dim=1)
+        y_frame_train = pd.DataFrame(y_frame_train.cpu().numpy(), columns=columns)
+        if z_test is not None:
+            y_frame_test = torch.cat([labels_test[n].reshape(-1, 1) for n in names], dim=1)
+            y_frame_test = pd.DataFrame(y_frame_test.cpu().numpy(), columns=columns)
+        else:
+            y_frame_test = None
+
+        compute_disentanglement_metrics(data_training_args, config, checkpoint=ckp,
+            latent_type="z", mu_train=z, y_train=y_frame_train,
+            mu_test=z_test, y_test=y_frame_test, target=columns
+        )
+
+
+if __name__ == "__main__":
+    main()

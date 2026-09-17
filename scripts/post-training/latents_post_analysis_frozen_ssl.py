@@ -69,7 +69,7 @@ from datasets import DatasetDict, concatenate_datasets, Dataset
 from torch.utils.data.dataloader import DataLoader
 import time
 
-JSON_FILE_NAME_MANUAL = "config_files/baselines/wav2vec2/sim_vowels/latent_evaluations/config_wav2vec2_latent_anal_sim_vowels.json"
+JSON_FILE_NAME_MANUAL = "config_files/baselines/hubert/iemocap/latent_evaluations/config_hubert_latent_anal_iemocap.json"
 
 logger = get_logger(__name__)
 
@@ -511,6 +511,30 @@ def main():
             latent_type="ssl", mu_train=z, y_train=y_frame_train,
             mu_test=z_test, y_test=y_frame_test, target=columns
         )
+
+        "Sequence-level disentanglement, read off the pooled embeddings. IEMOCAP is the dataset with"
+        "two utterance-level factors, so emotion against speaker is evaluated here the way"
+        "latents_post_analysis.py evaluates it for the DecVAE models"
+        if data_training_args.dataset_name == "iemocap":
+            if z_seq is None:
+                print("Skipping the sequence-level disentanglement - ssl_seq_pooling is not set, so "
+                      "there are no pooled embeddings to evaluate")
+            else:
+                seq_columns = ["speaker_seq", "cat_emotion_seq"]
+                seq_names = ["speaker_seq", "emotion_seq"]
+
+                y_seq_train = torch.cat([labels[n].reshape(-1, 1) for n in seq_names], dim=1)
+                y_seq_train = pd.DataFrame(y_seq_train.cpu().numpy(), columns=seq_columns)
+                if z_seq_test is not None:
+                    y_seq_test = torch.cat([labels_test[n].reshape(-1, 1) for n in seq_names], dim=1)
+                    y_seq_test = pd.DataFrame(y_seq_test.cpu().numpy(), columns=seq_columns)
+                else:
+                    y_seq_test = None
+
+                compute_disentanglement_metrics(data_training_args, config, checkpoint=ckp,
+                    latent_type="ssl", mu_train=z_seq, y_train=y_seq_train,
+                    mu_test=z_seq_test, y_test=y_seq_test, target=seq_columns
+                )
 
 
 if __name__ == "__main__":
