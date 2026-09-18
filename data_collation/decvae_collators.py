@@ -1118,6 +1118,13 @@ class DataCollatorForDecVAELatentPostAnalysis_NoFeatureExtraction:
             "Pad input_seq_values"
             batch['input_seq_values'] = pad_sequence([input_seq_values.clone().detach().to(device) for input_seq_values in batch['input_seq_values']],batch_first=True, padding_value=0.0)
 
+        "Below is most recent addition, not sure if it's right"
+        if len(batch["input_values"].shape) > 4 and batch["input_values"].shape[1] == 1:
+            batch["input_values"] = batch["input_values"].squeeze(1)
+
+        if len(batch["input_seq_values"].shape) > 3 and batch["input_seq_values"].shape[1] == 1:
+            batch["input_seq_values"] = batch["input_seq_values"].squeeze(1)
+
         "Features were extracted at the preprocessing step - only normalize them here"
         normalize_mel_batch(batch, self.input_type, self.data_training_args, device)
 

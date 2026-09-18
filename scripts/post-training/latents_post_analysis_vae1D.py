@@ -1215,10 +1215,10 @@ def main():
                 )
 
                 "Check vowels/speakers disentanglement in z - With Disease Duration"
-                compute_disentanglement_metrics(data_training_args,config,checkpoint = ckp,
-                    latent_type="z", mu_train = z_mean, y_train = y_frame_train_dis, 
-                    mu_test = None, y_test = None, target = ["disease_duration_frame","phoneme_frame","speaker_frame"]
-                )
+                #compute_disentanglement_metrics(data_training_args,config,checkpoint = ckp,
+                #    latent_type="z", mu_train = z_mean, y_train = y_frame_train_dis, 
+                #    mu_test = None, y_test = None, target = ["disease_duration_frame","phoneme_frame","speaker_frame"]
+                #)
             elif "iemocap" in data_training_args.dataset_name:
                 "Check phonemes/speakers/emotions disentanglement in z"
                 compute_disentanglement_metrics(data_training_args,config,checkpoint = ckp,

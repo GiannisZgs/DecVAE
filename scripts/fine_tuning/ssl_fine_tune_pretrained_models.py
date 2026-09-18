@@ -180,10 +180,11 @@ def main():
                 vectorized_datasets["test"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["test"]])
             except KeyError:
                 pass
-            try:
-                vectorized_datasets["dev"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["dev"]])
-            except KeyError:
-                pass
+            if "iemocap" not in data_training_args.dataset_name:
+                try:
+                    vectorized_datasets["dev"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["dev"]])
+                except KeyError:
+                    pass
             if min_length > 0.0:
                 vectorized_datasets = vectorized_datasets.filter(
                     lambda x: x > min_length,
@@ -259,8 +260,8 @@ def main():
 
             vectorized_datasets = vectorized_datasets.remove_columns("input_length")
             
-        if data_training_args.preprocessing_only:
-            return
+    if data_training_args.preprocessing_only:
+        return
 
     
     "Set up the model - either initialize from scratch or load pretrained model"

@@ -41,6 +41,57 @@ class EigenprojectionArguments:
                           "take the original signal alone, '*_ocs' every component but the original, "
                           "'*_all' all of them."},
     )
+    projection_sfa_fit_grid: str = field(
+        default="frames",
+        metadata={"help": "Which time axis SFA accumulates its covariances on. 'sequence' reads the "
+                          "sequence cut into frames that tile the utterance, so a one-step difference "
+                          "is taken between disjoint windows - preprocessing extracts the 'mel*' "
+                          "features on that same grid. 'frames' uses the strided grid the labels sit "
+                          "on, whose consecutive frames overlap. Either way the map is applied to the "
+                          "label grid. Ignored by the other methods, which do not read the time axis."},
+    )
+    projection_standardize: bool = field(
+        default=True,
+        metadata={"help": "Standardize the features before the projection, with the mean and standard "
+                          "deviation fitted on the train split alone. Mel inputs are standardized per "
+                          "mel channel, waveform inputs per frame position. Without it the high-energy "
+                          "low mel bands dominate the covariance."},
+    )
+    projection_expansion: str = field(
+        default=None,
+        metadata={"help": "Function class the linear projection is learned over. None leaves the frames "
+                          "as they are. 'context' concatenates projection_context_frames neighbours on "
+                          "either side of each frame. 'quadratic' appends every pairwise product. Linear "
+                          "SFA on plain log-mel returns overall energy and spectral tilt, which are slow "
+                          "but uninformative, so the expanded run is the headline and the plain one a "
+                          "secondary row."},
+    )
+    projection_context_frames: int = field(
+        default=5,
+        metadata={"help": "Neighbours taken on either side for the 'context' expansion, so the width "
+                          "grows by a factor of 2*projection_context_frames + 1. Frames near the edges "
+                          "of an utterance repeat the edge, which keeps one output frame per input frame "
+                          "and so keeps the labels aligned."},
+    )
+    projection_expansion_components: int = field(
+        default=500,
+        metadata={"help": "Dimensionality the expanded features are PCA-reduced to before the projection "
+                          "is fitted. Needed for 'quadratic', which squares the width. None or 0 skips "
+                          "the reduction."},
+    )
+    projection_pool_mel_bins: bool = field(
+        default=False,
+        metadata={"help": "Average the time bins preprocessing extracted inside each frame, leaving one "
+                          "value per mel channel, so a frame carries projection_n_mels features instead "
+                          "of n_mels times bins. Off by default, which keeps the front-end identical to "
+                          "the other baselines."},
+    )
+    projection_seq_pooling: str = field(
+        default=None,
+        metadata={"help": "How the frames of an utterance are pooled into one sequence-level embedding, "
+                          "for the '*_seq' classification and disentanglement targets. None skips them. "
+                          "'mean' averages over the frames of the utterance."},
+    )
     projection_n_mels: int = field(
         default=80,
         metadata={"help": "Number of mel bands, for the 'mel*' input types."},
