@@ -32,11 +32,9 @@ class FrameGeometry(nn.Module):
     Args:
         conv_kernel (list): Kernel size of each conv layer of the frame grid.
         conv_stride (list): Stride of each conv layer of the frame grid.
-        config (:class:`~config_files.configuration_decVAE.DecVAEConfig`, optional): Passed through to
-            the collator, which reads num_negatives off it.
     """
 
-    def __init__(self, conv_kernel, conv_stride, config=None):
+    def __init__(self, conv_kernel, conv_stride):
         super().__init__()
         if len(conv_kernel) != len(conv_stride):
             raise ValueError(
@@ -45,12 +43,6 @@ class FrameGeometry(nn.Module):
             )
         self.kernels = list(conv_kernel)
         self.strides = list(conv_stride)
-
-        "The post-analysis collator samples negatives for the contrastive loss and reads"
-        "num_negatives off the model config. There is no model here, so supply one to read"
-        self.config = config
-        if self.config is not None and not hasattr(self.config, "num_negatives"):
-            self.config.num_negatives = 100
 
     def _get_feat_extract_output_lengths(
         self, input_lengths: Union[torch.LongTensor, int]

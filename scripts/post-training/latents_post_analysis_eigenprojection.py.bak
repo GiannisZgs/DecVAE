@@ -89,13 +89,6 @@ DEFAULT_COMPONENTS = {
     "waveform_all": 70,
 }
 
-"Latent dimensionality of each dataset's DecVAE models, the second of the two components settings"
-Z_DIM = {
-    "sim_vowels": 48,
-    "timit": 64,
-    "iemocap": 64,
-}
-
 
 def _common_device(*values):
     """
@@ -127,29 +120,17 @@ def _expand_to_frames(seq_values, overlap_mask_batch):
     ])
 
 
-def resolve_components(eigenprojection_args, dataset_name):
-    """
-    Projection dimensionalities to run, in order.
-
-    A single number runs one setting, a list runs each in turn under its own result name. Left unset,
-    the run covers the two settings the paper reports: 20, as the PCA and ICA rows use, and the
-    latent dimensionality of the dataset's DecVAE models.
-
-    Args:
-        eigenprojection_args (:class:`~args_configs.eigenprojection_args.EigenprojectionArguments`)
-        dataset_name (str): One of SUPPORTED_DATASETS.
-    Returns:
-        list: The numbers of components to run.
-    """
-    requested = eigenprojection_args.projection_components
-    if requested is not None:
-        return [int(requested)] if isinstance(requested, int) else [int(c) for c in requested]
-    if dataset_name not in Z_DIM:
+def resolve_components(eigenprojection_args):
+    "Projection dimensionality, falling back to the per-input-type defaults of the VAE script"
+    if eigenprojection_args.projection_components is not None:
+        return eigenprojection_args.projection_components
+    input_type = eigenprojection_args.projection_input_type
+    if input_type not in DEFAULT_COMPONENTS:
         raise ValueError(
-            f"No latent dimensionality on record for '{dataset_name}'. Set projection_components "
-            f"in the config file."
+            f"No default number of components for input type '{input_type}'. Set "
+            f"projection_components in the config file."
         )
-    return sorted({20, Z_DIM[dataset_name],192})
+    return DEFAULT_COMPONENTS[input_type]
 
 
 def resolve_fit_fraction(eigenprojection_args):
@@ -288,116 +269,6 @@ def select_seq_frames(batch, input_type, batch_size, attention_mask):
     return selected
 
 
-def pool_mel_bins(z, n_mels, bins):
-    """
-    Average the time bins preprocessing extracted inside each frame, one value per mel channel.
-
-    A frame carries its components back to back, and inside a component the mel channels each carry
-    their bins, so the features run (component, mel channel, bin). The bin count cannot be read off
-    the width alone, as that would fold the components in with the bins.
-
-    Args:
-        z (torch.Tensor): (frames, components * n_mels * bins) gathered frames.
-        n_mels (int): Mel bands per component.
-        bins (int): Time bins preprocessing extracted inside one frame.
-    Returns:
-        torch.Tensor: (frames, components * n_mels)
-    """
-    width = z.shape[1]
-    if bins < 1 or width % (n_mels * bins) != 0:
-        raise ValueError(
-            f"{width} features do not divide into {n_mels} mel channels of {bins} bins, so the bins "
-            f"inside a frame cannot be identified. Check projection_n_mels and mel_hops."
-        )
-    return z.reshape(z.shape[0], -1, n_mels, bins).mean(dim=-1).reshape(z.shape[0], -1)
-
-
-def fit_standardizer(z_fit, input_type, n_mels):
-    """
-    Mean and standard deviation the features are standardized by, fitted on the train split.
-
-    Mel inputs are standardized per mel channel, so the statistics are shared by the time bins of a
-    channel, and waveform inputs per frame position. Either way the result is one mean and one
-    standard deviation per feature, so applying it is a single broadcast.
-
-    Args:
-        z_fit (torch.Tensor): (frames, features) training frames.
-        input_type (str): One of the keys of DEFAULT_COMPONENTS.
-        n_mels (int): Mel bands per component, for the 'mel*' input types.
-    Returns:
-        tuple: (mean, std) each (features,).
-    """
-    if not input_type.startswith("mel") or z_fit.shape[1] % n_mels != 0:
-        mean = z_fit.mean(dim=0)
-        std = z_fit.std(dim=0)
-    else:
-        "Pool the bins of a channel before taking the statistics, then broadcast them back"
-        bins = z_fit.shape[1] // n_mels
-        by_channel = z_fit.reshape(-1, n_mels, bins) if bins > 1 else z_fit.reshape(-1, n_mels, 1)
-        mean = by_channel.mean(dim=(0, 2)).repeat_interleave(bins)
-        std = by_channel.std(dim=(0, 2)).repeat_interleave(bins)
-        mean = mean.repeat(z_fit.shape[1] // mean.shape[0])
-        std = std.repeat(z_fit.shape[1] // std.shape[0])
-    return mean, torch.clamp(std, min=1e-8)
-
-
-def expand_segment(segment, expansion, context_frames):
-    """
-    Grow the function class the linear projection is learned over, for one utterance.
-
-    Linear SFA on plain log-mel returns overall energy and spectral tilt. Context stacking hands it
-    the neighbourhood of a frame instead, so it can read how the spectrum moves. Frames near the
-    edges repeat the edge, which keeps one output frame per input frame and so keeps the labels
-    aligned with the result.
-
-    Args:
-        segment (torch.Tensor): (frames, features) one utterance, in order.
-        expansion (str or None): None, 'context' or 'quadratic'.
-        context_frames (int): Neighbours on either side, for 'context'.
-    Returns:
-        torch.Tensor: (frames, expanded features)
-    """
-    if expansion is None:
-        return segment
-    if expansion == "context":
-        n_frames = segment.shape[0]
-        offsets = range(-context_frames, context_frames + 1)
-        indices = [torch.clamp(torch.arange(n_frames) + o, 0, n_frames - 1) for o in offsets]
-        return torch.cat([segment[i] for i in indices], dim=1)
-    if expansion == "quadratic":
-        "Every pairwise product, the upper triangle taken once, appended to the frame itself"
-        rows, cols = torch.triu_indices(segment.shape[1], segment.shape[1])
-        products = segment[:, rows] * segment[:, cols]
-        return torch.cat((segment, products), dim=1)
-    raise ValueError(f"projection_expansion must be None, 'context' or 'quadratic', got '{expansion}'.")
-
-
-def expand_frames(z, seq_lengths, expansion, context_frames):
-    "Apply expand_segment to every utterance and glue the results back into a flat frame matrix"
-    if expansion is None or z is None:
-        return z
-    return torch.cat([expand_segment(seg, expansion, context_frames)
-                      for seg in iter_segments(z, seq_lengths)], dim=0)
-
-
-def pool_segments(z, seq_lengths, seq_pooling):
-    """
-    One embedding per utterance, for the sequence-level targets.
-
-    Args:
-        z (torch.Tensor): (frames, features) frames of the split, in order.
-        seq_lengths (list): Frames per utterance.
-        seq_pooling (str or None): None or 'mean'.
-    Returns:
-        torch.Tensor: (utterances, features), or None when pooling is off.
-    """
-    if seq_pooling is None or z is None:
-        return None
-    if seq_pooling != "mean":
-        raise ValueError(f"projection_seq_pooling must be None or 'mean', got '{seq_pooling}'.")
-    return torch.stack([seg.mean(dim=0) for seg in iter_segments(z, seq_lengths)])
-
-
 def iter_segments(z, seq_lengths, indices=None):
     """
     Cut gathered frames back into one group per utterance.
@@ -517,145 +388,6 @@ def transform_z(projection, z, method):
     return torch.tensor(projection.transform(z))
 
 
-def fit_expansion_pca(z_fit, n_components, eigenprojection_args, reducer_path):
-    "PCA that cuts the expanded frames down to size, fitted on the train split or loaded from cache"
-    if os.path.exists(reducer_path):
-        print(f"Loading the expansion PCA from {reducer_path}")
-        return joblib.load(reducer_path)
-
-    rng = np.random.default_rng(seed=eigenprojection_args.projection_seed)
-    n_fit = min(max(n_components * 10, n_components), z_fit.shape[0])
-    indices = rng.choice(z_fit.shape[0], size=n_fit, replace=False)
-    reducer = PCA(n_components=n_components, random_state=0)
-    reducer.fit(z_fit[indices])
-    print(f"Fitted the expansion PCA on {n_fit} of {z_fit.shape[0]} frames, "
-          f"explained variance ratio summed: {reducer.explained_variance_ratio_.sum(): .4f}")
-    os.makedirs(os.path.dirname(reducer_path), exist_ok=True)
-    joblib.dump(reducer, reducer_path)
-    return reducer
-
-
-def stack_support(y, y_test, target, labels, labels_test):
-    "A two-name target asks for a grouped CV split, which reads the group off the second column"
-    if not isinstance(target, (list, tuple)):
-        return y, y_test
-    y = torch.stack((y, labels[target[1]]), dim=1)
-    if y_test is not None:
-        y_test = torch.stack((y_test, labels_test[target[1]]), dim=1)
-    return y, y_test
-
-
-def evaluate_projection(data_training_args, config, eigenprojection_args, ckp,
-                        z, z_test, labels, labels_test, z_seq, z_seq_test):
-    """
-    Run the classification and disentanglement evaluations on one fitted projection.
-
-    Args:
-        data_training_args: Data and training related arguments.
-        config: Model configuration object.
-        eigenprojection_args (:class:`~args_configs.eigenprojection_args.EigenprojectionArguments`)
-        ckp (str): Name the results are recorded under.
-        z, z_test (torch.Tensor): Projected frames of the evaluation and test splits.
-        labels, labels_test (dict): Label name -> tensor.
-        z_seq, z_seq_test (torch.Tensor or None): Pooled embeddings, one per utterance, or None when
-            projection_seq_pooling is not set.
-    """
-    dataset_name = data_training_args.dataset_name
-    tasks = data_training_args.classification_tasks
-
-    if data_training_args.classify:
-        "Label to gather, target name to record it under, and the task that switches it on -"
-        "the three differ, following the naming latents_post_analysis.py already uses"
-        if dataset_name == "sim_vowels":
-            frame_targets = [("vowel", "vowel", "vowel"),
-                             ("speaker_frame", "speaker_frame", "speaker_frame")]
-        elif dataset_name == "timit":
-            frame_targets = [("phoneme48", "phoneme48", "phoneme"),
-                             ("speaker_frame", "speaker_frame", "speaker_frame")]
-        else:
-            frame_targets = [("phoneme", "phoneme_frame", "phoneme"),
-                             ("speaker_frame", "speaker_frame", "speaker_frame"),
-                             ("emotion_frame", ["cat_emotion_frame", "speaker_frame"], "emotion_frame")]
-
-        for label_name, target, task in frame_targets:
-            if task not in tasks and "all" not in tasks:
-                continue
-            y, y_test = stack_support(labels[label_name], labels_test.get(label_name),
-                                      target, labels, labels_test)
-            prediction_eval(data_training_args, config,
-                X=z, X_test=z_test,
-                y=y, y_test=y_test,
-                checkpoint=ckp, latent_type="z", target=target
-            )
-
-        "Sequence-level targets, read off the pooled embeddings"
-        if z_seq is not None:
-            if dataset_name == "iemocap":
-                seq_targets = [("speaker_seq", "speaker_seq", "speaker_seq"),
-                               ("emotion_seq", ["cat_emotion_seq", "speaker_seq"], "emotion_seq")]
-            else:
-                seq_targets = [("speaker_seq", "speaker_seq", "speaker_seq")]
-
-            for label_name, target, task in seq_targets:
-                if task not in tasks and "all" not in tasks:
-                    continue
-                y, y_test = stack_support(labels[label_name], labels_test.get(label_name),
-                                          target, labels, labels_test)
-                prediction_eval(data_training_args, config,
-                    X=z_seq, X_test=z_seq_test,
-                    y=y, y_test=y_test,
-                    checkpoint=ckp, latent_type="z", target=target
-                )
-
-    if data_training_args.measure_disentanglement:
-        if dataset_name == "sim_vowels":
-            columns = ["vowel", "speaker_frame"]
-            names = ["vowel", "speaker_frame"]
-        elif dataset_name == "timit":
-            columns = ["phoneme", "speaker_frame"]
-            names = ["phoneme39", "speaker_frame"]
-        else:
-            columns = ["phoneme", "speaker_frame", "cat_emotion_frame"]
-            names = ["phoneme", "speaker_frame", "emotion_frame"]
-
-        y_frame_train = torch.cat([labels[n].reshape(-1, 1) for n in names], dim=1)
-        y_frame_train = pd.DataFrame(y_frame_train.cpu().numpy(), columns=columns)
-        if z_test is not None:
-            y_frame_test = torch.cat([labels_test[n].reshape(-1, 1) for n in names], dim=1)
-            y_frame_test = pd.DataFrame(y_frame_test.cpu().numpy(), columns=columns)
-        else:
-            y_frame_test = None
-
-        compute_disentanglement_metrics(data_training_args, config, checkpoint=ckp,
-            latent_type="z", mu_train=z, y_train=y_frame_train,
-            mu_test=z_test, y_test=y_frame_test, target=columns
-        )
-
-        "Sequence-level disentanglement, read off the pooled embeddings. IEMOCAP is the dataset with"
-        "two utterance-level factors, so emotion against speaker is evaluated the way"
-        "latents_post_analysis.py evaluates it for the DecVAE models"
-        if dataset_name == "iemocap":
-            if z_seq is None:
-                print("Skipping the sequence-level disentanglement - projection_seq_pooling is not "
-                      "set, so there are no pooled embeddings to evaluate")
-            else:
-                seq_columns = ["speaker_seq", "cat_emotion_seq"]
-                seq_names = ["speaker_seq", "emotion_seq"]
-
-                y_seq_train = torch.cat([labels[n].reshape(-1, 1) for n in seq_names], dim=1)
-                y_seq_train = pd.DataFrame(y_seq_train.cpu().numpy(), columns=seq_columns)
-                if z_seq_test is not None:
-                    y_seq_test = torch.cat([labels_test[n].reshape(-1, 1) for n in seq_names], dim=1)
-                    y_seq_test = pd.DataFrame(y_seq_test.cpu().numpy(), columns=seq_columns)
-                else:
-                    y_seq_test = None
-
-                compute_disentanglement_metrics(data_training_args, config, checkpoint=ckp,
-                    latent_type="z", mu_train=z_seq, y_train=y_seq_train,
-                    mu_test=z_seq_test, y_test=y_seq_test, target=seq_columns
-                )
-
-
 def gather_split(dataloader, data_training_args, eigenprojection_args, gather_fit_grid=False):
     """
     Read a split and collect frame-level inputs with their labels, keeping the sequence structure.
@@ -694,9 +426,7 @@ def gather_split(dataloader, data_training_args, eigenprojection_args, gather_fi
 
             assert overlap_mask_batch is not None if dataset_name in ["timit", "iemocap"] else True
             if overlap_mask_batch is None or not data_training_args.discard_label_overlaps:
-                "Padding is constant, so a projection that reads the time axis would call it the"
-                "slowest thing in the split - drop it even when the overlaps are kept"
-                overlap_mask_batch = ~sub_attention_mask.bool()
+                overlap_mask_batch = torch.zeros_like(sub_attention_mask, dtype=torch.bool)
             else:
                 "Frames corresponding to padding are set as True in the overlap and discarded"
                 padded = sub_attention_mask.sum(dim=-1)
@@ -789,14 +519,6 @@ def main():
             f"The eigenprojection baselines are set up for {SUPPORTED_DATASETS}, got "
             f"'{data_training_args.dataset_name}'."
         )
-    "The cache is chosen by input_type but the frames are selected by projection_input_type, so a"
-    "mismatch would fit the projection on the wrong features without saying so"
-    if cache_feature_type(eigenprojection_args.projection_input_type) != cache_feature_type(data_training_args.input_type):
-        raise ValueError(
-            f"projection_input_type '{eigenprojection_args.projection_input_type}' reads the "
-            f"'{cache_feature_type(eigenprojection_args.projection_input_type)}' cache, but input_type is "
-            f"'{data_training_args.input_type}'. Set them to the same feature type in the config file."
-        )
     if eigenprojection_args.projection_method not in SUPPORTED_METHODS:
         raise ValueError(
             f"projection_method must be one of {SUPPORTED_METHODS}, got "
@@ -872,34 +594,22 @@ def main():
 
     "There is nothing to load - the projection is fitted here. The run is named after the method and"
     "its settings so that results from different projections do not overwrite each other"
-    component_settings = resolve_components(eigenprojection_args, data_training_args.dataset_name)
+    n_components = resolve_components(eigenprojection_args)
+    ckp = eigenprojection_args.projection_method + "_" + eigenprojection_args.projection_input_type \
+        + "_c" + str(n_components)
     if eigenprojection_args.projection_sfa_fit_grid not in ("sequence", "frames"):
         raise ValueError(
             f"projection_sfa_fit_grid must be 'sequence' or 'frames', got "
             f"'{eigenprojection_args.projection_sfa_fit_grid}'."
         )
-    if eigenprojection_args.projection_expansion not in (None, "context", "quadratic"):
-        raise ValueError(
-            f"projection_expansion must be None, 'context' or 'quadratic', got "
-            f"'{eigenprojection_args.projection_expansion}'."
-        )
-    if eigenprojection_args.projection_seq_pooling not in (None, "mean"):
-        raise ValueError(
-            f"projection_seq_pooling must be None or 'mean', got "
-            f"'{eigenprojection_args.projection_seq_pooling}'."
-        )
     "Only SFA reads the time axis, so the grid is its setting alone and only it tags the run"
     use_tiling_grid = (eigenprojection_args.projection_method == "sfa"
                        and eigenprojection_args.projection_sfa_fit_grid == "sequence")
-    ckp_base = eigenprojection_args.projection_method + "_" + eigenprojection_args.projection_input_type
-    if eigenprojection_args.projection_pool_mel_bins and eigenprojection_args.projection_input_type.startswith("mel"):
-        ckp_base += "_pooledbins"
-    if eigenprojection_args.projection_expansion is not None:
-        ckp_base += "_" + eigenprojection_args.projection_expansion
     if use_tiling_grid:
-        ckp_base += "_tiled"
+        ckp += "_tiled"
+    projection_path = os.path.join(data_training_args.parent_dir, "eigenprojections", ckp + "_model.joblib")
     print(f"Evaluating the {eigenprojection_args.projection_method} projection of "
-          f"{eigenprojection_args.projection_input_type} frames onto {component_settings} components")
+          f"{eigenprojection_args.projection_input_type} frames onto {n_components} components")
 
     "data collator. The frame grid comes from the conv geometry the rest of the project shares -"
     "there is no encoder here, and the collator only asks a model for that geometry. The DecVAE"
@@ -970,12 +680,12 @@ def main():
         gather_fit_grid=use_tiling_grid and on_iemocap
     )
     if on_iemocap:
-        z_test, seq_lengths_test, labels_test = None, [], {}
+        z_test, labels_test = None, {}
     else:
-        z_test, seq_lengths_test, labels_test, _, _ = gather_split(
-            test_dataloader, data_training_args, eigenprojection_args)
+        z_test, _, labels_test, _, _ = gather_split(test_dataloader, data_training_args, eigenprojection_args)
     print(f"Total loading time: {time.time() - start_time: .4f} seconds")
 
+    "Fit the projection on the train split and apply it to the evaluation splits"
     if on_iemocap:
         "Every split is already in the single evaluation set - fit on it"
         z_fit, seq_lengths_fit = z, seq_lengths
@@ -985,72 +695,76 @@ def main():
             train_dataloader, data_training_args, eigenprojection_args,
             gather_fit_grid=use_tiling_grid
         )
+    projection = fit_projection(z_fit, seq_lengths_fit, eigenprojection_args, n_components,
+                                projection_path, z_tiled_fit, seq_lengths_tiled_fit)
+    if not on_iemocap:
+        del z_fit, seq_lengths_fit
+    del z_tiled, seq_lengths_tiled, z_tiled_fit, seq_lengths_tiled_fit
 
-    "Front-end of the projection, shared by every components setting. Padding is already out of the"
-    "way - gather_split drops it - so the statistics and the differences never see a constant frame"
-    input_type = eigenprojection_args.projection_input_type
-    if eigenprojection_args.projection_pool_mel_bins and input_type.startswith("mel"):
-        n_mels = eigenprojection_args.projection_n_mels
-        "Preprocessing hops mel_hops times across a frame, which leaves one bin more than that"
-        bins = data_training_args.mel_hops + 1
-        z = pool_mel_bins(z, n_mels, bins)
-        z_fit = z if on_iemocap else pool_mel_bins(z_fit, n_mels, bins)
-        z_test = pool_mel_bins(z_test, n_mels, bins) if z_test is not None else None
-        z_tiled_fit = pool_mel_bins(z_tiled_fit, n_mels, bins) if z_tiled_fit is not None else None
-        print(f"Averaged the {bins} time bins inside a frame - {z.shape[1]} features per frame")
+    z = transform_z(projection, z, eigenprojection_args.projection_method)
+    z_test = transform_z(projection, z_test, eigenprojection_args.projection_method)
 
-    if eigenprojection_args.projection_standardize:
-        mean, std = fit_standardizer(z_fit, input_type, eigenprojection_args.projection_n_mels)
-        z = (z - mean) / std
-        z_fit = z if on_iemocap else (z_fit - mean) / std
-        z_test = (z_test - mean) / std if z_test is not None else None
-        z_tiled_fit = (z_tiled_fit - mean) / std if z_tiled_fit is not None else None
-        print(f"Standardized {'per mel channel' if input_type.startswith('mel') else 'per frame position'}"
-              f" on {len(seq_lengths_fit)} training utterances")
+    "Now use train/val representations to get the evaluation metrics"
+    "Linear/non-linear classification"
+    tasks = data_training_args.classification_tasks
+    if data_training_args.classify:
+        "Label to gather, target name to record it under, and the task that switches it on -"
+        "the three differ, following the naming latents_post_analysis.py already uses"
+        if data_training_args.dataset_name == "sim_vowels":
+            frame_targets = [("vowel", "vowel", "vowel"),
+                             ("speaker_frame", "speaker_frame", "speaker_frame")]
+        elif data_training_args.dataset_name == "timit":
+            frame_targets = [("phoneme48", "phoneme48", "phoneme"),
+                             ("speaker_frame", "speaker_frame", "speaker_frame")]
+        else:
+            frame_targets = [("phoneme", "phoneme_frame", "phoneme"),
+                             ("speaker_frame", "speaker_frame", "speaker_frame"),
+                             ("emotion_frame", ["cat_emotion_frame", "speaker_frame"], "emotion_frame")]
 
-    if eigenprojection_args.projection_expansion is not None:
-        context = eigenprojection_args.projection_context_frames
-        expansion = eigenprojection_args.projection_expansion
-        width_before = z.shape[1]
-        z = expand_frames(z, seq_lengths, expansion, context)
-        z_fit = z if on_iemocap else expand_frames(z_fit, seq_lengths_fit, expansion, context)
-        z_test = expand_frames(z_test, seq_lengths_test, expansion, context)
-        z_tiled_fit = expand_frames(z_tiled_fit, seq_lengths_tiled_fit, expansion, context)
-        print(f"Expanded the frames with '{expansion}' - {width_before} features per frame became {z.shape[1]}")
+        def stack_support(y, y_test, target, labels, labels_test):
+            "A two-name target asks for a grouped CV split, which reads the group off the second column"
+            if not isinstance(target, (list, tuple)):
+                return y, y_test
+            y = torch.stack((y, labels[target[1]]), dim=1)
+            if y_test is not None:
+                y_test = torch.stack((y_test, labels_test[target[1]]), dim=1)
+            return y, y_test
 
-        "Quadratic squares the width, so the projection is fitted on a reduction of it"
-        reduce_to = eigenprojection_args.projection_expansion_components
-        if reduce_to and z.shape[1] > reduce_to:
-            reducer_path = os.path.join(data_training_args.parent_dir, "eigenprojections",
-                                        ckp_base + "_expansion_pca.joblib")
-            reducer = fit_expansion_pca(z_fit, reduce_to, eigenprojection_args, reducer_path)
-            z = torch.tensor(reducer.transform(z), dtype=torch.float32)
-            z_fit = z if on_iemocap else torch.tensor(reducer.transform(z_fit), dtype=torch.float32)
-            z_test = torch.tensor(reducer.transform(z_test), dtype=torch.float32) if z_test is not None else None
-            if z_tiled_fit is not None:
-                z_tiled_fit = torch.tensor(reducer.transform(z_tiled_fit), dtype=torch.float32)
-            print(f"Reduced the expanded frames to {z.shape[1]} features before fitting")
+        for label_name, target, task in frame_targets:
+            if task not in tasks and "all" not in tasks:
+                continue
+            y, y_test = stack_support(labels[label_name], labels_test.get(label_name),
+                                      target, labels, labels_test)
+            prediction_eval(data_training_args, config,
+                X=z, X_test=z_test,
+                y=y, y_test=y_test,
+                checkpoint=ckp, latent_type="z", target=target
+            )
 
-    "Every components setting reads the same frames, so only the projection is refitted"
-    for n_components in component_settings:
-        ckp = ckp_base + "_c" + str(n_components)
-        projection_path = os.path.join(data_training_args.parent_dir, "eigenprojections", ckp + "_model.joblib")
-        print(f"\n=== {eigenprojection_args.projection_method} onto {n_components} components ({ckp}) ===")
+    "Disentanglement metrics"
+    if data_training_args.measure_disentanglement:
+        if data_training_args.dataset_name == "sim_vowels":
+            columns = ["vowel", "speaker_frame"]
+            names = ["vowel", "speaker_frame"]
+        elif data_training_args.dataset_name == "timit":
+            columns = ["phoneme", "speaker_frame"]
+            names = ["phoneme39", "speaker_frame"]
+        else:
+            columns = ["phoneme", "speaker_frame", "cat_emotion_frame"]
+            names = ["phoneme", "speaker_frame", "emotion_frame"]
 
-        projection = fit_projection(z_fit, seq_lengths_fit, eigenprojection_args, n_components,
-                                    projection_path, z_tiled_fit, seq_lengths_tiled_fit)
-        method = eigenprojection_args.projection_method
-        z_proj = transform_z(projection, z, method)
-        z_proj_test = transform_z(projection, z_test, method)
+        y_frame_train = torch.cat([labels[n].reshape(-1, 1) for n in names], dim=1)
+        y_frame_train = pd.DataFrame(y_frame_train.cpu().numpy(), columns=columns)
+        if z_test is not None:
+            y_frame_test = torch.cat([labels_test[n].reshape(-1, 1) for n in names], dim=1)
+            y_frame_test = pd.DataFrame(y_frame_test.cpu().numpy(), columns=columns)
+        else:
+            y_frame_test = None
 
-        "One embedding per utterance for the sequence-level targets"
-        seq_pooling = eigenprojection_args.projection_seq_pooling
-        z_seq = pool_segments(z_proj, seq_lengths, seq_pooling)
-        z_seq_test = pool_segments(z_proj_test, seq_lengths_test, seq_pooling)
-
-        evaluate_projection(data_training_args, config, eigenprojection_args, ckp,
-                            z_proj, z_proj_test, labels, labels_test, z_seq, z_seq_test)
-
+        compute_disentanglement_metrics(data_training_args, config, checkpoint=ckp,
+            latent_type="z", mu_train=z, y_train=y_frame_train,
+            mu_test=z_test, y_test=y_frame_test, target=columns
+        )
 
 
 if __name__ == "__main__":
