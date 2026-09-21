@@ -590,10 +590,8 @@ def main():
         mask_time_prob = config.mask_time_prob if model_args.mask_time_prob is None else model_args.mask_time_prob
         mask_time_length = config.mask_time_length if model_args.mask_time_length is None else model_args.mask_time_length
 
-        "The collator only needs the frame grid, which the parameter-free geometry carries, so"
-        "worker processes never receive the model's weights"
         data_collator = DataCollatorForDecVAELatentPostAnalysis_NoFeatureExtraction(
-            model=representation_function.geometry,
+            model=representation_function,
             feature_extractor=feature_extractor,
             model_args=model_args,
             data_training_args=collator_data_args,
@@ -605,32 +603,27 @@ def main():
             mask_time_length=mask_time_length
         )
 
-        "The baselines are evaluated on ordered frames. Rows are read as numpy arrays rather than"
-        "nested lists, which is what made loading slow; the collator reads every column, so all stay"
-        num_workers = baseline_args.baseline_dataloader_num_workers
+        "The baselines are evaluated on ordered frames"
         if data_training_args.dataset_name == "iemocap":
             eval_dataset = concatenate_datasets([vectorized_datasets["train"], vectorized_datasets["validation"], vectorized_datasets["test"]])
             eval_dataloader = DataLoader(
-                eval_dataset.with_format("numpy"),
+                eval_dataset,
                 shuffle=False,
                 collate_fn=data_collator,
-                batch_size=data_training_args.per_device_train_batch_size,
-                num_workers=num_workers,
+                batch_size=data_training_args.per_device_train_batch_size
             )
         else:
             eval_dataloader = DataLoader(
-                vectorized_datasets["validation"].with_format("numpy"),
+                vectorized_datasets["validation"],
                 shuffle=False,
                 collate_fn=data_collator,
-                batch_size=data_training_args.per_device_eval_batch_size,
-                num_workers=num_workers,
+                batch_size=data_training_args.per_device_eval_batch_size
             )
             test_dataloader = DataLoader(
-                vectorized_datasets["test"].with_format("numpy"),
+                vectorized_datasets["test"],
                 shuffle=False,
                 collate_fn=data_collator,
-                batch_size=data_training_args.per_device_eval_batch_size,
-                num_workers=num_workers,
+                batch_size=data_training_args.per_device_eval_batch_size
             )
 
         "Prepare everything with HF accelerator"

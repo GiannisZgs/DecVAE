@@ -33,7 +33,6 @@ from models import build_cost, build_tfc, build_tcl, build_cpc, build_fhvae
 from models.baselines.tcl import fit_pca_whitening
 import joblib
 from data_collation import DataCollatorForBaselinePretraining_NoFeatureExtraction
-from data_collation.baseline_collators import KEPT_COLUMNS
 from data_preprocessing import prepare_extract_features_pretraining_dataset
 from config_files import DecVAEConfig
 
@@ -366,14 +365,7 @@ def check_against_source(checkpoint_dir, config_path, baseline_args, method_args
                          + "\n  ".join(mismatches))
 
 
-def as_loader_dataset(dataset):
-    "Keep only the columns the collator reads, and hand rows over as numpy arrays rather than nested lists"
-    keep = [column for column in KEPT_COLUMNS if column in dataset.column_names]
-    return dataset.select_columns(keep).with_format("numpy")
-
-
-def fit_tcl_whitening(model, dataset, data_collator, data_training_args, method_args, component, projection_path,
-                      num_workers=0):
+def fit_tcl_whitening(model, dataset, data_collator, data_training_args, method_args, component, projection_path):
     """
     Fit the PCA whitening TCL applies before its network, on the target training split, or load the
     one an earlier run fitted. Reached only when the source checkpoint carries none, since a
@@ -385,7 +377,7 @@ def fit_tcl_whitening(model, dataset, data_collator, data_training_args, method_
         return
 
     loader = DataLoader(dataset, shuffle=False, collate_fn=data_collator,
-                        batch_size=data_training_args.per_device_eval_batch_size, num_workers=num_workers)
+                        batch_size=data_training_args.per_device_eval_batch_size)
     generator = np.random.default_rng(seed=method_args.tcl_pca_seed)
     fraction = method_args.tcl_pca_fit_fraction
     width = model.input_dims
@@ -721,12 +713,14 @@ def main():
     seq_length, input_dims = series_shape(vectorized_datasets, baseline_args.baseline_component)
     if input_type.startswith("mel") and pool_mel_bins:
         input_dims = n_mels
-    "FHVAE rebuilds its prior-mean table for the target corpus, one row per utterance it trains on."
-    "IEMOCAP trains on train and test together, so both count; the indices are written once the two"
-    "are concatenated, below"
+    "FHVAE rebuilds its prior-mean table for the target corpus, one row per training utterance,"
+    "and the batch carries which utterance it came from. The indices follow any subsetting"
     n_train_utts = vectorized_datasets["train"].num_rows
-    if data_training_args.dataset_name == "iemocap":
-        n_train_utts += vectorized_datasets["test"].num_rows
+    if baseline_args.baseline_method == "fhvae":
+        vectorized_datasets["train"] = vectorized_datasets["train"].add_column(
+            "utt_index", list(range(n_train_utts))
+        )
+        print(f"fhvae indexes {n_train_utts} target training utterances for its prior-mean table")
 
     model = build_baseline_model(baseline_args, method_args, input_dims, seq_length, config,
                                  n_train_utts=n_train_utts)
@@ -753,10 +747,9 @@ def main():
     if data_training_args.gradient_checkpointing:
         model.gradient_checkpointing_enable()
 
-    "data collator, optimizer and scheduler. The collator only needs the frame grid, which the"
-    "parameter-free geometry carries, so worker processes never receive the model's weights"
+    "data collator, optimizer and scheduler"
     data_collator = DataCollatorForBaselinePretraining_NoFeatureExtraction(
-        model=model.geometry,
+        model=model,
         feature_extractor=feature_extractor,
         input_type=input_type,
         n_mels=n_mels,
@@ -769,15 +762,13 @@ def main():
     "TCL's whitening comes with the transferred weights and is kept: the feature extractor was"
     "trained to read the source's whitened space, and refitting here would rotate it away from it."
     "Only a checkpoint that carries none is fitted on the target training split"
-    num_workers = baseline_args.baseline_dataloader_num_workers
     if baseline_args.baseline_method == "tcl":
         if int(model.pca_fitted) == 1:
             print("Keeping the PCA whitening the source checkpoint was trained with")
         else:
-            fit_tcl_whitening(model, as_loader_dataset(vectorized_datasets["train"]), data_collator,
-                              data_training_args, method_args, baseline_args.baseline_component,
-                              os.path.join(data_training_args.output_dir, "tcl_pca_whitening.joblib"),
-                              num_workers=num_workers)
+            fit_tcl_whitening(model, vectorized_datasets["train"], data_collator, data_training_args,
+                              method_args, baseline_args.baseline_component,
+                              os.path.join(data_training_args.output_dir, "tcl_pca_whitening.joblib"))
 
     "CoST sizes its queue of negatives against the batch, and TF-C its contrastive mask, so an"
     "incomplete last batch cannot be used by those methods"
@@ -785,39 +776,18 @@ def main():
 
     if data_training_args.dataset_name == "iemocap":
         vectorized_datasets['train'] = concatenate_datasets([vectorized_datasets['train'], vectorized_datasets['test']])
-
-    if baseline_args.baseline_method == "fhvae":
-        if vectorized_datasets["train"].num_rows != n_train_utts:
-            raise ValueError(
-                f"The prior-mean table was built for {n_train_utts} utterances but the training set "
-                f"holds {vectorized_datasets['train'].num_rows}."
-            )
-        vectorized_datasets["train"] = vectorized_datasets["train"].add_column(
-            "utt_index", list(range(n_train_utts))
-        )
-        print(f"fhvae indexes {n_train_utts} target training utterances for its prior-mean table")
-
-    "Rows are read as numpy arrays holding only what the collator uses; decoding every column into"
-    "nested lists is what made loading slow. The batches are the same"
-    for split in ("train", "validation"):
-        vectorized_datasets[split] = as_loader_dataset(vectorized_datasets[split])
-
     train_dataloader = DataLoader(
         vectorized_datasets['train'],
         shuffle=True,
         collate_fn=data_collator,
         batch_size=data_training_args.per_device_train_batch_size,
         drop_last=drop_last,
-        num_workers=num_workers,
-        persistent_workers=num_workers > 0,
     )
     eval_dataloader = DataLoader(
         vectorized_datasets["validation"],
         collate_fn=data_collator,
         batch_size=data_training_args.per_device_eval_batch_size,
         drop_last=drop_last,
-        num_workers=num_workers,
-        persistent_workers=num_workers > 0,
     )
 
     if len(train_dataloader) == 0 or len(eval_dataloader) == 0:
