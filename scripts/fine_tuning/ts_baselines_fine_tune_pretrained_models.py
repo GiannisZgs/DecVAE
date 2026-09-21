@@ -29,7 +29,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
     print(f"Added {project_root} to Python path")
 
-from models import build_cost, build_tfc, build_tcl
+from models import build_cost, build_tfc, build_tcl, build_cpc, build_fhvae
 from models.baselines.tcl import fit_pca_whitening
 import joblib
 from data_collation import DataCollatorForBaselinePretraining_NoFeatureExtraction
@@ -62,6 +62,8 @@ from args_configs import (
     CoSTArguments,
     TFCArguments,
     TCLArguments,
+    CPCArguments,
+    FHVAEArguments,
 )
 from dataset_loading import load_timit, load_sim_vowels, load_iemocap, load_voc_als
 from utils.misc import parse_args, debugger_is_active, extract_epoch
@@ -96,6 +98,8 @@ METHOD_LOSS_KEYS = {
     "cost": ("trend_loss", "seasonal_loss"),
     "tfc": ("time_loss", "freq_loss", "time_frequency_loss"),
     "tcl": ("segment_accuracy", "classifier_only"),
+    "cpc": ("prediction_accuracy", "step_1_accuracy"),
+    "fhvae": ("log_px_z", "kld_seg", "kld_seq", "log_qy"),
 }
 
 "Settings that must agree with the source checkpoint. The data and the decomposition are expected"
@@ -111,6 +115,13 @@ MUST_MATCH_PRETRAINING = {
     "tcl": ("baseline_method", "baseline_component", "tcl_input_type", "tcl_n_mels", "tcl_mel_norm",
             "tcl_pool_mel_bins", "tcl_hidden_nodes", "tcl_maxout_k", "tcl_feature_nonlinearity",
             "tcl_pca_components", "tcl_segment_duration_in_seconds", "mel_hops"),
+    "cpc": ("baseline_method", "baseline_component", "cpc_input_type", "cpc_n_mels", "cpc_mel_norm",
+            "cpc_pool_mel_bins", "cpc_conv_kernel", "cpc_conv_stride", "cpc_encoder_hidden",
+            "cpc_encoder_dim", "cpc_ar_dim", "cpc_ar_layers", "cpc_ar_mode", "cpc_encoder_norm",
+            "mel_hops"),
+    "fhvae": ("baseline_method", "baseline_component", "fhvae_input_type", "fhvae_n_mels",
+              "fhvae_mel_norm", "fhvae_pool_mel_bins", "fhvae_seg_len", "fhvae_hidden",
+              "fhvae_d_seg", "fhvae_d_seq", "fhvae_seq_std", "mel_hops"),
 }
 
 
@@ -134,7 +145,7 @@ def subset_raw_datasets(raw_datasets, fraction, seed):
     return raw_datasets
 
 
-def resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args):
+def resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args, cpc_args, fhvae_args):
     """
     Select the argument group of the configured method and the front-end it reads.
 
@@ -159,12 +170,25 @@ def resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args):
         return (tcl_args, tcl_args.tcl_input_type, tcl_args.tcl_n_mels,
                 tcl_args.tcl_mel_norm, tcl_args.tcl_pool_mel_bins)
 
+    if baseline_args.baseline_method == "cpc":
+        if cpc_args.cpc_input_type not in ("mel", "waveform"):
+            raise ValueError(f"Unknown cpc_input_type {cpc_args.cpc_input_type}, expected 'mel' or 'waveform'.")
+        return (cpc_args, cpc_args.cpc_input_type, cpc_args.cpc_n_mels,
+                cpc_args.cpc_mel_norm, cpc_args.cpc_pool_mel_bins)
+
+    if baseline_args.baseline_method == "fhvae":
+        if fhvae_args.fhvae_input_type not in ("mel", "waveform"):
+            raise ValueError(f"Unknown fhvae_input_type {fhvae_args.fhvae_input_type}, expected 'mel' or 'waveform'.")
+        return (fhvae_args, fhvae_args.fhvae_input_type, fhvae_args.fhvae_n_mels,
+                fhvae_args.fhvae_mel_norm, fhvae_args.fhvae_pool_mel_bins)
+
     raise ValueError(
-        f"Unknown baseline_method {baseline_args.baseline_method}, expected one of 'cost', 'tfc', 'tcl'."
+        f"Unknown baseline_method {baseline_args.baseline_method}, expected one of 'cost', 'tfc', "
+        "'tcl', 'cpc', 'fhvae'."
     )
 
 
-def build_baseline_model(baseline_args, method_args, input_dims, seq_length, config):
+def build_baseline_model(baseline_args, method_args, input_dims, seq_length, config, n_train_utts=None):
     if baseline_args.baseline_method == "cost":
         return build_cost(method_args, input_dims, seq_length, config)
 
@@ -174,8 +198,20 @@ def build_baseline_model(baseline_args, method_args, input_dims, seq_length, con
     if baseline_args.baseline_method == "tcl":
         return build_tcl(method_args, input_dims, seq_length, config)
 
+    if baseline_args.baseline_method == "cpc":
+        return build_cpc(method_args, input_dims, seq_length, config)
+
+    if baseline_args.baseline_method == "fhvae":
+        if n_train_utts is None:
+            raise ValueError(
+                "FHVAE keeps one trainable prior mean per training utterance, so it has to be "
+                "built with n_train_utts - here the target dataset's training split."
+            )
+        return build_fhvae(method_args, input_dims, seq_length, config, n_train_utts)
+
     raise ValueError(
-        f"Unknown baseline_method {baseline_args.baseline_method}, expected one of 'cost', 'tfc', 'tcl'."
+        f"Unknown baseline_method {baseline_args.baseline_method}, expected one of 'cost', 'tfc', "
+        "'tcl', 'cpc', 'fhvae'."
     )
 
 
@@ -238,8 +274,49 @@ def build_optimizer(baseline_args, method_args, model, data_training_args):
                          eps=data_training_args.adam_epsilon)
         raise ValueError(f"Unknown tcl_optimizer {method_args.tcl_optimizer}, expected 'sgd' or 'adamw'.")
 
+    if baseline_args.baseline_method == "cpc":
+        "Both references build a plain Adam over the encoder, the context network and the predictors"
+        if method_args.cpc_optimizer == "adam":
+            return torch.optim.Adam(
+                trainable,
+                lr=data_training_args.learning_rate,
+                betas=[data_training_args.adam_beta1, data_training_args.adam_beta2],
+                eps=data_training_args.adam_epsilon,
+                weight_decay=data_training_args.weight_decay,
+            )
+        if method_args.cpc_optimizer == "adamw":
+            return AdamW(
+                trainable,
+                lr=data_training_args.learning_rate,
+                betas=[data_training_args.adam_beta1, data_training_args.adam_beta2],
+                eps=data_training_args.adam_epsilon,
+                weight_decay=data_training_args.weight_decay,
+            )
+        raise ValueError(f"Unknown cpc_optimizer {method_args.cpc_optimizer}, expected 'adam' or 'adamw'.")
+
+    if baseline_args.baseline_method == "fhvae":
+        "The reference builds a dense Adam over every parameter, the prior-mean table included"
+        if method_args.fhvae_optimizer == "adam":
+            return torch.optim.Adam(
+                trainable,
+                lr=data_training_args.learning_rate,
+                betas=[data_training_args.adam_beta1, data_training_args.adam_beta2],
+                eps=data_training_args.adam_epsilon,
+                weight_decay=data_training_args.weight_decay,
+            )
+        if method_args.fhvae_optimizer == "adamw":
+            return AdamW(
+                trainable,
+                lr=data_training_args.learning_rate,
+                betas=[data_training_args.adam_beta1, data_training_args.adam_beta2],
+                eps=data_training_args.adam_epsilon,
+                weight_decay=data_training_args.weight_decay,
+            )
+        raise ValueError(f"Unknown fhvae_optimizer {method_args.fhvae_optimizer}, expected 'adam' or 'adamw'.")
+
     raise ValueError(
-        f"Unknown baseline_method {baseline_args.baseline_method}, expected one of 'cost', 'tfc', 'tcl'."
+        f"Unknown baseline_method {baseline_args.baseline_method}, expected one of 'cost', 'tfc', "
+        "'tcl', 'cpc', 'fhvae'."
     )
 
 
@@ -365,6 +442,10 @@ def transfer_weights(model, pretrained_model_file, baseline_args, method_args):
     segment classifier. CoST's is part of the representation, so such a run stops unless
     cost_transfer_reinit_fourier allows that layer to start over; TCL's classifier is a training
     device that the evaluation discards, so tcl_transfer_reinit_classifier allows it by default.
+    TF-C and CPC size nothing by the frame count, so their checkpoints transfer whole - CPC's
+    encoder reads one frame, its context network runs over however many there are, and its
+    predictors map the context width to the encoder width. FHVAE's table is sized by the source
+    corpus rather than by the frame count, and fhvae_transfer_reinit_mu_table drops it by default.
     """
     weights = load_file(pretrained_model_file)
     target = model.state_dict()
@@ -390,6 +471,24 @@ def transfer_weights(model, pretrained_model_file, baseline_args, method_args):
                       "and start the classifier over, which costs nothing since the evaluation reads "
                       "the features and discards the classifier.")
             layer = "segment classifier"
+        elif baseline_args.baseline_method == "cpc":
+            reinit_allowed = (getattr(method_args, "cpc_transfer_reinit_predictors", False)
+                              and all(k.startswith("predictors.") for k in mismatched))
+            remedy = ("Nothing in CPC is sized by the frame count, so a shape mismatch means the "
+                      "architecture differs from the source - usually cpc_encoder_dim or cpc_ar_dim, "
+                      "which the configs set per dataset. Match them to the source config. If only "
+                      "the log-bilinear predictors differ, cpc_transfer_reinit_predictors transfers "
+                      "the encoder and the context network and starts those over.")
+            layer = "log-bilinear predictors"
+        elif baseline_args.baseline_method == "fhvae":
+            reinit_allowed = (getattr(method_args, "fhvae_transfer_reinit_mu_table", True)
+                              and all(k == "mu_seq_table" for k in mismatched))
+            remedy = ("FHVAE's prior-mean table has one row per training utterance of the "
+                      "source corpus, so a target corpus cannot share it. Set "
+                      "fhvae_transfer_reinit_mu_table to true to transfer the encoders and the "
+                      "decoder and start the table over, which costs nothing because the "
+                      "evaluation reads the encoders and estimates the means in closed form.")
+            layer = "prior-mean table"
         else:
             reinit_allowed, remedy, layer = False, "", ""
 
@@ -398,7 +497,9 @@ def transfer_weights(model, pretrained_model_file, baseline_args, method_args):
                 f"The source checkpoint does not fit the model built for this dataset: "
                 f"{[(k, tuple(weights[k].shape), tuple(target[k].shape)) for k in mismatched]}. " + remedy
             )
-        print(f"Re-initializing the {layer}, whose shape is set by the frame count: {mismatched}")
+        cause = ("the source corpus's training utterances" if baseline_args.baseline_method == "fhvae"
+                 else "the frame count")
+        print(f"Re-initializing the {layer}, whose shape is set by {cause}: {mismatched}")
         for key in mismatched:
             weights.pop(key)
 
@@ -414,13 +515,13 @@ def main():
     "Parse the arguments"
     parser = HfArgumentParser((ModelArguments, TrainingObjectiveArguments, DecompositionArguments,
                                DataTrainingArguments, BaselinePretrainingArguments, CoSTArguments,
-                               TFCArguments, TCLArguments))
+                               TFCArguments, TCLArguments, CPCArguments, FHVAEArguments))
     if debugger_is_active():
         config_path = JSON_FILE_NAME_MANUAL
     else:
         args = parse_args()
         config_path = args.config_file
-    model_args, training_obj_args, decomp_args, data_training_args, baseline_args, cost_args, tfc_args, tcl_args = \
+    model_args, training_obj_args, decomp_args, data_training_args, baseline_args, cost_args, tfc_args, tcl_args, cpc_args, fhvae_args = \
         parser.parse_json_file(json_file=config_path)
     delattr(model_args, "comment_model_args")
     delattr(training_obj_args, "comment_tr_obj_args")
@@ -429,8 +530,10 @@ def main():
     delattr(cost_args, "comment_cost_args")
     delattr(tfc_args, "comment_tfc_args")
     delattr(tcl_args, "comment_tcl_args")
+    delattr(cpc_args, "comment_cpc_args")
+    delattr(fhvae_args, "comment_fhvae_args")
 
-    method_args, input_type, n_mels, mel_norm, pool_mel_bins = resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args)
+    method_args, input_type, n_mels, mel_norm, pool_mel_bins = resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args, cpc_args, fhvae_args)
 
     use_iemocap_subset = "iemocap" in data_training_args.dataset_name and IEMOCAP_SUBSET_FRACTION is not None
     if use_iemocap_subset:
@@ -610,7 +713,17 @@ def main():
     seq_length, input_dims = series_shape(vectorized_datasets, baseline_args.baseline_component)
     if input_type.startswith("mel") and pool_mel_bins:
         input_dims = n_mels
-    model = build_baseline_model(baseline_args, method_args, input_dims, seq_length, config)
+    "FHVAE rebuilds its prior-mean table for the target corpus, one row per training utterance,"
+    "and the batch carries which utterance it came from. The indices follow any subsetting"
+    n_train_utts = vectorized_datasets["train"].num_rows
+    if baseline_args.baseline_method == "fhvae":
+        vectorized_datasets["train"] = vectorized_datasets["train"].add_column(
+            "utt_index", list(range(n_train_utts))
+        )
+        print(f"fhvae indexes {n_train_utts} target training utterances for its prior-mean table")
+
+    model = build_baseline_model(baseline_args, method_args, input_dims, seq_length, config,
+                                 n_train_utts=n_train_utts)
     print(f"{baseline_args.baseline_method} reads {seq_length} frames of {input_dims} features, "
           f"{count_parameters(model)} trainable parameters")
 

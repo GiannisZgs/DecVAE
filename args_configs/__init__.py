@@ -11,3 +11,4 @@ from .cost_args import CoSTArguments
 from .tfc_args import TFCArguments
 from .tcl_args import TCLArguments
 from .cpc_args import CPCArguments
+from .fhvae_args import FHVAEArguments

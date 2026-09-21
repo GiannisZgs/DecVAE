@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """This script handles all latent evaluations (classification, disentanglement) for the pre-trained
-time-series baselines (CoST, TF-C, TCL), checkpoint by checkpoint as pre-trained by
+time-series baselines (CoST, TF-C, TCL, CPC, FHVAE), checkpoint by checkpoint as pre-trained by
 ts_baselines_pretraining.py. The methods are frame-level: they read the framed decomposition and
 emit one embedding per frame of the DecVAE grid. Sequence-level targets are read off the mean of the
 frame embeddings of each utterance, as latents_post_analysis_frozen_ssl.py does.
@@ -28,7 +28,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
     print(f"Added {project_root} to Python path")
 
-from models import build_cost, build_tfc, build_tcl
+from models import build_cost, build_tfc, build_tcl, build_cpc, build_fhvae
 from data_collation import DataCollatorForDecVAELatentPostAnalysis_NoFeatureExtraction
 from config_files import DecVAEConfig
 from args_configs import (
@@ -40,12 +40,15 @@ from args_configs import (
     CoSTArguments,
     TFCArguments,
     TCLArguments,
+    CPCArguments,
+    FHVAEArguments,
 )
 from utils import parse_args, debugger_is_active
 from utils.misc import extract_epoch
 from utils.cache_utils import build_cache_file_names
 from latent_analysis_utils import prediction_eval
 from disentanglement_utils import compute_disentanglement_metrics
+from safetensors import safe_open
 from safetensors.torch import load_file
 import copy
 import json
@@ -69,7 +72,7 @@ from datasets import DatasetDict, concatenate_datasets, Dataset
 from torch.utils.data.dataloader import DataLoader
 import time
 
-JSON_FILE_NAME_MANUAL = "config_files/baselines/tcl/sim_vowels/latent_evaluations/config_tcl_latent_anal_sim_vowels.json"
+JSON_FILE_NAME_MANUAL = "config_files/baselines/fhvae/sim_vowels/latent_evaluations/config_fhvae_latent_anal_sim_vowels.json"
 
 logger = get_logger(__name__)
 
@@ -92,10 +95,19 @@ MUST_MATCH_PRETRAINING = {
             "tcl_pool_mel_bins", "tcl_hidden_nodes", "tcl_maxout_k", "tcl_feature_nonlinearity",
             "tcl_pca_components", "tcl_segment_duration_in_seconds",
             "mel_hops", "decomp_to_perform", "NoC", "receptive_field", "stride", "max_duration_in_seconds"),
+    "cpc": ("baseline_method", "baseline_component", "cpc_input_type", "cpc_n_mels", "cpc_mel_norm",
+            "cpc_pool_mel_bins", "cpc_conv_kernel", "cpc_conv_stride", "cpc_encoder_hidden",
+            "cpc_encoder_dim", "cpc_ar_dim", "cpc_ar_layers", "cpc_ar_mode", "cpc_encoder_norm",
+            "cpc_representation",
+            "mel_hops", "decomp_to_perform", "NoC", "receptive_field", "stride", "max_duration_in_seconds"),
+    "fhvae": ("baseline_method", "baseline_component", "fhvae_input_type", "fhvae_n_mels",
+              "fhvae_mel_norm", "fhvae_pool_mel_bins", "fhvae_seg_len", "fhvae_hidden",
+              "fhvae_d_seg", "fhvae_d_seq", "fhvae_seq_std", "fhvae_representation",
+              "mel_hops", "decomp_to_perform", "NoC", "receptive_field", "stride", "max_duration_in_seconds"),
 }
 
 
-def resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args):
+def resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args, cpc_args, fhvae_args):
     """
     Select the argument group of the configured method and the front-end it reads.
 
@@ -120,12 +132,25 @@ def resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args):
         return (tcl_args, tcl_args.tcl_input_type, tcl_args.tcl_n_mels,
                 tcl_args.tcl_mel_norm, tcl_args.tcl_pool_mel_bins)
 
+    if baseline_args.baseline_method == "cpc":
+        if cpc_args.cpc_input_type not in ("mel", "waveform"):
+            raise ValueError(f"Unknown cpc_input_type {cpc_args.cpc_input_type}, expected 'mel' or 'waveform'.")
+        return (cpc_args, cpc_args.cpc_input_type, cpc_args.cpc_n_mels,
+                cpc_args.cpc_mel_norm, cpc_args.cpc_pool_mel_bins)
+
+    if baseline_args.baseline_method == "fhvae":
+        if fhvae_args.fhvae_input_type not in ("mel", "waveform"):
+            raise ValueError(f"Unknown fhvae_input_type {fhvae_args.fhvae_input_type}, expected 'mel' or 'waveform'.")
+        return (fhvae_args, fhvae_args.fhvae_input_type, fhvae_args.fhvae_n_mels,
+                fhvae_args.fhvae_mel_norm, fhvae_args.fhvae_pool_mel_bins)
+
     raise ValueError(
-        f"Unknown baseline_method {baseline_args.baseline_method}, expected one of 'cost', 'tfc', 'tcl'."
+        f"Unknown baseline_method {baseline_args.baseline_method}, expected one of 'cost', 'tfc', "
+        "'tcl', 'cpc', 'fhvae'."
     )
 
 
-def build_baseline_model(baseline_args, method_args, input_dims, seq_length, config):
+def build_baseline_model(baseline_args, method_args, input_dims, seq_length, config, n_train_utts=None):
     if baseline_args.baseline_method == "cost":
         return build_cost(method_args, input_dims, seq_length, config)
 
@@ -135,8 +160,20 @@ def build_baseline_model(baseline_args, method_args, input_dims, seq_length, con
     if baseline_args.baseline_method == "tcl":
         return build_tcl(method_args, input_dims, seq_length, config)
 
+    if baseline_args.baseline_method == "cpc":
+        return build_cpc(method_args, input_dims, seq_length, config)
+
+    if baseline_args.baseline_method == "fhvae":
+        if n_train_utts is None:
+            raise ValueError(
+                "FHVAE carries a prior-mean table with one row per training utterance of the run "
+                "that produced the checkpoint, so it has to be built with n_train_utts."
+            )
+        return build_fhvae(method_args, input_dims, seq_length, config, n_train_utts)
+
     raise ValueError(
-        f"Unknown baseline_method {baseline_args.baseline_method}, expected one of 'cost', 'tfc', 'tcl'."
+        f"Unknown baseline_method {baseline_args.baseline_method}, expected one of 'cost', 'tfc', "
+        "'tcl', 'cpc', 'fhvae'."
     )
 
 
@@ -146,6 +183,10 @@ def representation_name(baseline_args, method_args):
         return method_args.cost_representation
     if baseline_args.baseline_method == "tfc":
         return method_args.tfc_representation
+    if baseline_args.baseline_method == "cpc":
+        return method_args.cpc_representation
+    if baseline_args.baseline_method == "fhvae":
+        return method_args.fhvae_representation
     return baseline_args.baseline_method
 
 
@@ -157,9 +198,14 @@ def resolve_seq_pooling(baseline_args, method_args):
         return method_args.tfc_seq_pooling
     if baseline_args.baseline_method == "tcl":
         return method_args.tcl_seq_pooling
+    if baseline_args.baseline_method == "cpc":
+        return method_args.cpc_seq_pooling
+    if baseline_args.baseline_method == "fhvae":
+        return method_args.fhvae_seq_pooling
 
     raise ValueError(
-        f"Unknown baseline_method {baseline_args.baseline_method}, expected one of 'cost', 'tfc', 'tcl'."
+        f"Unknown baseline_method {baseline_args.baseline_method}, expected one of 'cost', 'tfc', "
+        "'tcl', 'cpc', 'fhvae'."
     )
 
 
@@ -226,6 +272,38 @@ def list_checkpoints(checkpoint_dir, epoch_range_to_evaluate):
     raise ValueError("epoch_range_to_evaluate should be a list of 1 or 2 integers, or None. Please check your config file.")
 
 
+def table_rows_from_checkpoint(checkpoint_dir, checkpoints):
+    """
+    Rows of FHVAE's prior-mean table, read off a checkpoint.
+
+    The table has one row per training utterance of the run that produced the checkpoint, a count
+    the evaluation config does not carry, so it is read from the checkpoint itself. The randomly
+    initialized model is then built the same size, so the two stay comparable and the strict load
+    of every other checkpoint succeeds.
+
+    Args:
+        checkpoint_dir (str): Directory the checkpoints sit in
+        checkpoints (list): Checkpoint names, the random initialization included
+    Returns:
+        int
+    """
+    for name in checkpoints:
+        if name == RANDOM_INIT:
+            continue
+        path = os.path.join(checkpoint_dir, name, "model.safetensors")
+        if not os.path.exists(path):
+            continue
+        with safe_open(path, framework="pt") as handle:
+            if "mu_seq_table" in handle.keys():
+                return int(handle.get_slice("mu_seq_table").get_shape()[0])
+
+    raise ValueError(
+        f"No checkpoint under {checkpoint_dir} holds an FHVAE prior-mean table, so the number of "
+        "training utterances it was pre-trained with cannot be recovered. Point parent_dir at the "
+        "directory the FHVAE pre-training run wrote."
+    )
+
+
 def _common_device(*values):
     """
     Device of the tensors found in values, which may be nested lists of them.
@@ -266,8 +344,15 @@ def gather_split(dataloader, representation_function, data_training_args, compon
             ones with z_seq.
     """
     dataset_name = data_training_args.dataset_name
-    if seq_pooling not in (None, "mean"):
-        raise ValueError(f"The sequence pooling must be None or 'mean', got '{seq_pooling}'.")
+    if seq_pooling not in (None, "mean", "last", "mu"):
+        raise ValueError(
+            f"The sequence pooling must be None, 'mean', 'last' or 'mu', got '{seq_pooling}'."
+        )
+    if seq_pooling == "mu" and not hasattr(representation_function, "pooled_sequence_embedding"):
+        raise ValueError(
+            "The 'mu' pooling is FHVAE's closed-form prior-mean estimate, and this model does not "
+            "define pooled_sequence_embedding."
+        )
     z = None
     z_seq = None
     labels = {}
@@ -316,7 +401,12 @@ def gather_split(dataloader, representation_function, data_training_args, compon
             if pool_mel_bins:
                 frames = frames.reshape(*frames.shape[:-1], n_mels, -1).mean(dim=-1)
             frames = frames * sub_attention_mask.to(frames.dtype).unsqueeze(-1)
-            outputs = representation_function.encode(frames)
+            "FHVAE slides a window over the frames, so it has to be told where the valid ones end."
+            "The frame-level methods read each frame on its own and are handed no mask, as before"
+            if getattr(representation_function, "encode_requires_mask", False):
+                outputs = representation_function.encode(frames, sub_attention_mask)
+            else:
+                outputs = representation_function.encode(frames)
             del batch
 
             "Gather labels for evaluations"
@@ -347,6 +437,20 @@ def gather_split(dataloader, representation_function, data_training_args, compon
             if seq_pooling == "mean":
                 z_seq_batch = outputs[0].mean(dim=1).detach().cpu()
                 z_seq = z_seq_batch if step == 0 else torch.cat((z_seq, z_seq_batch), dim=0)
+            elif seq_pooling == "last":
+                "The embedding at the last non-padded frame. Only a method with a recurrent context"
+                "has a frame that has already seen the whole utterance, so this is CPC's alone"
+                last = (sub_attention_mask.sum(dim=-1).clamp(min=1) - 1).to(outputs[0].device)
+                rows = torch.arange(batch_size, device=outputs[0].device)
+                z_seq_batch = outputs[0][rows, last].detach().cpu()
+                z_seq = z_seq_batch if step == 0 else torch.cat((z_seq, z_seq_batch), dim=0)
+            elif seq_pooling == "mu":
+                "FHVAE's s-vector, the closed-form prior-mean estimate over the non-overlapping"
+                "segments. Up to the factor N/(N+sigma^2) it is mean pooling of the sequence latent"
+                z_seq_batch = representation_function.pooled_sequence_embedding(
+                    frames, sub_attention_mask
+                ).detach().cpu()
+                z_seq = z_seq_batch if step == 0 else torch.cat((z_seq, z_seq_batch), dim=0)
 
     return z, z_seq, labels
 
@@ -355,13 +459,13 @@ def main():
     "Parse the arguments"
     parser = HfArgumentParser((ModelArgumentsPost, DataTrainingArgumentsPost, TrainingObjectiveArguments,
                                DecompositionArguments, BaselinePretrainingArguments, CoSTArguments,
-                               TFCArguments, TCLArguments))
+                               TFCArguments, TCLArguments, CPCArguments, FHVAEArguments))
     if debugger_is_active() or ('TERM_PROGRAM' in os.environ.keys() and os.environ['TERM_PROGRAM'] == 'vscode'):
         config_path = JSON_FILE_NAME_MANUAL
     else:
         args = parse_args()
         config_path = args.config_file
-    model_args, data_training_args, training_obj_args, decomp_args, baseline_args, cost_args, tfc_args, tcl_args = parser.parse_json_file(json_file=config_path)
+    model_args, data_training_args, training_obj_args, decomp_args, baseline_args, cost_args, tfc_args, tcl_args, cpc_args, fhvae_args = parser.parse_json_file(json_file=config_path)
     delattr(model_args, "comment_model_args")
     delattr(data_training_args, "comment_data_args")
     delattr(training_obj_args, "comment_tr_obj_args")
@@ -370,6 +474,8 @@ def main():
     delattr(cost_args, "comment_cost_args")
     delattr(tfc_args, "comment_tfc_args")
     delattr(tcl_args, "comment_tcl_args")
+    delattr(cpc_args, "comment_cpc_args")
+    delattr(fhvae_args, "comment_fhvae_args")
 
     if data_training_args.dataset_name not in SUPPORTED_DATASETS:
         raise ValueError(
@@ -377,7 +483,7 @@ def main():
             f"'{data_training_args.dataset_name}'."
         )
 
-    method_args, input_type, n_mels, mel_norm, pool_mel_bins = resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args)
+    method_args, input_type, n_mels, mel_norm, pool_mel_bins = resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args, cpc_args, fhvae_args)
     component = baseline_args.baseline_component
     seq_pooling = resolve_seq_pooling(baseline_args, method_args)
 
@@ -456,13 +562,20 @@ def main():
     seq_length, input_dims = series_shape(vectorized_datasets["train"], component, n_mels, pool_mel_bins)
     print(f"{baseline_args.baseline_method} reads {seq_length} frames of {input_dims} features")
 
+    "FHVAE's table is sized by the pre-training split, so its size comes off the checkpoint"
+    n_train_utts = None
+    if baseline_args.baseline_method == "fhvae":
+        n_train_utts = table_rows_from_checkpoint(checkpoint_dir, checkpoints)
+        print(f"fhvae was pre-trained with {n_train_utts} utterances in its prior-mean table")
+
     "Below this point we need to iterate across checkpoints"
     for ckp_dir in checkpoints:
         print(f"Loading model from checkpoint directory: {checkpoint_dir}")
         print(f"Processing checkpoint {ckp_dir}...")
 
         "initialize random model and load pretrained weights"
-        representation_function = build_baseline_model(baseline_args, method_args, input_dims, seq_length, config)
+        representation_function = build_baseline_model(baseline_args, method_args, input_dims,
+                                                       seq_length, config, n_train_utts=n_train_utts)
         if ckp_dir != RANDOM_INIT:
             weights = load_file(os.path.join(checkpoint_dir, ckp_dir, "model.safetensors"))
             representation_function.load_state_dict(weights, strict=True)

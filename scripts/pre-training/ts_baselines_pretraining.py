@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-"""Pre-Training a time-series representation baseline (CoST, TF-C, TCL, CPC) on unlabeled audio data.
+"""Pre-Training a time-series representation baseline (CoST, TF-C, TCL, CPC, FHVAE) on unlabeled audio data.
 
 The core of the script - data loading, training parameters, the training/validation loop, early
 stopping, checkpointing and logging - is the one vaes_pretraining.py uses. What differs per method
@@ -31,7 +31,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
     print(f"Added {project_root} to Python path")
 
-from models import build_cost, build_tfc, build_tcl, build_cpc
+from models import build_cost, build_tfc, build_tcl, build_cpc, build_fhvae
 from models.baselines.tcl import fit_pca_whitening
 import joblib
 from data_collation import DataCollatorForBaselinePretraining_NoFeatureExtraction
@@ -64,6 +64,7 @@ from args_configs import (
     TFCArguments,
     TCLArguments,
     CPCArguments,
+    FHVAEArguments,
 )
 from dataset_loading import load_timit, load_sim_vowels, load_iemocap, load_voc_als
 from utils.misc import parse_args, debugger_is_active
@@ -82,7 +83,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm.auto import tqdm
 import time
 
-JSON_FILE_NAME_MANUAL = "config_files/baselines/cpc/sim_vowels/pre-training/config_pretraining_cpc_sim_vowels.json" #for debugging purposes only
+JSON_FILE_NAME_MANUAL = "config_files/baselines/fhvae/sim_vowels/pre-training/config_pretraining_fhvae_sim_vowels.json" #for debugging purposes only
 
 logger = get_logger(__name__)
 
@@ -116,10 +117,11 @@ METHOD_LOSS_KEYS = {
     "tfc": ("time_loss", "freq_loss", "time_frequency_loss"),
     "tcl": ("segment_accuracy", "classifier_only"),
     "cpc": ("prediction_accuracy", "step_1_accuracy"),
+    "fhvae": ("log_px_z", "kld_seg", "kld_seq", "log_qy"),
 }
 
 
-def resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args, cpc_args):
+def resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args, cpc_args, fhvae_args):
     """
     Select the argument group of the configured method and the front-end it reads.
 
@@ -129,6 +131,7 @@ def resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args, cpc_args):
         tfc_args (:class:`~args_configs.tfc_args.TFCArguments`)
         tcl_args (:class:`~args_configs.tcl_args.TCLArguments`)
         cpc_args (:class:`~args_configs.cpc_args.CPCArguments`)
+        fhvae_args (:class:`~args_configs.fhvae_args.FHVAEArguments`)
     Returns:
         method_args: The argument group of the configured method
         input_type (str): The front-end the method reads - 'mel' or 'waveform'
@@ -164,13 +167,20 @@ def resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args, cpc_args):
             raise ValueError(f"Unknown cpc_input_type {resolved[1]}, expected 'mel' or 'waveform'.")
         return resolved
 
+    if baseline_args.baseline_method == "fhvae":
+        resolved = (fhvae_args, fhvae_args.fhvae_input_type, fhvae_args.fhvae_n_mels,
+                    fhvae_args.fhvae_mel_norm, fhvae_args.fhvae_pool_mel_bins)
+        if resolved[1] not in ("mel", "waveform"):
+            raise ValueError(f"Unknown fhvae_input_type {resolved[1]}, expected 'mel' or 'waveform'.")
+        return resolved
+
     raise ValueError(
         f"Unknown baseline_method {baseline_args.baseline_method}, expected one of 'cost', 'tfc', "
-        "'tcl', 'cpc'."
+        "'tcl', 'cpc', 'fhvae'."
     )
 
 
-def build_baseline_model(baseline_args, method_args, input_dims, seq_length, config):
+def build_baseline_model(baseline_args, method_args, input_dims, seq_length, config, n_train_utts=None):
     """
     Build the model of the configured method.
 
@@ -180,6 +190,8 @@ def build_baseline_model(baseline_args, method_args, input_dims, seq_length, con
         input_dims (int): Width of one frame of the input series
         seq_length (int): Number of frames per utterance
         config (:class:`~config_files.configuration_decVAE.DecVAEConfig`): Carries the frame grid
+        n_train_utts (int, optional): Number of training utterances, which FHVAE needs for its
+            table of per-utterance prior means. Unused by the other methods
     Returns:
         torch.nn.Module: The model, whose forward returns a dict holding at least 'loss'
     """
@@ -195,9 +207,17 @@ def build_baseline_model(baseline_args, method_args, input_dims, seq_length, con
     if baseline_args.baseline_method == "cpc":
         return build_cpc(method_args, input_dims, seq_length, config)
 
+    if baseline_args.baseline_method == "fhvae":
+        if n_train_utts is None:
+            raise ValueError(
+                "FHVAE keeps one trainable prior mean per training utterance, so it has to be built "
+                "with n_train_utts."
+            )
+        return build_fhvae(method_args, input_dims, seq_length, config, n_train_utts)
+
     raise ValueError(
         f"Unknown baseline_method {baseline_args.baseline_method}, expected one of 'cost', 'tfc', "
-        "'tcl', 'cpc'."
+        "'tcl', 'cpc', 'fhvae'."
     )
 
 
@@ -289,9 +309,31 @@ def build_optimizer(baseline_args, method_args, model, data_training_args):
             )
         raise ValueError(f"Unknown cpc_optimizer {method_args.cpc_optimizer}, expected 'adam' or 'adamw'.")
 
+    if baseline_args.baseline_method == "fhvae":
+        "The reference builds a plain Adam over every parameter, the prior-mean table included."
+        "It must be dense: TF1 decays the moments of every row each step, which a sparse or lazy"
+        "Adam would not, and the table is what the discriminative term shapes"
+        if method_args.fhvae_optimizer == "adam":
+            return torch.optim.Adam(
+                trainable,
+                lr=data_training_args.learning_rate,
+                betas=[data_training_args.adam_beta1, data_training_args.adam_beta2],
+                eps=data_training_args.adam_epsilon,
+                weight_decay=data_training_args.weight_decay,
+            )
+        if method_args.fhvae_optimizer == "adamw":
+            return AdamW(
+                trainable,
+                lr=data_training_args.learning_rate,
+                betas=[data_training_args.adam_beta1, data_training_args.adam_beta2],
+                eps=data_training_args.adam_epsilon,
+                weight_decay=data_training_args.weight_decay,
+            )
+        raise ValueError(f"Unknown fhvae_optimizer {method_args.fhvae_optimizer}, expected 'adam' or 'adamw'.")
+
     raise ValueError(
         f"Unknown baseline_method {baseline_args.baseline_method}, expected one of 'cost', 'tfc', "
-        "'tcl', 'cpc'."
+        "'tcl', 'cpc', 'fhvae'."
     )
 
 
@@ -416,14 +458,14 @@ def main():
     "Parse the arguments"
     parser = HfArgumentParser((ModelArguments, TrainingObjectiveArguments, DecompositionArguments,
                                DataTrainingArguments, BaselinePretrainingArguments, CoSTArguments,
-                               TFCArguments, TCLArguments, CPCArguments))
+                               TFCArguments, TCLArguments, CPCArguments, FHVAEArguments))
 
     if debugger_is_active():
-        model_args, training_obj_args, decomp_args, data_training_args, baseline_args, cost_args, tfc_args, tcl_args, cpc_args = \
+        model_args, training_obj_args, decomp_args, data_training_args, baseline_args, cost_args, tfc_args, tcl_args, cpc_args, fhvae_args = \
             parser.parse_json_file(json_file=JSON_FILE_NAME_MANUAL)
     else:
         args = parse_args()
-        model_args, training_obj_args, decomp_args, data_training_args, baseline_args, cost_args, tfc_args, tcl_args, cpc_args = \
+        model_args, training_obj_args, decomp_args, data_training_args, baseline_args, cost_args, tfc_args, tcl_args, cpc_args, fhvae_args = \
             parser.parse_json_file(json_file=args.config_file)
     delattr(model_args, "comment_model_args")
     delattr(training_obj_args, "comment_tr_obj_args")
@@ -433,8 +475,9 @@ def main():
     delattr(tfc_args, "comment_tfc_args")
     delattr(tcl_args, "comment_tcl_args")
     delattr(cpc_args, "comment_cpc_args")
+    delattr(fhvae_args, "comment_fhvae_args")
 
-    method_args, input_type, n_mels, mel_norm, pool_mel_bins = resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args, cpc_args)
+    method_args, input_type, n_mels, mel_norm, pool_mel_bins = resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args, cpc_args, fhvae_args)
 
     use_timit_subset = "timit" in data_training_args.dataset_name and TIMIT_SUBSET_FRACTION is not None
     if use_timit_subset:
@@ -603,7 +646,19 @@ def main():
     seq_length, input_dims = series_shape(vectorized_datasets, baseline_args.baseline_component)
     if input_type.startswith("mel") and pool_mel_bins:
         input_dims = n_mels
-    model = build_baseline_model(baseline_args, method_args, input_dims, seq_length, config)
+
+    "FHVAE keeps one trainable prior mean per training utterance, so a batch has to carry which"
+    "utterance it came from. The indices are written after any subsetting, so they run 0..n-1 over"
+    "the split the table is sized for. A held-out split carries none, and the mean is estimated"
+    n_train_utts = vectorized_datasets["train"].num_rows
+    if baseline_args.baseline_method == "fhvae":
+        vectorized_datasets["train"] = vectorized_datasets["train"].add_column(
+            "utt_index", list(range(n_train_utts))
+        )
+        print(f"fhvae indexes {n_train_utts} training utterances for its prior-mean table")
+
+    model = build_baseline_model(baseline_args, method_args, input_dims, seq_length, config,
+                                 n_train_utts=n_train_utts)
     print(f"{baseline_args.baseline_method} reads {seq_length} frames of {input_dims} features, "
           f"{count_parameters(model)} trainable parameters")
 

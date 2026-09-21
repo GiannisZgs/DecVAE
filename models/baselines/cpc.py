@@ -270,6 +270,22 @@ class CPCForPreTraining(nn.Module):
         self.geometry = FrameGeometry(config.conv_kernel, config.conv_stride, config=config)
         self.config = self.geometry.config
 
+    def state_dict(self, *args, **kwargs):
+        """
+        The model's tensors, with the recurrent weights copied out of cuDNN's flat buffer.
+
+        On the GPU torch flattens a GRU's weights into one buffer and leaves every parameter a view
+        of it, and safetensors refuses to serialize tensors that share storage. Copying those views
+        gives one tensor per parameter again, which is what the checkpoint should hold anyway.
+        """
+        state = super().state_dict(*args, **kwargs)
+        for key, tensor in state.items():
+            if type(tensor) is torch.Tensor and (
+                tensor.untyped_storage().nbytes() != tensor.numel() * tensor.element_size()
+            ):
+                state[key] = tensor.clone()
+        return state
+
     def _get_feat_extract_output_lengths(
         self, input_lengths: Union[torch.LongTensor, int], add_adapter: Optional[bool] = None
     ):
