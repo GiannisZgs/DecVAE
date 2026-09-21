@@ -74,7 +74,7 @@ JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/iemocap/fine_tuning/config_finetun
 logger = get_logger(__name__)
 
 "Hardcoded intervention: keep only this fraction of every IEMOCAP split. Set to None for the full dataset"
-IEMOCAP_SUBSET_FRACTION = 0.05
+IEMOCAP_SUBSET_FRACTION = None
 
 
 def redirect_subset_outputs(data_training_args, fraction):

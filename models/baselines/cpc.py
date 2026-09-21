@@ -43,41 +43,96 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from .frame_geometry import FrameGeometry
 
 
+class ChannelNorm(nn.Module):
+    """
+    The normalization CPC_audio's encoder uses under its default normMode of 'layerNorm': the
+    statistics are taken over the channel axis at each position, with a per-channel affine.
+
+    Args:
+        num_features (int): Channels of the layer.
+        epsilon (float): Added to the variance before the reciprocal square root.
+    """
+
+    def __init__(self, num_features, epsilon=1e-05):
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(1, num_features, 1))
+        self.bias = nn.Parameter(torch.zeros(1, num_features, 1))
+        self.epsilon = epsilon
+
+    def forward(self, x):
+        mean = x.mean(dim=1, keepdim=True)
+        variance = x.var(dim=1, keepdim=True)
+        return (x - mean) * torch.rsqrt(variance + self.epsilon) * self.weight + self.bias
+
+
 class CPCEncoder(nn.Module):
     """
-    g_enc, reading one mel frame of the grid and emitting z, as the reference's filterbank
-    front-ends do once the filterbank has been applied.
+    g_enc, the strided convolutional stack that reads one mel frame of the grid and emits z.
+
+    The stack is the reference's own, kept convolutional, but it strides over the frame the
+    filterbank already produced rather than over raw samples, which is what the reference's 'mfcc'
+    and 'lfb' front-ends do. The kernels and strides are CPC's, not DecVAE's: the defaults keep
+    CPC_audio's first four layers as they stand and shorten only the last, so that a 400-value
+    frame collapses to exactly one position - 79, 18, 8, 3, 1. One frame therefore yields one z,
+    the frame grid is whatever the cached features already are, and nothing has to be realigned for
+    the post-analysis.
 
     Args:
         input_dims (int): Width of one frame.
-        hidden (list): Width of each hidden layer.
-        output_dim (int): Width of z.
-        norm (str): 'layer', 'batch' or 'none', matching the reference's normMode.
+        conv_kernel (list): Kernel size of each layer.
+        conv_stride (list): Stride of each layer.
+        output_dim (int): Channels of the last layer, which is the width of z.
+        hidden (int or None): Channels of every earlier layer. None keeps one width throughout, as
+            the reference's sizeHidden does.
+        norm (str): 'layer' for the reference's ChannelNorm, 'batch', or 'none'.
+        bias (bool): Whether the convolutions carry a bias. The reference leaves nn.Conv1d's
+            default, which is True.
     """
 
-    def __init__(self, input_dims, hidden, output_dim, norm="layer"):
+    def __init__(self, input_dims, conv_kernel, conv_stride, output_dim, hidden=None,
+                 norm="layer", bias=True):
         super().__init__()
 
         if norm not in ("layer", "batch", "none"):
             raise ValueError(f"Unknown cpc_encoder_norm {norm}, expected 'layer', 'batch' or 'none'.")
+        if len(conv_kernel) != len(conv_stride):
+            raise ValueError(
+                f"conv_kernel and conv_stride must have the same length, got {len(conv_kernel)} "
+                f"and {len(conv_stride)}."
+            )
+
         self.output_dim = output_dim
+        self.kernels = list(conv_kernel)
+        self.strides = list(conv_stride)
 
-        widths = list(hidden) + [output_dim]
-        layers = []
-        in_dim = input_dims
-        for width in widths:
-            layers.append(nn.Linear(in_dim, width))
-            in_dim = width
-        self.layers = nn.ModuleList(layers)
+        "Walk the stack over the frame width, so a frame that it cannot reduce is caught here"
+        length = input_dims
+        for layer, (kernel, stride) in enumerate(zip(self.kernels, self.strides)):
+            if length < kernel:
+                raise ValueError(
+                    f"g_enc strides its conv stack over one frame, but layer {layer} has kernel "
+                    f"{kernel} and only {length} positions are left of the {input_dims} a frame "
+                    "holds. Either the frame was narrowed, in which case set cpc_pool_mel_bins to "
+                    "false and feed the mel frame whole, or cpc_conv_kernel and cpc_conv_stride "
+                    "need to be sized for this frame width."
+                )
+            length = (length - kernel) // stride + 1
+        self.output_length = length
 
-        "The reference's ChannelNorm normalizes over the channel axis with a per-channel affine,"
-        "which is a layer norm over the feature axis once the frame grid is the sequence axis"
-        if norm == "layer":
-            self.norms = nn.ModuleList([nn.LayerNorm(width) for width in widths])
-        elif norm == "batch":
-            self.norms = nn.ModuleList([nn.BatchNorm1d(width) for width in widths])
-        else:
-            self.norms = nn.ModuleList([nn.Identity() for _ in widths])
+        widths = [hidden or output_dim] * (len(self.kernels) - 1) + [output_dim]
+        convs, norms = [], []
+        in_channels = 1
+        for width, kernel, stride in zip(widths, self.kernels, self.strides):
+            convs.append(nn.Conv1d(in_channels, width, kernel_size=kernel, stride=stride, bias=bias))
+            if norm == "layer":
+                norms.append(ChannelNorm(width))
+            elif norm == "batch":
+                norms.append(nn.BatchNorm1d(width))
+            else:
+                norms.append(nn.Identity())
+            in_channels = width
+        self.convs = nn.ModuleList(convs)
+        self.norms = nn.ModuleList(norms)
         self.norm_mode = norm
 
     def forward(self, x):
@@ -89,10 +144,15 @@ class CPCEncoder(nn.Module):
             layer of its encoder including the last.
         """
         batch, frames, _ = x.shape
-        x = x.reshape(batch * frames, -1)
-        for linear, norm in zip(self.layers, self.norms):
-            x = F.relu(norm(linear(x)))
-        return x.reshape(batch, frames, -1)
+
+        "Every frame is convolved on its own, as one channel over the feature axis"
+        h = x.reshape(batch * frames, 1, -1)
+        for conv, norm in zip(self.convs, self.norms):
+            h = F.relu(norm(conv(h)))
+
+        "The stack leaves one position per frame; anything left over is averaged into it"
+        h = h.mean(dim=-1) if h.shape[-1] > 1 else h.squeeze(-1)
+        return h.reshape(batch, frames, -1)
 
 
 class CPCAutoregressive(nn.Module):
@@ -181,8 +241,10 @@ class CPCForPreTraining(nn.Module):
 
         self.encoder = CPCEncoder(
             input_dims=input_dims,
-            hidden=cpc_args.cpc_encoder_hidden,
+            conv_kernel=cpc_args.cpc_conv_kernel,
+            conv_stride=cpc_args.cpc_conv_stride,
             output_dim=cpc_args.cpc_encoder_dim,
+            hidden=cpc_args.cpc_encoder_hidden,
             norm=cpc_args.cpc_encoder_norm,
         )
         self.ar = CPCAutoregressive(
