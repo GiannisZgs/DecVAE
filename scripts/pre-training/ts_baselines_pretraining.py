@@ -35,6 +35,7 @@ from models import build_cost, build_tfc, build_tcl, build_cpc, build_fhvae
 from models.baselines.tcl import fit_pca_whitening
 import joblib
 from data_collation import DataCollatorForBaselinePretraining_NoFeatureExtraction
+from data_collation.baseline_collators import KEPT_COLUMNS
 from data_preprocessing import prepare_extract_features_pretraining_dataset
 from config_files import DecVAEConfig
 
@@ -337,7 +338,14 @@ def build_optimizer(baseline_args, method_args, model, data_training_args):
     )
 
 
-def fit_tcl_whitening(model, dataset, data_collator, data_training_args, method_args, component, projection_path):
+def as_loader_dataset(dataset):
+    "Keep only the columns the collator reads, and hand rows over as numpy arrays rather than nested lists"
+    keep = [column for column in KEPT_COLUMNS if column in dataset.column_names]
+    return dataset.select_columns(keep).with_format("numpy")
+
+
+def fit_tcl_whitening(model, dataset, data_collator, data_training_args, method_args, component, projection_path,
+                      num_workers=0):
     """
     Fit the PCA whitening TCL applies before its network, on the training split alone, or load the
     one an earlier run fitted. The mean and the covariance are accumulated over the frames rather
@@ -351,6 +359,7 @@ def fit_tcl_whitening(model, dataset, data_collator, data_training_args, method_
         method_args (:class:`~args_configs.tcl_args.TCLArguments`)
         component (int): Which decomposition component feeds the encoder
         projection_path (str): Where the fitted transform is cached
+        num_workers (int): DataLoader worker processes
     """
     if os.path.exists(projection_path):
         print(f"Loading the fitted TCL whitening from {projection_path}")
@@ -358,7 +367,7 @@ def fit_tcl_whitening(model, dataset, data_collator, data_training_args, method_
         return
 
     loader = DataLoader(dataset, shuffle=False, collate_fn=data_collator,
-                        batch_size=data_training_args.per_device_eval_batch_size)
+                        batch_size=data_training_args.per_device_eval_batch_size, num_workers=num_workers)
     generator = np.random.default_rng(seed=method_args.tcl_pca_seed)
     fraction = method_args.tcl_pca_fit_fraction
     width = model.input_dims
@@ -662,9 +671,15 @@ def main():
     print(f"{baseline_args.baseline_method} reads {seq_length} frames of {input_dims} features, "
           f"{count_parameters(model)} trainable parameters")
 
-    "data collator, optimizer and scheduler"
+    "Rows are read as numpy arrays holding only what the collator uses; decoding every column into"
+    "nested lists is what made loading slow. The batches are the same"
+    for split in ("train", "validation"):
+        vectorized_datasets[split] = as_loader_dataset(vectorized_datasets[split])
+
+    "data collator, optimizer and scheduler. The collator only needs the frame grid, which the"
+    "parameter-free geometry carries, so worker processes never receive the model's weights"
     data_collator = DataCollatorForBaselinePretraining_NoFeatureExtraction(
-        model=model,
+        model=model.geometry,
         feature_extractor=feature_extractor,
         input_type=input_type,
         n_mels=n_mels,
@@ -678,18 +693,23 @@ def main():
     "incomplete last batch cannot be used by those methods"
     drop_last = getattr(model, "requires_fixed_batch_size", False)
 
+    num_workers = baseline_args.baseline_dataloader_num_workers
     train_dataloader = DataLoader(
         vectorized_datasets['train'],
         shuffle=True,
         collate_fn=data_collator,
         batch_size=data_training_args.per_device_train_batch_size,
         drop_last=drop_last,
+        num_workers=num_workers,
+        persistent_workers=num_workers > 0,
     )
     eval_dataloader = DataLoader(
         vectorized_datasets["validation"],
         collate_fn=data_collator,
         batch_size=data_training_args.per_device_eval_batch_size,
         drop_last=drop_last,
+        num_workers=num_workers,
+        persistent_workers=num_workers > 0,
     )
 
     if len(train_dataloader) == 0 or len(eval_dataloader) == 0:
@@ -703,7 +723,8 @@ def main():
     if baseline_args.baseline_method == "tcl":
         fit_tcl_whitening(model, vectorized_datasets["train"], data_collator, data_training_args,
                           method_args, baseline_args.baseline_component,
-                          os.path.join(data_training_args.output_dir, "tcl_pca_whitening.joblib"))
+                          os.path.join(data_training_args.output_dir, "tcl_pca_whitening.joblib"),
+                          num_workers=num_workers)
 
     "Optimizer of the method's reference implementation. The learning rate, weight decay, schedule"
     "shape and batch size are the reference ones too, carried in the data arguments of the config"
