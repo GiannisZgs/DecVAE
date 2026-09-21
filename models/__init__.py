@@ -8,3 +8,4 @@ from .baselines import CoSTEncoder, CoSTForPreTraining, build_cost
 from .baselines import TFC, TFCForPreTraining, build_tfc
 from .baselines import TCLNetwork, TCLForPreTraining, build_tcl
 from .baselines import CPCEncoder, CPCForPreTraining, build_cpc
+from .baselines import FHVAEForPreTraining, build_fhvae

@@ -32,7 +32,7 @@ from transformers import Wav2Vec2FeatureExtractor
 from feature_extraction import normalize_mel_spectrogram, rereference_mel_db
 
 "Pre-training reads no labels, so everything else the preprocessing wrote is dropped here"
-KEPT_COLUMNS = ("input_values", "attention_mask", "mel_spec_max")
+KEPT_COLUMNS = ("input_values", "attention_mask", "mel_spec_max", "utt_index")
 
 
 def normalize_baseline_mel_batch(values, spec_max, mel_norm, n_mels, device):
@@ -116,6 +116,9 @@ class DataCollatorForBaselinePretraining_NoFeatureExtraction:
 
         features = [{k: v for k, v in feature.items() if k in KEPT_COLUMNS} for feature in features]
         spec_max = [feature.pop("mel_spec_max", None) for feature in features]
+        "FHVAE reads which utterance a batch entry came from, to index its prior-mean table. It is"
+        "written on the training split only, so a held-out split simply does not carry it"
+        utt_index = [feature.pop("utt_index", None) for feature in features]
 
         batch = self.feature_extractor.pad(
             features,
@@ -164,5 +167,8 @@ class DataCollatorForBaselinePretraining_NoFeatureExtraction:
         batch["sub_attention_mask"] = self.model._get_feature_vector_attention_mask(
             mask_indices_seq_length, batch["attention_mask"]
         )
+
+        if all(index is not None for index in utt_index):
+            batch["utt_index"] = torch.tensor(utt_index, dtype=torch.long, device=device)
 
         return batch
