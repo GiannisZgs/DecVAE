@@ -656,6 +656,11 @@ def evaluate_projection(data_training_args, config, eigenprojection_args, ckp,
                 )
 
 
+def tensor_mb(z):
+    """Megabytes a gathered tensor occupies in memory."""
+    return 0.0 if z is None else z.element_size() * z.nelement() / (1024 ** 2)
+
+
 def gather_split(dataloader, data_training_args, eigenprojection_args, gather_fit_grid=False):
     """
     Read a split and collect frame-level inputs with their labels, keeping the sequence structure.
@@ -975,6 +980,10 @@ def main():
         z_test, seq_lengths_test, labels_test, _, _ = gather_split(
             test_dataloader, data_training_args, eigenprojection_args)
     print(f"Total loading time: {time.time() - start_time: .4f} seconds")
+    print(f"Gathered frames: "
+          + (f"{tuple(z.shape)} eval ({tensor_mb(z):.1f} MB)" if z is not None else "none")
+          + (f", {tuple(z_test.shape)} test ({tensor_mb(z_test):.1f} MB)" if z_test is not None else "")
+          + (f", {tuple(z_tiled.shape)} tiled ({tensor_mb(z_tiled):.1f} MB)" if z_tiled is not None else ""))
 
     if on_iemocap:
         "Every split is already in the single evaluation set - fit on it"
@@ -1016,7 +1025,7 @@ def main():
         z_fit = z if on_iemocap else expand_frames(z_fit, seq_lengths_fit, expansion, context)
         z_test = expand_frames(z_test, seq_lengths_test, expansion, context)
         z_tiled_fit = expand_frames(z_tiled_fit, seq_lengths_tiled_fit, expansion, context)
-        print(f"Expanded the frames with '{expansion}' - {width_before} features per frame became {z.shape[1]}")
+        print(f"Expanded the frames with '{expansion}' - {width_before} features per frame became {z.shape[1]} - {tensor_mb(z):.1f} MB")
 
         "Quadratic squares the width, so the projection is fitted on a reduction of it"
         reduce_to = eigenprojection_args.projection_expansion_components
