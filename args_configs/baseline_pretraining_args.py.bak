@@ -58,13 +58,6 @@ class BaselinePretrainingArguments:
         metadata={"help": "Which baseline to pre-train: 'cost', 'tfc', 'tcl' or 'cpc'. The method's "
                           "own argument group is read, the other groups are ignored."},
     )
-    baseline_dataloader_num_workers: int = field(
-        default=0,
-        metadata={"help": "Worker processes each DataLoader of the baseline scripts uses to read and "
-                          "collate batches. 0 reads them in the main process, as before this setting "
-                          "existed. A few workers keep the GPU fed while the next batch is decoded; "
-                          "the batches themselves are the same either way."},
-    )
     baseline_component: int = field(
         default=0,
         metadata={"help": "Which decomposition component feeds the encoder. 0 is the original "
