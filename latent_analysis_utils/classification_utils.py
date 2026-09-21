@@ -1056,14 +1056,15 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                         'classifier__max_depth': [None],
                         'classifier__min_samples_split': [2],
                         'classifier__max_features': ['sqrt'],
-                    },
-                    'SVC': {
-                        'classifier': [SVC(random_state=rs)],
-                        'classifier__C': [1],
-                        'classifier__kernel': ['rbf'],
-                        'classifier__decision_function_shape': ['ovr'],
                     }
-                }
+                } #,
+                #    'SVC': {
+                #        'classifier': [SVC(random_state=rs)],
+                #        'classifier__C': [1],
+                #        'classifier__kernel': ['rbf'],
+                #        'classifier__decision_function_shape': ['ovr'],
+                #    }
+                #}
                 
                 if data_training_args.dataset_name in ["VOC_ALS","iemocap"]:
                     current_classifiers.pop('SVC', None)

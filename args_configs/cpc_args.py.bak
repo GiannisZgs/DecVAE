@@ -1,0 +1,169 @@
+# coding=utf-8
+# Copyright 2025 Ioannis Ziogas <ziogioan@ieee.org>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Arguments for the CPC baseline, Contrastive Predictive Coding of van den Oord et al. (2018).
+
+CPC has no single reference implementation, so the defaults here are read off the two that are
+followed: https://github.com/facebookresearch/CPC_audio, whose cpc_default_config.py sets the
+architecture and the optimizer, and https://github.com/Spijkervet/contrastive-predictive-coding,
+whose config/audio carries the paper's GRU and its single log-bilinear predictor.
+
+An encoder emits one vector z_t per frame and an autoregressive network summarizes the past into a
+context c_t at the same rate, and the pretext task is to tell the true z_{t+k} from negatives, for
+k up to cpc_prediction_steps. Both vectors come out as (batch, frames, dim) on the DecVAE grid.
+
+Where this port departs from the references, and why:
+
+    g_enc   CPC_audio builds the 10 ms grid itself, with five strided convolutions over the raw
+            waveform. The grid here is DecVAE's and the features are already cached per frame, so
+            g_enc reads one frame and is an MLP over it. This is the accommodation TCL and TF-C
+            already make, and it leaves the frame axis untouched end to end.
+    k       cpc_prediction_steps is 6 rather than the reference's 12, since the reference predicts
+            over a 10 ms grid and DecVAE's stride is 20 ms. The lookahead is the same 120 ms.
+    negs    The references draw negatives from anywhere in the batch. The default here draws them
+            from the same utterance: on a corpus like SimVowels a negative from another utterance
+            is a negative from another speaker, which would let the model separate them on speaker
+            identity alone and confound the axis being measured. 'batch' restores the reference's
+            sampling. Two consequences follow from the smaller pool: the count is the second
+            reference's 10 rather than CPC_audio's 128, and the offset is drawn past the prediction
+            horizon so that a negative is never the true future of some step. The references let
+            that collision happen because their pool makes it negligible; inside one utterance of a
+            few hundred frames it is not.
+
+The reference training recipe, which the shipped configs carry in the data arguments:
+Adam with betas (0.9, 0.999), epsilon 1e-8 and no weight decay, learning rate 2e-4, a constant
+learning rate (CPC_audio's schedulerStep defaults to -1, which disables its step decay, and the
+second reference builds no scheduler at all), and batch 8, which both references default to.
+"""
+
+from dataclasses import dataclass, field
+from typing import List
+
+
+@dataclass
+class CPCArguments:
+    comment_cpc_args: str = field(
+        default="CPC Baseline Arguments",
+        metadata={"help": "A comment to add to the CPC arguments."},
+    )
+    cpc_input_type: str = field(
+        default="mel",
+        metadata={"help": "What each frame holds: 'mel' takes the log-mel features extracted per "
+                          "frame at preprocessing, 'waveform' takes the frame samples themselves. "
+                          "The reference encodes the waveform, but it does so with the strided "
+                          "convolutions that build its own frame grid, which this port replaces, "
+                          "so 'mel' is the default front-end for the per-frame encoder."},
+    )
+    cpc_n_mels: int = field(
+        default=80,
+        metadata={"help": "Number of mel bands, for the 'mel' input type."},
+    )
+    cpc_mel_norm: str = field(
+        default="global",
+        metadata={"help": "Mel normalization applied in the collator, for the 'mel' input type."},
+    )
+    cpc_pool_mel_bins: bool = field(
+        default=False,
+        metadata={"help": "Average the time bins preprocessing extracted inside each frame, leaving "
+                          "one value per mel channel."},
+    )
+    cpc_encoder_hidden: List[int] = field(
+        default_factory=lambda: [256],
+        metadata={"help": "Width of each hidden layer of g_enc, the per-frame encoder, before the "
+                          "layer that emits z. The reference's encoder is five strided convolutions "
+                          "of width 256 over the waveform; here the grid is already built, so the "
+                          "encoder is an MLP over one frame."},
+    )
+    cpc_encoder_dim: int = field(
+        default=256,
+        metadata={"help": "Width of z, the frame-local representation, which is hiddenEncoder in "
+                          "the reference. The configs lower it to DecVAE's latent width so the "
+                          "embeddings being compared have the same size."},
+    )
+    cpc_ar_dim: int = field(
+        default=256,
+        metadata={"help": "Width of c, the context the autoregressive network emits, which is "
+                          "hiddenGar in the reference. The reference keeps it equal to "
+                          "cpc_encoder_dim."},
+    )
+    cpc_ar_layers: int = field(
+        default=1,
+        metadata={"help": "Layers of the autoregressive network, nLevelsGRU in the reference."},
+    )
+    cpc_ar_mode: str = field(
+        default="gru",
+        metadata={"help": "Autoregressive network: 'gru' is the paper's and the second reference's, "
+                          "'lstm' is CPC_audio's default, 'rnn' is the third choice it offers."},
+    )
+    cpc_encoder_norm: str = field(
+        default="layer",
+        metadata={"help": "Normalization inside g_enc: 'layer' is the reference's default normMode, "
+                          "'batch' is its batchNorm, 'none' its ID."},
+    )
+    cpc_prediction_steps: int = field(
+        default=6,
+        metadata={"help": "How many steps ahead the context predicts, nPredicts in the reference. "
+                          "The reference predicts 12 steps on a 10 ms grid; 6 steps on DecVAE's "
+                          "20 ms stride is the same 120 ms of lookahead."},
+    )
+    cpc_negative_samples: int = field(
+        default=10,
+        metadata={"help": "Negatives drawn per position, shared across the prediction steps as the "
+                          "references share them. This is the second reference's negative_samples. "
+                          "CPC_audio's negativeSamplingExt of 128 is a count for a pool of "
+                          "batch times sequence candidates; the default here draws inside one "
+                          "utterance, where a few hundred frames cannot support that many distinct "
+                          "negatives."},
+    )
+    cpc_negative_sampling: str = field(
+        default="same_sequence",
+        metadata={"help": "Where negatives come from: 'same_sequence' draws them from other frames "
+                          "of the same utterance, 'batch' from anywhere in the batch, which is what "
+                          "the references do. The default is deliberately not the reference's: "
+                          "cross-utterance negatives hand the model speaker identity as a free "
+                          "discriminator, which confounds the axis the evaluation measures. Padded "
+                          "frames are never drawn under either setting."},
+    )
+    cpc_optimizer: str = field(
+        default="adam",
+        metadata={"help": "Optimizer family, taken from the reference implementations: 'adam' is "
+                          "what both of them build, with the betas and epsilon of the data "
+                          "arguments. 'adamw' uses the optimizer the rest of the project trains "
+                          "with, and is an ablation rather than the baseline."},
+    )
+    cpc_representation: str = field(
+        default="context",
+        metadata={"help": "Which vector the evaluation reads: 'context' is c, the autoregressive "
+                          "output, which is what the paper classifies on and what the reference "
+                          "evaluates unless onEncoder is set; 'z' is the frame-local encoder output, "
+                          "which lines up with DecVAE's Z the way TF-C's and TCL's do; 'both' "
+                          "concatenates them. Both are returned whichever is chosen."},
+    )
+    cpc_seq_pooling: str = field(
+        default=None,
+        metadata={"help": "How the frames of an utterance are pooled into one sequence-level "
+                          "embedding, for the '*_seq' targets. None skips them. 'mean' averages over "
+                          "the frames of the utterance, as DecVAE's SequenceAggregator does, and is "
+                          "what the other baselines use. 'last' takes the context at the last "
+                          "non-padded frame, which CPC has and they do not, since c_t has summarized "
+                          "the whole utterance by then."},
+    )
+    cpc_transfer_reinit_predictors: bool = field(
+        default=False,
+        metadata={"help": "Fine-tuning only. Nothing in CPC is sized by the frame count, so a "
+                          "checkpoint transfers whole and this is off. On, the log-bilinear "
+                          "predictors start over while the encoder and the autoregressive network "
+                          "transfer, which is an ablation rather than a requirement."},
+    )
