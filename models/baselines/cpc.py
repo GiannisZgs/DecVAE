@@ -69,13 +69,13 @@ class CPCEncoder(nn.Module):
     """
     g_enc, the strided convolutional stack that reads one mel frame of the grid and emits z.
 
-    The stack is the reference's own, kept convolutional, but it strides over the frame the
+    The encoder stays convolutional as in the reference, but it strides over the frame the
     filterbank already produced rather than over raw samples, which is what the reference's 'mfcc'
-    and 'lfb' front-ends do. The kernels and strides are CPC's, not DecVAE's: the defaults keep
-    CPC_audio's first four layers as they stand and shorten only the last, so that a 400-value
-    frame collapses to exactly one position - 79, 18, 8, 3, 1. One frame therefore yields one z,
-    the frame grid is whatever the cached features already are, and nothing has to be realigned for
-    the post-analysis.
+    and 'lfb' front-ends do. The kernels and strides are DecVAE's seven-layer stack, which takes a
+    400-value frame down to exactly one position - 79, 39, 19, 9, 4, 2, 1. Nothing else is taken
+    from DecVAE: the ReLU after every layer and the ChannelNorm are CPC's own. One frame therefore
+    yields one z, the frame grid is whatever the cached features already are, and nothing has to be
+    realigned for the post-analysis.
 
     Args:
         input_dims (int): Width of one frame.

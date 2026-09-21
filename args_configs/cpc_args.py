@@ -34,10 +34,11 @@ Where this port departs from the references, and why:
             The filterbank is DecVAE's own log-mel, already extracted at preprocessing over the
             same 400-sample window at a 20 ms hop, and the encoder stays convolutional: the stack
             strides over that mel frame instead of over raw samples, collapsing it to one z. Its
-            kernels and strides are CPC's own, near enough the reference's, and are not tied to
-            DecVAE's conv geometry. Nothing about the grid has to be arranged either, since CPC is
-            fed the very tensor DecVAE's encoder reads, with no pooling and no realignment, so the
-            frames its embeddings sit on are the frames the labels sit on.
+            kernels and strides are DecVAE's seven-layer geometry, which takes 400 values down to
+            one position; everything else about the encoder is CPC's, the ReLU after every layer
+            and the ChannelNorm of its default normMode. Nothing about the grid has to be arranged
+            either, since CPC is fed the very tensor DecVAE's encoder reads, with no pooling and no
+            realignment, so the frames its embeddings sit on are the frames the labels sit on.
     k       cpc_prediction_steps is 6 rather than the reference's 12, since the reference predicts
             over a 10 ms grid and DecVAE's stride is 20 ms. The lookahead is the same 120 ms.
     negs    The references draw negatives from anywhere in the batch. The default here draws them
@@ -90,19 +91,19 @@ class CPCArguments:
                           "one value per mel channel."},
     )
     cpc_conv_kernel: List[int] = field(
-        default_factory=lambda: [10, 8, 4, 4, 3],
-        metadata={"help": "Kernel of each layer of g_enc, the convolutional encoder. These are "
-                          "CPC_audio's own kernels with only the last shortened, from 4 to 3, so "
-                          "that the stack reduces a 400-value frame to exactly one position: 79, "
-                          "18, 8, 3, 1. They are CPC's hyperparameters, not DecVAE's - the frame "
-                          "grid comes from the cached features, so the stack does not have to "
-                          "reproduce any geometry, only to collapse one frame to one z."},
+        default_factory=lambda: [10, 3, 3, 3, 3, 2, 2],
+        metadata={"help": "Kernel of each layer of g_enc, the convolutional encoder. The default is "
+                          "DecVAE's own seven-layer stack, which reduces a 400-value frame to "
+                          "exactly one position: 79, 39, 19, 9, 4, 2, 1. Only the kernels and "
+                          "strides are taken from DecVAE; everything else about the encoder stays "
+                          "CPC's, its ReLU after every layer and the normalization chosen by "
+                          "cpc_encoder_norm."},
     )
     cpc_conv_stride: List[int] = field(
-        default_factory=lambda: [5, 4, 2, 2, 1],
-        metadata={"help": "Stride of each layer of g_enc. CPC_audio's strides with the last dropped "
-                          "to 1, for the reason given under cpc_conv_kernel. Must have the same "
-                          "length as cpc_conv_kernel."},
+        default_factory=lambda: [5, 2, 2, 2, 2, 2, 2],
+        metadata={"help": "Stride of each layer of g_enc, DecVAE's seven-layer stack, for the "
+                          "reason given under cpc_conv_kernel. Must have the same length as "
+                          "cpc_conv_kernel."},
     )
     cpc_encoder_hidden: int = field(
         default=256,
