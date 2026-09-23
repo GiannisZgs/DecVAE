@@ -310,7 +310,7 @@ def main():
         if data_training_args.dataset_name == "VOC_ALS":
             train_dataset = concatenate_datasets([vectorized_datasets["train"], vectorized_datasets["validation"],vectorized_datasets["test"],vectorized_datasets["dev"]])                                                    
             train_dataloader = DataLoader(
-                train_dataset, 
+                train_dataset.with_format("numpy"), 
                 shuffle=True,
                 collate_fn=data_collator, 
                 batch_size=data_training_args.per_device_train_batch_size
@@ -318,26 +318,26 @@ def main():
         elif data_training_args.dataset_name == "iemocap":
             train_dataset = concatenate_datasets([vectorized_datasets["train"], vectorized_datasets["validation"],vectorized_datasets["test"]])                                                    
             train_dataloader = DataLoader(
-                train_dataset, 
+                train_dataset.with_format("numpy"), 
                 shuffle=True,
                 collate_fn=data_collator, 
                 batch_size=data_training_args.per_device_train_batch_size
             )
         else:
             train_dataloader = DataLoader(
-                vectorized_datasets["train"],
+                vectorized_datasets["train"].with_format("numpy"),
                 shuffle=False,
                 collate_fn=data_collator,
                 batch_size=data_training_args.per_device_train_batch_size,
             )
             eval_dataloader = DataLoader(
-                vectorized_datasets["validation"], 
+                vectorized_datasets["validation"].with_format("numpy"), 
                 shuffle=False,
                 collate_fn=data_collator, 
                 batch_size=data_training_args.per_device_eval_batch_size
             )
             test_dataloader = DataLoader(
-                vectorized_datasets["test"], 
+                vectorized_datasets["test"].with_format("numpy"), 
                 shuffle=False,
                 collate_fn=data_collator, 
                 batch_size=data_training_args.per_device_eval_batch_size

@@ -279,7 +279,7 @@ def main():
         elif data_training_args.dataset_name == "iemocap":
             vectorized_datasets['validation'] = concatenate_datasets([vectorized_datasets['validation'], vectorized_datasets['test'],vectorized_datasets['train']])
         dataloader = DataLoader(
-            vectorized_datasets['validation'],
+            vectorized_datasets['validation'].with_format("numpy"),
             shuffle=True,
             collate_fn=data_collator,
             batch_size=data_training_args.per_device_train_batch_size,
@@ -287,14 +287,14 @@ def main():
     else:
         if data_training_args.dataset_name == "sim_vowels":
             dataloader = DataLoader(
-                vectorized_datasets['validation' if vis_args.set_to_use_for_vis == 'dev' else vis_args.set_to_use_for_vis],
+                vectorized_datasets['validation' if vis_args.set_to_use_for_vis == 'dev' else vis_args.set_to_use_for_vis].with_format("numpy"),
                 shuffle=True,
                 collate_fn=data_collator,
                 batch_size=data_training_args.per_device_train_batch_size,
             )
         else:
             dataloader = DataLoader(
-                vectorized_datasets[vis_args.set_to_use_for_vis],
+                vectorized_datasets[vis_args.set_to_use_for_vis].with_format("numpy"),
                 shuffle=True,
                 collate_fn=data_collator,
                 batch_size=data_training_args.per_device_train_batch_size,

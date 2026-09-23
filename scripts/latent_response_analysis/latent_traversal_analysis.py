@@ -405,14 +405,14 @@ def main():
 
     try:
         train_dataloader = DataLoader(
-            vectorized_datasets[data_training_args.experiment],
+            vectorized_datasets[data_training_args.experiment].with_format("numpy"),
             shuffle=True,
             collate_fn=data_collator,
             batch_size=[dat.num_rows for name, dat in vectorized_datasets.items() if name == data_training_args.experiment][0],
         )
     except KeyError: 
         train_dataloader = DataLoader(
-            vectorized_datasets[to_use[data_training_args.experiment]],
+            vectorized_datasets[to_use[data_training_args.experiment]].with_format("numpy"),
             shuffle=True,
             collate_fn=data_collator,
             batch_size=[dat.num_rows for name, dat in vectorized_datasets.items() if name == to_use[data_training_args.experiment]][0],

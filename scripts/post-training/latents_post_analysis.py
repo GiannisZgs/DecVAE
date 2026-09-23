@@ -249,7 +249,7 @@ def main():
         if data_training_args.dataset_name == "VOC_ALS":
             eval_dataset = concatenate_datasets([vectorized_datasets["train"], vectorized_datasets["validation"],vectorized_datasets["test"],vectorized_datasets["dev"]])                                                    
             eval_dataloader = DataLoader(
-                eval_dataset, 
+                eval_dataset.with_format("numpy"), 
                 shuffle=True,
                 collate_fn=data_collator, 
                 batch_size=data_training_args.per_device_train_batch_size
@@ -257,20 +257,20 @@ def main():
         elif data_training_args.dataset_name == "iemocap":
             eval_dataset = concatenate_datasets([vectorized_datasets["train"], vectorized_datasets["validation"],vectorized_datasets["test"]])                                                    
             eval_dataloader = DataLoader(
-                eval_dataset, 
+                eval_dataset.with_format("numpy"), 
                 shuffle=True,
                 collate_fn=data_collator, 
                 batch_size=data_training_args.per_device_train_batch_size
             )
         else:
             eval_dataloader = DataLoader(
-                vectorized_datasets["validation"], 
+                vectorized_datasets["validation"].with_format("numpy"), 
                 shuffle=False,
                 collate_fn=data_collator, 
                 batch_size=data_training_args.per_device_eval_batch_size
             )
             test_dataloader = DataLoader(
-                vectorized_datasets["test"], 
+                vectorized_datasets["test"].with_format("numpy"), 
                 shuffle=False,
                 collate_fn=data_collator, 
                 batch_size=data_training_args.per_device_eval_batch_size
