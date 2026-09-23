@@ -232,7 +232,7 @@ class TFCForPreTraining(nn.Module):
     @staticmethod
     def spectrum(x):
         "Magnitude spectrum of every frame, as the reference dataloader builds it"
-        return fft.fft(x, dim=-1).abs()
+        return fft.fft(x, dim=-1).abs() #/ x.shape[-1]
 
     def _sample_frames(self, batch, frames, sub_attention_mask, device):
         """
@@ -315,9 +315,22 @@ class TFCForPreTraining(nn.Module):
         aug_t = jitter(x_t, self.jitter_ratio)
         aug_f = remove_frequency(x_f, self.pertub_ratio) + add_frequency(x_f, self.pertub_ratio)
 
+        #print('input x_t max:',x_t.abs().max())
+        #print('x_f max:',x_f.abs().max())
+
         squeeze = lambda outputs: tuple(out.squeeze(0) for out in outputs)
         h_t, z_t, h_f, z_f = squeeze(self.tfc(x_t.unsqueeze(0), x_f.unsqueeze(0)))
         h_t_aug, z_t_aug, h_f_aug, z_f_aug = squeeze(self.tfc(aug_t.unsqueeze(0), aug_f.unsqueeze(0)))
+
+        #print('h_t max:',h_t.abs().max())
+        #print('h_f max:',h_f.abs().max())
+        #print('z_t max:',h_t.abs().max())
+        #print('z_f max:',h_f.abs().max())
+
+        #print('h_t_aug max:',h_t_aug.abs().max())
+        #print('h_f_aug max:',h_f_aug.abs().max())
+        #print('z_t_aug max:',z_t_aug.abs().max())
+        #print('z_f_aug max:',z_f_aug.abs().max())
 
         ntxent = lambda a, b: ntxent_poly_loss(a, b, self.temperature, self.use_cosine_similarity)
         time_loss = ntxent(h_t, h_t_aug)

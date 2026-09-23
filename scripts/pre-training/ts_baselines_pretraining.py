@@ -84,7 +84,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm.auto import tqdm
 import time
 
-JSON_FILE_NAME_MANUAL = "config_files/baselines/fhvae/sim_vowels/pre-training/config_pretraining_fhvae_sim_vowels.json" #for debugging purposes only
+JSON_FILE_NAME_MANUAL = "config_files/baselines/tfc/sim_vowels/pre-training/config_pretraining_tfc_sim_vowels.json" #for debugging purposes only
 
 logger = get_logger(__name__)
 
@@ -800,6 +800,12 @@ def main():
             loss = outputs["loss"] / data_training_args.gradient_accumulation_steps
 
             accelerator.backward(loss)
+
+            #W = model.tfc.transformer_encoder_t.layers[0].self_attn.in_proj_weight
+            #d = W.shape[1]
+            #g = W.grad
+            #print("q",g[:d].abs().max(), "k",g[d:2*d].abs().max(), "v",g[2*d:].abs().max())
+            #print("nan rows:", torch.isnan(W).any(dim=1).nonzero().flatten()[:10])
 
             "clip gradients"
             if training_obj_args.clip_grad_value is not None:
