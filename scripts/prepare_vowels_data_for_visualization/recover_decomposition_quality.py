@@ -233,7 +233,7 @@ def main():
         dataset_name = data_training_args.dataset_name,
     )
     train_dataloader = DataLoader(
-        vectorized_datasets['train'],
+        vectorized_datasets['train'].with_format("numpy"),
         shuffle=True,
         collate_fn=data_collator,
         batch_size=data_training_args.per_device_train_batch_size,

@@ -378,14 +378,14 @@ def main():
     if data_training_args.dataset_name == "iemocap":
         vectorized_datasets['train'] = concatenate_datasets([vectorized_datasets['train'],vectorized_datasets['test']])
     train_dataloader = DataLoader(
-        vectorized_datasets['train'],
+        vectorized_datasets['train'].with_format("numpy"),
         shuffle=True,
         collate_fn=data_collator,
         batch_size=data_training_args.per_device_train_batch_size,
     )
     
     eval_dataloader = DataLoader(
-        vectorized_datasets["validation"], 
+        vectorized_datasets["validation"].with_format("numpy"), 
         collate_fn=data_collator, 
         batch_size=data_training_args.per_device_eval_batch_size
     )

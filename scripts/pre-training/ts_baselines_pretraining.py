@@ -84,7 +84,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm.auto import tqdm
 import time
 
-JSON_FILE_NAME_MANUAL = "config_files/baselines/fhvae/sim_vowels/pre-training/config_pretraining_fhvae_sim_vowels.json" #for debugging purposes only
+JSON_FILE_NAME_MANUAL = "config_files/baselines/tfc/sim_vowels/pre-training/config_pretraining_tfc_sim_vowels.json" #for debugging purposes only
 
 logger = get_logger(__name__)
 
