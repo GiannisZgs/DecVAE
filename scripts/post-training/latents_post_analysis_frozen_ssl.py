@@ -69,7 +69,7 @@ from datasets import DatasetDict, concatenate_datasets, Dataset
 from torch.utils.data.dataloader import DataLoader
 import time
 
-JSON_FILE_NAME_MANUAL = "config_files/baselines/hubert/iemocap/latent_evaluations/config_hubert_latent_anal_iemocap.json"
+JSON_FILE_NAME_MANUAL = "config_files/baselines/hubert/timit/latent_evaluations/config_hubert_latent_anal_timit.json"
 
 logger = get_logger(__name__)
 
