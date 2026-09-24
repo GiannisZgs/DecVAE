@@ -240,7 +240,7 @@ class TFCForPreTraining(nn.Module):
     @staticmethod
     def spectrum(x):
         "Magnitude spectrum of every frame, as the reference dataloader builds it"
-        return fft.fft(x, dim=-1).abs()
+        return fft.fft(x, dim=-1).abs() #/ x.shape[-1]
 
     @staticmethod
     def _sample_frames(x_t, x_f, sub_attention_mask, frames_per_batch_entry, device):
@@ -363,6 +363,16 @@ class TFCForPreTraining(nn.Module):
         flatten = lambda h: h.reshape(-1, h.shape[-1])[valid]
         h_t, z_t, h_f, z_f = flatten(h_t), flatten(z_t), flatten(h_f), flatten(z_f)
         h_t_aug, z_t_aug, h_f_aug, z_f_aug = flatten(h_t_aug), flatten(z_t_aug), flatten(h_f_aug), flatten(z_f_aug)
+
+        #print('h_t max:',h_t.abs().max())
+        #print('h_f max:',h_f.abs().max())
+        #print('z_t max:',h_t.abs().max())
+        #print('z_f max:',h_f.abs().max())
+
+        #print('h_t_aug max:',h_t_aug.abs().max())
+        #print('h_f_aug max:',h_f_aug.abs().max())
+        #print('z_t_aug max:',z_t_aug.abs().max())
+        #print('z_f_aug max:',z_f_aug.abs().max())
 
         ntxent = lambda a, b: ntxent_poly_loss(a, b, self.temperature, self.use_cosine_similarity)
         time_loss = ntxent(h_t, h_t_aug)

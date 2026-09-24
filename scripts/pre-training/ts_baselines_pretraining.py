@@ -801,6 +801,12 @@ def main():
 
             accelerator.backward(loss)
 
+            #W = model.tfc.transformer_encoder_t.layers[0].self_attn.in_proj_weight
+            #d = W.shape[1]
+            #g = W.grad
+            #print("q",g[:d].abs().max(), "k",g[d:2*d].abs().max(), "v",g[2*d:].abs().max())
+            #print("nan rows:", torch.isnan(W).any(dim=1).nonzero().flatten()[:10])
+
             "clip gradients"
             if training_obj_args.clip_grad_value is not None:
                 accelerator.clip_grad_norm_(model.parameters(), max_norm=training_obj_args.clip_grad_value)
