@@ -131,7 +131,7 @@ class TFC(nn.Module):
         self.ts_length = ts_length
 
         encoder_layers_t = TransformerEncoderLayer(
-            ts_length, dim_feedforward=feedforward_multiplier * ts_length, nhead=heads
+            ts_length, batch_first = True, dim_feedforward=feedforward_multiplier * ts_length, nhead=heads
         )
         self.transformer_encoder_t = TransformerEncoder(encoder_layers_t, layers)
         self.projector_t = nn.Sequential(
@@ -142,7 +142,7 @@ class TFC(nn.Module):
         )
 
         encoder_layers_f = TransformerEncoderLayer(
-            ts_length, dim_feedforward=feedforward_multiplier * ts_length, nhead=heads
+            ts_length, batch_first = True, dim_feedforward=feedforward_multiplier * ts_length, nhead=heads
         )
         self.transformer_encoder_f = TransformerEncoder(encoder_layers_f, layers)
         self.projector_f = nn.Sequential(
@@ -152,11 +152,14 @@ class TFC(nn.Module):
             nn.Linear(projector_hidden, projector_dim),
         )
 
-    def forward(self, x_in_t, x_in_f):
+    def forward(self, x_in_t, x_in_f,key_padding_mask=None):
         """
         Args:
             x_in_t: (batch, frames, ts_length) frames.
             x_in_f: (batch, frames, ts_length) magnitude spectra of those frames.
+            key_padding_mask: (utterances_in_batch, frames_per_utterance) bool, True at padded
+                positions. None when every utterance in the batch contributes the same number
+                of frames (e.g. SimVowels' fixed tfc_frames_per_batch_entry).
         Returns:
             h_time, z_time, h_freq, z_freq. The h_* are (batch, frames, ts_length), the z_* are
             (batch, frames, projector_dim).
@@ -164,14 +167,15 @@ class TFC(nn.Module):
         batch, frames, _ = x_in_t.shape
 
         "Each frame is its own sequence of length one, as the reference encodes each sample alone"
-        t = x_in_t.reshape(batch * frames, -1).unsqueeze(0)
-        h_time = self.transformer_encoder_t(t).squeeze(0)
-        z_time = self.projector_t(h_time)
+        #t = x_in_t.reshape(batch * frames, -1).unsqueeze(1) #.unsqueeze(0)
+        h_time = self.transformer_encoder_t(x_in_t, src_key_padding_mask = key_padding_mask) #.squeeze(1) #.squeeze(0)
+        z_time = self.projector_t(h_time.reshape(batch*frames,-1))
 
-        f = x_in_f.reshape(batch * frames, -1).unsqueeze(0)
-        h_freq = self.transformer_encoder_f(f).squeeze(0)
-        z_freq = self.projector_f(h_freq)
+        #f = x_in_f.reshape(batch * frames, -1).unsqueeze(1) #.unsqueeze(0)
+        h_freq = self.transformer_encoder_f(x_in_f, src_key_padding_mask = key_padding_mask) #.squeeze(1) #.squeeze(0)
+        z_freq = self.projector_f(h_freq.reshape(batch*frames,-1))
 
+        #return h_time, z_time, h_freq, z_freq
         return (h_time.reshape(batch, frames, -1), z_time.reshape(batch, frames, -1),
                 h_freq.reshape(batch, frames, -1), z_freq.reshape(batch, frames, -1))
 
@@ -192,6 +196,10 @@ class TFCForPreTraining(nn.Module):
 
     "The contrastive losses read a sampled set of frames, so the batch may vary"
     requires_fixed_batch_size = False
+
+    "Windows are slid over the valid frames only, so encode has to be told where they end. The"
+    "other baselines read each frame on its own and are handed no mask, which is left as it was"
+    encode_requires_mask = True
 
     def __init__(self, input_dims, seq_length, tfc_args, config):
         super().__init__()
@@ -232,29 +240,48 @@ class TFCForPreTraining(nn.Module):
     @staticmethod
     def spectrum(x):
         "Magnitude spectrum of every frame, as the reference dataloader builds it"
-        return fft.fft(x, dim=-1).abs()
+        return fft.fft(x, dim=-1).abs() #/ x.shape[-1]
 
-    def _sample_frames(self, batch, frames, sub_attention_mask, device):
+    @staticmethod
+    def _sample_frames(x_t, x_f, sub_attention_mask, frames_per_batch_entry, device):
         """
-        Indices into the flattened (batch*frames) axis that the contrastive losses read.
+        Args:
+            x_t, x_f: (batch, num_frames, ts_length), every frame of the batch (valid + padded).
+            sub_attention_mask: (batch, num_frames), 1 at valid (real) frames, 0 at padding.
+            frames_per_batch_entry: int for a fixed count per utterance (SimVowels), or None to
+                sample ~50% of each utterance's own valid frames (TIMIT).
+        Returns:
+            out_t, out_f: (batch, max_k, ts_length), sampled frames, padded with zeros where an
+                utterance contributed fewer than max_k frames.
+            pad_mask: (batch, max_k) bool, True at the padded positions (feed as
+                src_key_padding_mask). All-False when every utterance sampled the same count.
 
-        Padded frames are left out, and the count is tfc_frames_per_batch_entry per utterance of
-        the batch, so the contrastive batch grows with the batch rather than staying fixed.
+        Sampling is independent per utterance and draws only from that utterance's own valid
+        frames, so nothing from another utterance ever enters its sequence.
         """
-        if sub_attention_mask is not None:
-            valid = sub_attention_mask.reshape(-1).to(torch.bool).nonzero().flatten()
-        else:
-            valid = torch.arange(batch * frames, device=device)
+        batch = x_t.shape[0]
+        sampled_t, sampled_f, counts = [], [], []
+        for b in range(batch):
+            valid_idx = sub_attention_mask[b].nonzero(as_tuple=True)[0]
+            n_valid = valid_idx.numel()
+            k = frames_per_batch_entry if frames_per_batch_entry is not None else max(1, n_valid // 2)
+            k = min(k, n_valid)
+            perm = valid_idx[torch.randperm(n_valid, device=device)[:k]]
+            sampled_t.append(x_t[b, perm])
+            sampled_f.append(x_f[b, perm])
+            counts.append(k)
 
-        if valid.numel() < 2:
-            raise ValueError(
-                "TF-C needs at least two frames for its contrastive losses, but the batch holds "
-                f"{valid.numel()} non-padded frames."
-            )
-        sampled = self.frames_per_batch_entry * batch
-        if valid.numel() <= sampled:
-            return valid
-        return valid[torch.randperm(valid.numel(), device=device)[:sampled]]
+        max_k = max(counts)
+        out_t = x_t.new_zeros(batch, max_k, x_t.shape[-1])
+        out_f = x_f.new_zeros(batch, max_k, x_f.shape[-1])
+        pad_mask = torch.ones(batch, max_k, dtype=torch.bool, device=device)
+        for b in range(batch):
+            k = counts[b]
+            out_t[b, :k] = sampled_t[b]
+            out_f[b, :k] = sampled_f[b]
+            pad_mask[b, :k] = False
+
+        return out_t, out_f, pad_mask
 
     def encode(self, input_values, sub_attention_mask=None):
         """
@@ -267,7 +294,16 @@ class TFCForPreTraining(nn.Module):
             A (representation, z_time, z_freq) tuple of the cross-space projector outputs, each
             (batch, frames, tfc_projector_dim). The representation follows tfc_representation.
         """
-        _, z_time, _ , z_freq = self.tfc(input_values, self.spectrum(input_values))
+        key_padding_mask = None
+        if sub_attention_mask is not None:
+            key_padding_mask = ~sub_attention_mask.to(torch.bool)
+
+        _, z_time, _ , z_freq = self.tfc(input_values, self.spectrum(input_values), key_padding_mask = key_padding_mask)
+
+        if sub_attention_mask is not None:
+            keep = sub_attention_mask.to(torch.bool).unsqueeze(-1)
+            z_time = z_time * keep
+            z_freq = z_freq * keep
 
         if self.representation == "time":
             representation = z_time
@@ -279,12 +315,6 @@ class TFCForPreTraining(nn.Module):
             raise ValueError(
                 f"Unknown tfc_representation {self.representation}, expected 'both', 'time' or 'freq'"
             )
-
-        if sub_attention_mask is not None:
-            keep = sub_attention_mask.to(torch.bool).unsqueeze(-1)
-            representation = representation * keep
-            z_time = z_time * keep
-            z_freq = z_freq * keep
 
         return representation, z_time, z_freq
 
@@ -309,15 +339,40 @@ class TFCForPreTraining(nn.Module):
         "The frames are sampled before they are encoded: every frame is encoded on its own, so this"
         "gives what encoding the whole batch and selecting afterwards would, and it leaves the"
         "projector's batch norm reading exactly the windows being contrasted, as the reference does"
-        index = self._sample_frames(batch, frames, sub_attention_mask, input_values.device)
-        x_t = input_values.reshape(batch * frames, -1)[index]
+        x_t = input_values.clone() #reshape(batch * frames, -1)[index]
         x_f = self.spectrum(x_t)
+
+        x_t, x_f, key_padding_mask = self._sample_frames(
+            x_t, x_f, sub_attention_mask, self.frames_per_batch_entry,
+            x_t.device
+        )
+        
+        #index = self._sample_frames(batch, frames, sub_attention_mask, input_values.device)
+        
         aug_t = jitter(x_t, self.jitter_ratio)
         aug_f = remove_frequency(x_f, self.pertub_ratio) + add_frequency(x_f, self.pertub_ratio)
 
-        squeeze = lambda outputs: tuple(out.squeeze(0) for out in outputs)
-        h_t, z_t, h_f, z_f = squeeze(self.tfc(x_t.unsqueeze(0), x_f.unsqueeze(0)))
-        h_t_aug, z_t_aug, h_f_aug, z_f_aug = squeeze(self.tfc(aug_t.unsqueeze(0), aug_f.unsqueeze(0)))
+        #squeeze = lambda outputs: tuple(out.squeeze(0) for out in outputs)
+        #h_t, z_t, h_f, z_f = squeeze(self.tfc(x_t.unsqueeze(1), x_f.unsqueeze(1))) #(x_t.unsqueeze(0), x_f.unsqueeze(0))
+        #h_t_aug, z_t_aug, h_f_aug, z_f_aug = squeeze(self.tfc(aug_t.unsqueeze(1), aug_f.unsqueeze(1)))
+
+        h_t, z_t, h_f, z_f = self.tfc(x_t, x_f, key_padding_mask=key_padding_mask)
+        h_t_aug, z_t_aug, h_f_aug, z_f_aug = self.tfc(aug_t, aug_f, key_padding_mask=key_padding_mask)
+
+        valid = (~key_padding_mask).reshape(-1)
+        flatten = lambda h: h.reshape(-1, h.shape[-1])[valid]
+        h_t, z_t, h_f, z_f = flatten(h_t), flatten(z_t), flatten(h_f), flatten(z_f)
+        h_t_aug, z_t_aug, h_f_aug, z_f_aug = flatten(h_t_aug), flatten(z_t_aug), flatten(h_f_aug), flatten(z_f_aug)
+
+        #print('h_t max:',h_t.abs().max())
+        #print('h_f max:',h_f.abs().max())
+        #print('z_t max:',h_t.abs().max())
+        #print('z_f max:',h_f.abs().max())
+
+        #print('h_t_aug max:',h_t_aug.abs().max())
+        #print('h_f_aug max:',h_f_aug.abs().max())
+        #print('z_t_aug max:',z_t_aug.abs().max())
+        #print('z_f_aug max:',z_f_aug.abs().max())
 
         ntxent = lambda a, b: ntxent_poly_loss(a, b, self.temperature, self.use_cosine_similarity)
         time_loss = ntxent(h_t, h_t_aug)

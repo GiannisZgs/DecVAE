@@ -72,7 +72,7 @@ from datasets import DatasetDict, concatenate_datasets, Dataset
 from torch.utils.data.dataloader import DataLoader
 import time
 
-JSON_FILE_NAME_MANUAL = "config_files/baselines/fhvae/sim_vowels/latent_evaluations/config_fhvae_latent_anal_sim_vowels.json"
+JSON_FILE_NAME_MANUAL = "config_files/baselines/tfc/sim_vowels/latent_evaluations/config_tfc_latent_anal_sim_vowels.json"
 
 logger = get_logger(__name__)
 
