@@ -496,18 +496,6 @@ class DataTrainingArgumentsPost:
         default=False,
         metadata={"help": "Whether to measure the disentanglement properties of the latent variables."},
     )
-    eval_dump_only: bool = field(
-        default=False,
-        metadata={"help": "Save the arrays that would enter the disentanglement metrics, then return without computing any metric."},
-    )
-    eval_dump_dir: str = field(
-        default=None,
-        metadata={"help": "Where the eval_dump_only arrays are saved. Defaults to <output_dir>/eval_dumps."},
-    )
-    eval_dump_tag: str = field(
-        default=None,
-        metadata={"help": "Free-text name of the model or dataset variant, written into the eval dump filenames."},
-    )
     sup_eval: bool = field(
         default=True,
         metadata={"help": "Whether to evaluate representations with a supervised classification task."},

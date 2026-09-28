@@ -1,0 +1,8 @@
+[
+    {"name": "DecVAE + EWT", "dump": "../post-training_results/sensitivity/eval_dumps/decvae_ewt_b01_all_vowel_speaker_frame.npz", "in_ranking": true},
+    {"name": "beta-VAE", "dump": "../post-training_results/sensitivity/eval_dumps/beta_vae_z_vowel_speaker_frame.npz", "in_ranking": true},
+    {"name": "FHVAE seg", "dump": "../post-training_results/sensitivity/eval_dumps/fhvae_seg_z_vowel_speaker_frame.npz", "in_ranking": true},
+    {"name": "CoST", "dump": "../post-training_results/sensitivity/eval_dumps/cost_z_vowel_speaker_frame.npz", "in_ranking": true},
+    {"name": "SFA linear", "dump": "../post-training_results/sensitivity/eval_dumps/sfa_linear_z_vowel_speaker_frame.npz", "in_ranking": true},
+    {"name": "PCA", "dump": "../post-training_results/sensitivity/eval_dumps/pca_z_vowel_speaker_frame.npz", "in_ranking": true}
+]

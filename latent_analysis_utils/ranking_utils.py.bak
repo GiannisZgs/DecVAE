@@ -1,0 +1,105 @@
+#!/usr/bin/env python
+# coding=utf-8
+# Copyright 2025 Ioannis Ziogas <ziogioan@ieee.org>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Rank representation learning methods over the disentanglement and informativeness metrics."""
+
+import logging
+import re
+import numpy as np
+import pandas as pd
+
+logger = logging.getLogger(__name__)
+
+METRICS = {  # column: (higher_is_better, family)
+    "MI": (False, "Independence"), "GCN": (False, "Independence"),
+    "DCI-D": (True, "Disentanglement"), "DCI-C": (True, "Disentanglement"), "Modularity": (True, "Disentanglement"),
+    "DCI-I": (True, "Informativeness"), "Explicitness": (True, "Informativeness"),
+    "Task A": (True, "Informativeness"), "Task B": (True, "Informativeness"), "Task C": (True, "Informativeness"),
+    "IRS": (True, "Interventional"), "ICS-factors": (True, "Interventional"),
+}
+
+_LEADING_NUMBER = re.compile(r"^\s*([-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)")
+
+
+def parse_cell(value):
+    "Leading number of a cell such as '0.230 +- 0.001'; NaN for N/A, '////' and empty cells"
+    if value is None:
+        return np.nan
+    if isinstance(value, (int, float, np.number)) and not isinstance(value, bool):
+        return float(value)
+    match = _LEADING_NUMBER.match(str(value))
+    return float(match.group(1)) if match else np.nan
+
+
+def positions(scores):
+    "Rank positions of mean-rank scores, 1 is best; ties share the lower position"
+    return scores.rank(ascending=True, method="min")
+
+
+def rank_methods(df, metrics=METRICS):
+    """
+    Args:
+        df: One row per method (index), one column per metric; cells may be strings.
+        metrics: column -> (higher_is_better, family).
+    Returns:
+        Dict of DataFrames: 'values', 'metric_ranks', 'family_ranks', 'aggregations',
+        'aggregation_positions', 'lofo', 'lofo_positions', 'rank_range', and the list 'used_metrics'.
+    """
+    values = df[[c for c in df.columns if c in metrics]].apply(lambda col: col.map(parse_cell))
+    used = [c for c in values.columns if values[c].notna().all()]
+    excluded = [c for c in metrics if c not in used]
+    if excluded:
+        logger.info(f"Metrics not used (missing column or a non-numeric value): {excluded}")
+    values = values[used]
+
+    oriented = pd.DataFrame({c: values[c] if metrics[c][0] else -values[c] for c in used})
+    metric_ranks = oriented.rank(ascending=False, method="average")
+
+    families = list(dict.fromkeys(metrics[c][1] for c in used))
+    family_members = {f: [c for c in used if metrics[c][1] == f] for f in families}
+    family_ranks = pd.DataFrame({f: metric_ranks[cols].mean(axis=1) for f, cols in family_members.items()})
+
+    aggregations = pd.DataFrame({
+        "Flat": metric_ranks.mean(axis=1),
+        "4-family": family_ranks.mean(axis=1),
+        "3-family": family_ranks[[f for f in families if f != "Independence"]].mean(axis=1),
+    })
+
+    lofo = {}
+    for f in families:
+        lofo[f"Flat -{f}"] = metric_ranks[[c for c in used if metrics[c][1] != f]].mean(axis=1)
+        lofo[f"Family -{f}"] = family_ranks[[g for g in families if g != f]].mean(axis=1)
+    lofo = pd.DataFrame(lofo)
+
+    aggregation_positions = aggregations.apply(positions)
+    lofo_positions = lofo.apply(positions)
+    all_positions = pd.concat([aggregation_positions, lofo_positions], axis=1)
+    rank_range = pd.DataFrame({"Best position": all_positions.min(axis=1),
+                               "Worst position": all_positions.max(axis=1)})
+
+    return {
+        "values": values, "used_metrics": used, "metric_ranks": metric_ranks,
+        "family_ranks": family_ranks, "aggregations": aggregations,
+        "aggregation_positions": aggregation_positions, "lofo": lofo,
+        "lofo_positions": lofo_positions, "rank_range": rank_range,
+    }
+
+
+def kendall_tau_rankings(a, b):
+    "Kendall's tau-b between two score Series over their common index"
+    from scipy.stats import kendalltau
+    common = a.index.intersection(b.index)
+    return kendalltau(a[common], b[common]).statistic
