@@ -1,0 +1,436 @@
+#!/usr/bin/env python
+# coding=utf-8
+# Copyright 2025 Ioannis Ziogas <ziogioan@ieee.org>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Sensitivity of the disentanglement metrics and of the model rankings on the SimVowels eval dumps.
+
+Each condition (cyclic-shift null, factor imbalance, correlated factors, label noise, partial
+observability, dimensionality) is applied on its own to the saved latents of every model listed in
+the models file, and scored with compute_metric_suite.
+
+python scripts/post-training/metric_sensitivity_real.py --config_file config_files/sensitivity/config_metric_sensitivity_real.json
+Config keys: see DEFAULT_ARGS. The models file is a list of {"name", "dump", "in_ranking"}.
+"""
+
+import json
+import logging
+import os
+import sys
+import types
+import zlib
+import numpy as np
+import pandas as pd
+from scipy.optimize import brentq
+from scipy.stats.contingency import association
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+from disentanglement_utils.metric_suite import compute_metric_suite, load_dump, args_from_sidecar
+from latent_analysis_utils.ranking_utils import METRICS, rank_methods, kendall_tau_rankings
+from utils import parse_args, debugger_is_active
+
+JSON_FILE_NAME_MANUAL = "config_files/sensitivity/config_metric_sensitivity_real.json" #for debugging purposes only
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_ARGS = {
+    "models_file": "config_files/sensitivity/models.json",
+    "output_dir": None,
+    "n_sub": 20000,
+    "n_null": 5,
+    "seed": 0,
+    "dci_random_state": 0,
+    "gcn_key": "gaussian_total_correlation",
+    "n_jobs": 1,
+    "conditions": None,  # subset of condition names to run, None runs all
+    "null_zero_check": False,
+}
+
+SUPERVISED = ["DCI-D", "DCI-C", "DCI-I", "Modularity", "Explicitness", "IRS"]
+UNSUPERVISED = ["MI", "GCN"]
+RAW_KEYS = {
+    "MI": "mutual_info_score", "DCI-D": "disentanglement", "DCI-C": "completeness",
+    "DCI-I": "informativeness_test", "Modularity": "modularity_score",
+    "Explicitness": "explicitness_score_test", "IRS": "IRS",
+}
+GCN_KEYS = ["gaussian_total_correlation", "gaussian_total_correlation_norm"]
+
+CONDITIONS = [  # condition, level, parameter, where MI and GCN come from
+    ("ref_full", "", None, "self"),
+    ("null", "", None, "ref_full"),
+    ("ref_sub", "", None, "self"),
+    ("imbalance", "Zipf a = 1", 1.0, "ref_sub"),
+    ("imbalance", "Zipf a = 2", 2.0, "ref_sub"),
+    ("correlated", "V = 0.3", 0.3, "ref_sub"),
+    ("correlated", "V = 0.6", 0.6, "ref_sub"),
+    ("label_noise", "10%", 0.1, "ref_sub"),
+    ("label_noise", "30%", 0.3, "ref_sub"),
+    ("partial", "5 speaker groups", 5, "ref_sub"),
+    ("dimensionality", "+d noise dims", None, "self"),
+]
+COLUMNS = ["model", "condition", "level", "seed", "n_frames", "latent_dim", "MI", "GCN"] + GCN_KEYS + SUPERVISED + [
+    "mi_gcn_from", "cramers_v_achieved", "replacement", "shift", "zipf_a", "target_v", "lambda", "flip_rate",
+    "speaker_groups", "noise_sd"]
+TRAJECTORY_ORDER = [(c, l) for c, l, _, _ in CONDITIONS if c != "null"]
+
+RANKED_METRICS = {k: v for k, v in METRICS.items() if k in UNSUPERVISED + SUPERVISED}
+
+PALETTE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300"]
+MARKERS = ["o", "s", "^", "D", "v", "P"]
+
+
+def load_config(path):
+    with open(path) as f:
+        cfg = json.load(f)
+    cfg = {k: v for k, v in cfg.items() if not k.startswith("comment")}
+    unknown = set(cfg) - set(DEFAULT_ARGS)
+    if unknown:
+        raise ValueError(f"Unknown keys in {path}: {sorted(unknown)}")
+    args = types.SimpleNamespace(**{**DEFAULT_ARGS, **cfg})
+    if args.output_dir is None:
+        raise ValueError(f"output_dir must be set in {path}")
+    return args
+
+
+def condition_label(condition, level):
+    return f"{condition} {level}".strip()
+
+
+def cell_index(ys):
+    "Vowel and speaker classes, and each frame's (vowel, speaker) cell"
+    vowels, v = np.unique(ys[0], return_inverse=True)
+    speakers, s = np.unique(ys[1], return_inverse=True)
+    return vowels, speakers, v, s
+
+
+def allocate(n, weights):
+    "Largest-remainder integer allocation of n over the weights"
+    exact = n * weights / weights.sum()
+    counts = np.floor(exact).astype(int)
+    counts[np.argsort(-(exact - counts))[: n - counts.sum()]] += 1
+    return counts
+
+
+def cell_counts(ys):
+    vowels, speakers, v, s = cell_index(ys)
+    return np.bincount(v * len(speakers) + s, minlength=len(vowels) * len(speakers)).reshape(len(vowels), -1).astype(float)
+
+
+def weighted_sample(ys, weights, n_sub, rng):
+    """Sample n_sub frames whose (vowel, speaker) cells follow weights.
+
+    Args:
+        weights: (n_vowels, n_speakers) target cell weights; cells without frames are dropped.
+    Returns:
+        Sorted original frame indices, and whether any cell needed sampling with replacement.
+    """
+    vowels, speakers, v, s = cell_index(ys)
+    cells = v * len(speakers) + s
+    present = np.bincount(cells, minlength=weights.size) > 0
+    w = weights.ravel() * present
+    counts = allocate(n_sub, w)
+    order = np.argsort(cells, kind="stable")
+    bounds = np.searchsorted(cells[order], np.arange(weights.size + 1))
+    chosen, replaced = [], False
+    for c in np.flatnonzero(counts):
+        members = order[bounds[c]:bounds[c + 1]]
+        replace = counts[c] > len(members)
+        replaced |= replace
+        chosen.append(rng.choice(members, size=counts[c], replace=replace))
+    return np.sort(np.concatenate(chosen)), bool(replaced)
+
+
+def cramers_v_pmf(p):
+    p = p[p.sum(axis=1) > 0][:, p.sum(axis=0) > 0]
+    p = p / p.sum()
+    phi2 = np.sum(p ** 2 / np.outer(p.sum(axis=1), p.sum(axis=0))) - 1
+    return np.sqrt(max(phi2, 0.0) / (min(p.shape) - 1))
+
+
+def speaker_vt_rank(speakers, sidecar):
+    "Rank of each speaker class in vocal-tract order, from the sidecar speaker_vt"
+    vt = np.array([sidecar["speaker_vt"][str(int(s))] for s in speakers])
+    return np.argsort(np.argsort(vt, kind="stable"), kind="stable")
+
+
+def flip_labels(y, p, rng):
+    "Flip a fraction p of the labels, each to a different class chosen at random"
+    classes, pos = np.unique(y, return_inverse=True)
+    flip = rng.random(len(y)) < p
+    new = pos.copy()
+    new[flip] = (pos[flip] + rng.integers(1, len(classes), size=flip.sum())) % len(classes)
+    return classes[new]
+
+
+def make_run(condition, param, draw, mus, ys, sidecar, ref_sub_idx, args):
+    """
+    Returns:
+        mus (d', n), ys (2, n), original frame indices, info dict.
+    """
+    n_frames = ys.shape[1]
+    rng = np.random.default_rng([args.seed, draw, zlib.crc32(condition.encode()), int(round((param or 0) * 100))])
+    info = {"replacement": False}
+
+    if condition == "ref_full":
+        return mus, ys, np.arange(n_frames), info
+    if condition in ("null", "null_shift0"):
+        shift = 0 if condition == "null_shift0" else int(null_shifts(n_frames, args)[draw])
+        info["shift"] = shift
+        return mus, np.roll(ys, shift, axis=1), np.arange(n_frames), info
+    if condition == "ref_sub":
+        return mus[:, ref_sub_idx], ys[:, ref_sub_idx], ref_sub_idx, info
+
+    vowels, speakers, _, _ = cell_index(ys)
+    if condition == "imbalance":
+        order_rng = np.random.default_rng(args.seed)
+        w_v = (order_rng.permutation(len(vowels)) + 1.0) ** -param
+        w_s = (order_rng.permutation(len(speakers)) + 1.0) ** -param
+        idx, info["replacement"] = weighted_sample(ys, np.outer(w_v, w_s), args.n_sub, rng)
+        info["zipf_a"] = param
+        return mus[:, idx], ys[:, idx], idx, info
+    if condition == "correlated":
+        pref = speaker_vt_rank(speakers, sidecar) % len(vowels)
+        match = (np.arange(len(vowels))[:, None] == pref[None, :]).astype(float)
+
+        def weights(lam):
+            return ((1 - lam) / len(vowels) + lam * match) / len(speakers)
+
+        lam = brentq(lambda l: cramers_v_pmf(weights(l)) - param, 0.0, 1.0)
+        idx, info["replacement"] = weighted_sample(ys, weights(lam), args.n_sub, rng)
+        info.update({"target_v": param, "lambda": lam})
+        return mus[:, idx], ys[:, idx], idx, info
+
+    idx = ref_sub_idx
+    sub_mus, sub_ys = mus[:, idx], ys[:, idx].copy()
+    if condition == "label_noise":
+        sub_ys[0] = flip_labels(sub_ys[0], param, np.random.default_rng([args.seed, 1, int(param * 100)]))
+        sub_ys[1] = flip_labels(sub_ys[1], param, np.random.default_rng([args.seed, 2, int(param * 100)]))
+        info["flip_rate"] = param
+        return sub_mus, sub_ys, idx, info
+    if condition == "partial":
+        _, speakers_sub, _, s = cell_index(sub_ys)
+        group = speaker_vt_rank(speakers_sub, sidecar) * param // len(speakers_sub)
+        sub_ys[1] = group[s]
+        info["speaker_groups"] = param
+        return sub_mus, sub_ys, idx, info
+    if condition == "dimensionality":
+        sd = float(np.median(sub_mus.std(axis=1)))
+        noise = rng.normal(0.0, sd, size=sub_mus.shape).astype(sub_mus.dtype)
+        info["noise_sd"] = sd
+        return np.concatenate([sub_mus, noise], axis=0), sub_ys, idx, info
+    raise ValueError(f"Unknown condition {condition}")
+
+
+def null_shifts(n_frames, args):
+    return np.random.default_rng([args.seed, 99]).integers(n_frames // 4, 3 * n_frames // 4 + 1, size=args.n_null)
+
+
+def score(mus, ys, n_train, sidecar, args, unsupervised):
+    res = compute_metric_suite(mus, ys, n_train, sidecar["targets"], args_from_sidecar(sidecar, args.n_jobs),
+                               random_state=args.dci_random_state, unsupervised=unsupervised)
+    row = {col: float(res[key]) for col, key in RAW_KEYS.items() if key in res}
+    for key in GCN_KEYS:
+        if key in res:
+            row[key] = float(res[key])
+    return row
+
+
+def run_model(model, args, csv_path, done):
+    mus, ys, n_train, sidecar = load_dump(model["dump"])
+    if sidecar.get("eval_shuffle", True):
+        raise ValueError(f"{model['name']}: the dump is not in utterance-contiguous order (eval_shuffle), "
+                         "the cyclic-shift null is not valid")
+    if not sidecar.get("speaker_vt"):
+        raise ValueError(f"{model['name']}: the sidecar has no speaker_vt map")
+    ref_sub_idx, ref_sub_replaced = weighted_sample(ys, cell_counts(ys), min(args.n_sub, ys.shape[1]),
+                                                    np.random.default_rng([args.seed, 7]))
+
+    runs = []
+    for condition, level, param, unsup_from in CONDITIONS:
+        if args.conditions and condition not in args.conditions:
+            continue
+        draws = range(args.n_null) if condition == "null" else [0]
+        runs += [(condition, level, param, unsup_from, d) for d in draws]
+    if args.null_zero_check:
+        runs.insert(1, ("null_shift0", "", None, "self", 0))
+
+    carried = {}
+    for condition, level, param, unsup_from, draw in runs:
+        key = (model["name"], condition, level, draw)
+        if key in done:
+            carried[condition] = done[key]
+            continue
+        run_mus, run_ys, idx, info = make_run(condition, param, draw, mus, ys, sidecar, ref_sub_idx, args)
+        own_unsup = unsup_from == "self"
+        row = score(run_mus, run_ys, int(np.sum(idx < n_train)), sidecar, args, own_unsup)
+        if not own_unsup:
+            if unsup_from not in carried:
+                raise ValueError(f"{model['name']}: {condition} carries MI and GCN from {unsup_from}, which was not run")
+            for col in ["MI"] + GCN_KEYS:
+                row[col] = carried[unsup_from][col]
+        if condition == "ref_sub":
+            info["replacement"] = ref_sub_replaced
+        row.update({
+            "model": model["name"], "condition": condition, "level": level, "seed": draw,
+            "n_frames": run_ys.shape[1], "latent_dim": run_mus.shape[0],
+            "cramers_v_achieved": float(association(pd.crosstab(run_ys[0], run_ys[1]).to_numpy(), method="cramer")),
+            "mi_gcn_from": unsup_from, **info,
+        })
+        row["GCN"] = row[args.gcn_key]
+        carried[condition] = row
+        done[key] = row
+        logger.info(f"{model['name']} | {condition_label(condition, level)} {draw}: "
+                    + ", ".join(f"{m} {row[m]:.3f}" for m in SUPERVISED))
+        pd.DataFrame([row]).reindex(columns=COLUMNS).to_csv(csv_path, mode="a", header=not os.path.exists(csv_path), index=False)
+
+    if args.null_zero_check:
+        a, b = carried["null_shift0"], carried["ref_full"]
+        diff = {m: a[m] - b[m] for m in SUPERVISED + ["MI"] + GCN_KEYS if a[m] != b[m]}
+        if diff:
+            raise AssertionError(f"{model['name']}: null with shift 0 differs from ref_full: {diff}")
+        logger.info(f"{model['name']}: null with shift 0 equals ref_full exactly")
+
+
+def null_summary(results):
+    rows = []
+    for model, g in results.groupby("model", sort=False):
+        null = g[g["condition"] == "null"]
+        ref = g[g["condition"] == "ref_full"]
+        if null.empty or ref.empty:
+            continue
+        for m in SUPERVISED:
+            mean, sd, value = null[m].mean(), null[m].std(ddof=1), ref[m].iloc[0]
+            rows.append({"model": model, "metric": m, "ref_full": value, "null_mean": mean, "null_sd": sd,
+                         "n_null": len(null), "calibrated": (value - mean) / (1 - mean)})
+    return pd.DataFrame(rows)
+
+
+def metric_deltas(results):
+    rows = []
+    for model, g in results.groupby("model", sort=False):
+        ref = g[g["condition"] == "ref_sub"]
+        if ref.empty:
+            continue
+        ref = ref.iloc[0]
+        for _, r in g[~g["condition"].isin(["ref_full", "null", "null_shift0", "ref_sub"])].iterrows():
+            rows.append({"model": model, "condition": r["condition"], "level": r["level"],
+                         **{m: r[m] - ref[m] for m in UNSUPERVISED + SUPERVISED}})
+    return pd.DataFrame(rows)
+
+
+def rankings(results, ranked_models, path):
+    ranked = results[results["model"].isin(ranked_models) & ~results["condition"].isin(["null", "null_shift0"])]
+    per_condition = {}
+    for condition, level in TRAJECTORY_ORDER:
+        g = ranked[(ranked["condition"] == condition) & (ranked["level"] == level)]
+        if g["model"].nunique() < 2:
+            continue
+        per_condition[(condition, level)] = rank_methods(g.set_index("model")[UNSUPERVISED + SUPERVISED], RANKED_METRICS)
+
+    aggregations = ["Flat", "4-family", "3-family"]
+    positions = {a: pd.DataFrame({condition_label(*k): r["aggregation_positions"][a] for k, r in per_condition.items()})
+                 for a in aggregations}
+    ref = per_condition.get(("ref_sub", ""))
+    taus = pd.DataFrame({a: {condition_label(*k): kendall_tau_rankings(r["aggregations"][a], ref["aggregations"][a])
+                             for k, r in per_condition.items()} for a in aggregations}) if ref else pd.DataFrame()
+
+    with pd.ExcelWriter(path, engine="openpyxl") as writer:
+        row = 0
+        for a in aggregations:
+            pd.DataFrame([[f"{a}: position (1 is best)"]]).to_excel(writer, sheet_name="Summary", startrow=row, header=False, index=False)
+            positions[a].to_excel(writer, sheet_name="Summary", startrow=row + 1)
+            row += len(positions[a]) + 4
+        pd.DataFrame([["Kendall's tau of the aggregation scores against ref_sub"]]).to_excel(
+            writer, sheet_name="Summary", startrow=row, header=False, index=False)
+        taus.to_excel(writer, sheet_name="Summary", startrow=row + 1)
+        for k, r in per_condition.items():
+            sheet = condition_label(*k).replace("%", "pct").replace("= ", "")[:31]
+            table = pd.concat([r["values"], r["metric_ranks"].add_suffix(" rank"), r["family_ranks"].add_suffix(" family rank"),
+                               r["aggregations"], r["aggregation_positions"].add_suffix(" position")], axis=1)
+            table.to_excel(writer, sheet_name=sheet)
+    return positions, taus
+
+
+def plot_trajectories(positions, path):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    models = list(next(iter(positions.values())).index)
+    fig, axes = plt.subplots(1, len(positions), figsize=(5.2 * len(positions), 4.2), sharey=True, constrained_layout=True)
+    for ax, (name, pos) in zip(np.atleast_1d(axes), positions.items()):
+        x = np.arange(pos.shape[1])
+        for i, model in enumerate(models):
+            ax.plot(x, pos.loc[model].to_numpy(dtype=float), color=PALETTE[i % len(PALETTE)], marker=MARKERS[i % len(MARKERS)],
+                    linewidth=2, markersize=6, markeredgecolor="white", markeredgewidth=1, label=model)
+        ax.set_title(name, fontsize=11)
+        ax.set_xticks(x, pos.columns, rotation=45, ha="right", fontsize=8)
+        ax.set_yticks(range(1, len(models) + 1))
+        ax.set_ylim(len(models) + 0.5, 0.5)
+        ax.grid(axis="y", color="0.9", linewidth=0.8)
+        for side in ("top", "right"):
+            ax.spines[side].set_visible(False)
+    np.atleast_1d(axes)[0].set_ylabel("Rank position (1 is best)")
+    fig.legend(*np.atleast_1d(axes)[0].get_legend_handles_labels(), loc="outside lower center", ncol=len(models), frameon=False, fontsize=9)
+    fig.savefig(path, dpi=200)
+    fig.savefig(os.path.splitext(path)[0] + ".pdf")
+    plt.close(fig)
+
+
+def main():
+    "Parse the arguments"
+    if debugger_is_active():
+        args = load_config(JSON_FILE_NAME_MANUAL)
+    else:
+        args = load_config(parse_args().config_file)
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    with open(args.models_file) as f:
+        models = json.load(f)
+    out_dir = os.path.join(args.output_dir, "metric_sensitivity")
+    os.makedirs(out_dir, exist_ok=True)
+    csv_path = os.path.join(out_dir, "real_results.csv")
+
+    done = {}
+    if os.path.exists(csv_path):
+        for r in pd.read_csv(csv_path, keep_default_na=False, na_values=[""]).to_dict("records"):
+            r["level"] = "" if pd.isna(r["level"]) else r["level"]
+            done[(r["model"], r["condition"], r["level"], int(r["seed"]))] = r
+
+    labels = {}
+    for model in models:
+        labels[model["name"]] = load_dump(model["dump"])[1]
+        run_model(model, args, csv_path, done)
+    first = next(iter(labels.values()))
+    for name, ys in labels.items():
+        if ys.shape != first.shape or not np.array_equal(ys, first):
+            logger.warning(f"{name}: its frames or labels differ from {models[0]['name']}'s, so the "
+                           "subsamples are not the same frames across models")
+
+    results = pd.read_csv(csv_path, keep_default_na=False, na_values=[""])
+    results["level"] = results["level"].fillna("")
+    results["GCN"] = results[args.gcn_key]
+    results.reindex(columns=COLUMNS).to_csv(csv_path, index=False)
+
+    null_summary(results).to_csv(os.path.join(out_dir, "null_summary.csv"), index=False)
+    metric_deltas(results).to_csv(os.path.join(out_dir, "metric_deltas.csv"), index=False)
+    ranked_models = [m["name"] for m in models if m.get("in_ranking", True)]
+    positions, taus = rankings(results, ranked_models, os.path.join(out_dir, "rankings_by_condition.xlsx"))
+    plot_trajectories(positions, os.path.join(out_dir, "rank_trajectories.png"))
+    logger.info(f"Kendall's tau against ref_sub:\n{taus}")
+    logger.info(f"Saved the outputs in {out_dir}")
+
+
+if __name__ == "__main__":
+    main()

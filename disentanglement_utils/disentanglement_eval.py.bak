@@ -182,13 +182,6 @@ def compute_disentanglement_metrics(data_training_args,config,checkpoint, latent
     if mu_test is not None:
         mu_test = np.array(mu_test.transpose())
 
-    if getattr(data_training_args, "eval_dump_only", False):
-        speaker_vt = None
-        if "vowels" in data_training_args.dataset_name and ("speaker" in target1 or "speaker" in target2):
-            speaker_vt = {int(i): float(speaker_groups[int(s[2:]) - 1].mean()) for i, s in enumerate(le_speakers.classes_)}
-        _dump_eval_arrays(data_training_args, latent_type, target, mu_train, y_train, mu_test, y_test, speaker_vt)
-        return {}
-
     "Train/test split if test set is not provided"
     if mu_test is None and y_test is None:
         mu_train, mu_test = split_train_test(mu_train, data_training_args.train_data_percent)
@@ -351,57 +344,6 @@ def compute_disentanglement_metrics(data_training_args,config,checkpoint, latent
             wandb.log({log_name: value})
 
     return results
-
-def _dump_eval_arrays(data_training_args, latent_type, target, mu_train, y_train, mu_test, y_test, speaker_vt=None):
-  """Save the arrays that would enter the disentanglement metrics, with a JSON sidecar.
-
-  Args:
-    mu_train, mu_test: (latent_dim, num_points) representations, original frame order.
-    y_train, y_test: (num_factors, num_points) encoded factors.
-    speaker_vt: SimVowels encoded speaker ID -> midpoint of its vocal-tract range.
-  """
-  if mu_test is None and y_test is None:
-    mu_train, mu_test = split_train_test(mu_train, data_training_args.train_data_percent)
-    y_train, y_test = split_train_test(y_train, data_training_args.train_data_percent)
-  y_train = np.asarray(y_train)
-  y_test = np.asarray(y_test)
-  if is_discrete(y_train) and is_discrete(y_test):
-    y_train = y_train.astype(np.int64)
-    y_test = y_test.astype(np.int64)
-
-  dump_dir = data_training_args.eval_dump_dir or os.path.join(data_training_args.output_dir, "eval_dumps")
-  os.makedirs(dump_dir, exist_ok=True)
-  tag = data_training_args.eval_dump_tag or "dump"
-  fname = f"{tag}_{latent_type}_{'_'.join(target)}"
-
-  np.savez(os.path.join(dump_dir, fname + ".npz"),
-           mu_train=np.asarray(mu_train, dtype=np.float32), mu_test=np.asarray(mu_test, dtype=np.float32),
-           y_train=y_train, y_test=y_test, n_train=mu_train.shape[1])
-
-  sidecar = {
-    "tag": tag,
-    "latent_type": latent_type,
-    "targets": list(target),
-    "dataset_name": data_training_args.dataset_name,
-    "latent_dim": int(mu_train.shape[0]),
-    "n_frames": int(mu_train.shape[1] + mu_test.shape[1]),
-    "n_train": int(mu_train.shape[1]),
-    "train_data_percent": data_training_args.train_data_percent,
-    "dev_data_percent": data_training_args.dev_data_percent,
-    "disentanglement_eval_cv_splits": data_training_args.disentanglement_eval_cv_splits,
-    "random_states": data_training_args.random_states,
-    "disentanglement_num_workers": data_training_args.disentanglement_num_workers,
-    "discard_label_overlaps": data_training_args.discard_label_overlaps,
-    "sim_vowels_number": getattr(data_training_args, "sim_vowels_number", None),
-    "sim_snr_db": getattr(data_training_args, "sim_snr_db", None),
-    # the post-analysis scripts shuffle the eval dataloader only for VOC_ALS and IEMOCAP
-    "eval_shuffle": data_training_args.dataset_name in ["VOC_ALS", "iemocap"],
-    "speaker_vt": speaker_vt,
-  }
-  with open(os.path.join(dump_dir, fname + ".json"), "w") as f:
-    json.dump(sidecar, f, indent=4)
-  print(f"Saved eval dump {os.path.join(dump_dir, fname)}.npz")
-
 
 def _dci_cell(mus_combined, ys_combined, train_idx, test_idx, rs, fold, n_random_states, n_splits):
   "DCI of one (random state, fold) cell of the cross-validation grid"
