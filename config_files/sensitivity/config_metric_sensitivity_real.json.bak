@@ -1,0 +1,12 @@
+{
+    "models_file": "config_files/sensitivity/models.json",
+    "output_dir": "../post-training_results/sensitivity",
+    "n_sub": 20000,
+    "n_null": 5,
+    "seed": 0,
+    "dci_random_state": 0,
+    "gcn_key": "gaussian_total_correlation_norm",
+    "n_jobs": 1,
+    "conditions": null,
+    "null_zero_check": true
+}
