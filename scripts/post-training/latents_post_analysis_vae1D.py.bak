@@ -73,8 +73,8 @@ os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 os.environ["TORCH_USE_CUDA_DSA"] = "1"
 os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 
-#JSON_FILE_NAME_MANUAL = "config_files/sensitivity/dumps/config_dump_beta_vae_sim_vowels.json" #for debugging purposes only
-JSON_FILE_NAME_MANUAL = "config_files/VAEs/sim_vowels/latent_evaluations/config_vae1d_latent_anal_sim_vowels.json" #for debugging purposes only
+JSON_FILE_NAME_MANUAL = "config_files/sensitivity/dumps/config_dump_beta_vae_sim_vowels.json" #for debugging purposes only
+#JSON_FILE_NAME_MANUAL = "config_files/VAEs/sim_vowels/latent_evaluations/config_vae1d_latent_anal_sim_vowels.json" #for debugging purposes only
 #JSON_FILE_NAME_MANUAL = "config_files/VAEs/voc_als/latent_evaluations/config_vae1d_latent_anal_voc_als.json" #for debugging purposes only
 SAVE_DIR_PLOTS = '/home/giannis/Documents/DecSSL/R_vis/latent_quality/low_dim_vis_latents/' #'/home/giannis/Documents/DecSSL/R_vis/latent_quality/low_dim_vis_latents/'
 
@@ -92,12 +92,6 @@ def main():
     delattr(data_training_args,"comment_data_args")
     delattr(training_obj_args,"comment_tr_obj_args")
     delattr(decomp_args,"comment_decomp_args")
-
-    if model_args.vae_seq_pooling not in (None, "mean"):
-        raise ValueError(f"vae_seq_pooling must be None or 'mean', got '{model_args.vae_seq_pooling}'.")
-    if model_args.vae_seq_pooling is not None and model_args.raw_mels and model_args.eigenprojection is not None:
-        raise ValueError("vae_seq_pooling is not supported with an eigenprojection of the raw features - "
-                         "use latents_post_analysis_eigenprojection.py, which pools with projection_seq_pooling.")
 
     "Initialize the accelerator. Accelerator handles device placement for us"
     kwargs = DDPK(find_unused_parameters=True)
@@ -412,9 +406,6 @@ def main():
             representation_function, train_dataloader, eval_dataloader, test_dataloader = accelerator.prepare(
                 representation_function, train_dataloader, eval_dataloader, test_dataloader
             )
-
-        "Pooled embeddings, one per utterance, for the sequence-level targets"
-        z_seq, z_seq_test = None, None
 
         "Only for the cases of ICA, PCA, kPCA, get the training data"
         if model_args.raw_mels and model_args.eigenprojection is not None and data_training_args.dataset_name not in ["VOC_ALS", "iemocap"]:
@@ -758,12 +749,6 @@ def main():
                         z_mean = z_mean_batch.detach().cpu()
                     else:
                         z_mean = torch.cat((z_mean,z_mean_batch.detach().cpu()),dim = 0)
-                    if model_args.vae_seq_pooling == "mean":
-                        "Mean over every frame of the padded sequence, as the frozen SSL baselines and DecVAE's SequenceAggregator do"
-                        if outputs[0].dim() != 3:
-                            raise ValueError(f"vae_seq_pooling needs (batch, frames, dim) embeddings, got shape {tuple(outputs[0].shape)}")
-                        z_seq_batch = outputs[0].mean(dim=1).detach().cpu()
-                        z_seq = z_seq_batch if z_seq is None else torch.cat((z_seq, z_seq_batch), dim=0)
                     
             if model_args.raw_mels and model_args.eigenprojection is not None:
                 
@@ -931,12 +916,6 @@ def main():
                         z_mean = z_mean_batch.detach().cpu()
                     else:
                         z_mean = torch.cat((z_mean,z_mean_batch.detach().cpu()),dim = 0)
-                    if model_args.vae_seq_pooling == "mean":
-                        "Mean over every frame of the padded sequence, as the frozen SSL baselines and DecVAE's SequenceAggregator do"
-                        if outputs[0].dim() != 3:
-                            raise ValueError(f"vae_seq_pooling needs (batch, frames, dim) embeddings, got shape {tuple(outputs[0].shape)}")
-                        z_seq_batch = outputs[0].mean(dim=1).detach().cpu()
-                        z_seq = z_seq_batch if z_seq is None else torch.cat((z_seq, z_seq_batch), dim=0)
 
                 if model_args.eigenprojection is not None:
                     "Transform dev set"
@@ -1063,12 +1042,6 @@ def main():
                         z_mean_test = z_mean_batch.detach().cpu()
                     else:
                         z_mean_test = torch.cat((z_mean_test,z_mean_batch.detach().cpu()),dim = 0)
-                    if model_args.vae_seq_pooling == "mean":
-                        "Mean over every frame of the padded sequence, as the frozen SSL baselines and DecVAE's SequenceAggregator do"
-                        if outputs[0].dim() != 3:
-                            raise ValueError(f"vae_seq_pooling needs (batch, frames, dim) embeddings, got shape {tuple(outputs[0].shape)}")
-                        z_seq_batch = outputs[0].mean(dim=1).detach().cpu()
-                        z_seq_test = z_seq_batch if z_seq_test is None else torch.cat((z_seq_test, z_seq_batch), dim=0)
 
                 if model_args.eigenprojection is not None:
                     "Transform test set"
@@ -1094,7 +1067,7 @@ def main():
                         y = vowel_labels, y_test = vowel_labels_test,
                         checkpoint = ckp, latent_type="z",target = "vowel"
                     )
-                if "speaker_frame" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
+                if "speaker" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
                     "Check speakers in z"
                     prediction_eval(data_training_args,config,
                         X = z_mean, X_test = z_mean_test,
@@ -1110,7 +1083,7 @@ def main():
                         y = phonemes48, y_test = phonemes48_test,
                         checkpoint = ckp, latent_type="z",target = "phoneme48" 
                     )
-                if "speaker_frame" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
+                if "speaker" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
                     "Check speakers in z"
                     prediction_eval(data_training_args,config,
                         X = z_mean, X_test = z_mean_test,
@@ -1126,7 +1099,7 @@ def main():
                         y = phonemes, y_test = None,
                         checkpoint = ckp, latent_type="z",target = "phoneme" 
                     )
-                if "speaker_frame" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
+                if "speaker" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
                     "Check speaker identification in z" 
                     prediction_eval(data_training_args,config,
                         X = z_mean, X_test = None,
@@ -1149,7 +1122,7 @@ def main():
                         y = phonemes_frame, y_test = None,
                         checkpoint = ckp, latent_type="z",target = "phoneme_frame" 
                     )
-                if "speaker_frame" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
+                if "speaker" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
                     "Check speaker identification in z"
                     prediction_eval(data_training_args,config,
                         X = z_mean, X_test = None,
@@ -1190,28 +1163,6 @@ def main():
                         X = z_mean, X_test = None,
                         y = alsfrs_speech_frame, y_test = None,
                         checkpoint = ckp, latent_type="OCs_joint_emb",target = "alsfrs_speech_frame"
-                    )
-
-            "Sequence-level targets, read off the pooled embeddings"
-            if z_seq is not None:
-                tasks = data_training_args.classification_tasks
-                if "vowels" in data_training_args.dataset_name:
-                    seq_targets = [(speaker_vt_factor_seq, speaker_vt_factor_seq_test, "speaker_seq", "speaker_seq")]
-                elif "timit" in data_training_args.dataset_name:
-                    seq_targets = [(speaker_id_seq, speaker_id_seq_test, "speaker_seq", "speaker_seq")]
-                elif "iemocap" in data_training_args.dataset_name:
-                    seq_targets = [(speaker_id_seq, None, "speaker_seq", "speaker_seq"),
-                                   (torch.stack((emotion_seq, speaker_id_seq), dim = 1), None, ["cat_emotion_seq", "speaker_seq"], "emotion_seq")]
-                else:
-                    print(f"No sequence-level classification targets are set up for {data_training_args.dataset_name}")
-                    seq_targets = []
-                for y, y_test, target, task in seq_targets:
-                    if task not in tasks and "all" not in tasks:
-                        continue
-                    prediction_eval(data_training_args,config,
-                        X = z_seq, X_test = z_seq_test,
-                        y = y, y_test = y_test,
-                        checkpoint = ckp, latent_type="z",target = target
                     )
 
         "Disentanglement evaluation"
@@ -1275,15 +1226,6 @@ def main():
                     latent_type="z", mu_train = z_mean, y_train = y_frame_train, 
                     mu_test = None, y_test = None, target = ["phoneme","speaker_frame","cat_emotion_frame"]
                 )
-
-                "Sequence-level disentanglement, emotion against speaker, off the pooled embeddings"
-                if z_seq is None:
-                    print("Skipping the sequence-level disentanglement - vae_seq_pooling is not set, so there are no pooled embeddings to evaluate")
-                else:
-                    compute_disentanglement_metrics(data_training_args,config,checkpoint = ckp,
-                        latent_type="z_seq", mu_train = z_seq, y_train = y_seq_train,
-                        mu_test = None, y_test = None, target = ["speaker_seq","cat_emotion_seq"]
-                    )
             else:    
                 "Check vowels/speakers disentanglement in z"
                 compute_disentanglement_metrics(data_training_args,config,checkpoint = ckp,

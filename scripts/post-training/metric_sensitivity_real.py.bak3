@@ -64,7 +64,6 @@ DEFAULT_ARGS = {
     "n_chance_draws": 3,
     "chance_include_model_dims": True,  # also score the chance level at every model's own d
     "chance_reference_model": None,  # model whose ref_sub frames and labels the chance runs use, None is the first
-    "outputs_only": False,  # rebuild the tables and figures from real_results.csv alone, without loading any dump
 }
 
 SUPERVISED = ["DCI-D", "DCI-C", "DCI-I", "Modularity", "Explicitness", "IRS"]
@@ -526,31 +525,23 @@ def main():
             r["level"] = "" if pd.isna(r["level"]) else r["level"]
             done[(r["model"], r["condition"], r["level"], int(r["seed"]))] = r
 
-    if args.outputs_only:
-        if not done:
-            raise FileNotFoundError(f"outputs_only needs the results of earlier runs in {csv_path}")
-        missing = [m["name"] for m in models if m["name"] not in {k[0] for k in done}]
-        if missing:
-            logger.warning(f"No results in {csv_path} for {missing}, so they are left out of the outputs")
-        logger.info("outputs_only: rebuilding the tables and figures from the saved results, nothing is computed")
-    else:
-        labels, reference = {}, {}
-        for model in models:
-            ys, ref_sub_idx, sidecar = run_model(model, args, csv_path, done)
-            labels[model["name"]] = ys
-            reference[model["name"]] = (ys, ref_sub_idx, sidecar)
+    labels, reference = {}, {}
+    for model in models:
+        ys, ref_sub_idx, sidecar = run_model(model, args, csv_path, done)
+        labels[model["name"]] = ys
+        reference[model["name"]] = (ys, ref_sub_idx, sidecar)
 
-        dims = set(args.chance_dims or [])
-        if args.chance_include_model_dims:
-            dims |= {reference[m["name"]][2]["latent_dim"] for m in models}
-        if dims:
-            frames_from = args.chance_reference_model or models[0]["name"]
-            run_chance(*reference[frames_from], frames_from, sorted(dims), args, csv_path, done)
-        first = next(iter(labels.values()))
-        for name, ys in labels.items():
-            if ys.shape != first.shape or not np.array_equal(ys, first):
-                logger.warning(f"{name}: its frames or labels differ from {models[0]['name']}'s, so the "
-                               "subsamples are not the same frames across models")
+    dims = set(args.chance_dims or [])
+    if args.chance_include_model_dims:
+        dims |= {reference[m["name"]][2]["latent_dim"] for m in models}
+    if dims:
+        frames_from = args.chance_reference_model or models[0]["name"]
+        run_chance(*reference[frames_from], frames_from, sorted(dims), args, csv_path, done)
+    first = next(iter(labels.values()))
+    for name, ys in labels.items():
+        if ys.shape != first.shape or not np.array_equal(ys, first):
+            logger.warning(f"{name}: its frames or labels differ from {models[0]['name']}'s, so the "
+                           "subsamples are not the same frames across models")
 
     results = pd.read_csv(csv_path, keep_default_na=False, na_values=[""])
     results["level"] = results["level"].fillna("")

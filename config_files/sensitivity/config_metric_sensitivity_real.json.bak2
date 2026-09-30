@@ -1,0 +1,18 @@
+{
+    "models_file": "config_files/sensitivity/models.json",
+    "output_dir": "../post-training_results/sensitivity",
+    "n_sub": 20000,
+    "n_null": 5,
+    "seed": 0,
+    "dci_random_state": 0,
+    "gcn_key": "gaussian_total_correlation",
+    "n_jobs": 1,
+    "conditions": null,
+    "null_zero_check": true,
+    "subset_dims": [48, 96, 192, 384],
+    "n_subset_draws": 5,
+    "chance_dims": [48, 96, 192, 384, 768],
+    "n_chance_draws": 3,
+    "chance_include_model_dims": true,
+    "chance_reference_model": null
+}
