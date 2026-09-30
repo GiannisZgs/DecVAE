@@ -1042,8 +1042,14 @@ def main():
 
     "Every components setting reads the same frames, so only the projection is refitted"
     for n_components in component_settings:
-        ckp = ckp_base + "_c" + str(n_components)
-        projection_path = os.path.join(data_training_args.parent_dir, "eigenprojections", ckp + "_model.joblib")
+        try:
+            ckp = ckp_base + "_c" + str(n_components)
+            projection_path = os.path.join(data_training_args.parent_dir, "eigenprojections", ckp + "_model.joblib")
+            assert os.path.exists(projection_path)
+        except AssertionError:
+            ckp = ckp_base
+            projection_path = os.path.join(data_training_args.parent_dir, ckp + "_model.joblib")
+            assert os.path.exists(projection_path)
         print(f"\n=== {eigenprojection_args.projection_method} onto {n_components} components ({ckp}) ===")
 
         projection = fit_projection(z_fit, seq_lengths_fit, eigenprojection_args, n_components,
