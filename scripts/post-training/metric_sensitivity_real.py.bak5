@@ -95,7 +95,6 @@ COLUMNS = ["model", "condition", "level", "seed", "n_frames", "latent_dim", "MI"
     "speaker_groups", "noise_sd", "subset_dims", "frames_from"]
 STANDARD_CONDITIONS = list(dict.fromkeys(c for c, _, _, _ in CONDITIONS))
 CHANCE_MODEL = "Gaussian noise"
-FLAT_NO_INDEPENDENCE = "Flat (no MI, GCN)"
 TRAJECTORY_ORDER = [(c, l) for c, l, _, _ in CONDITIONS if c != "null"]
 
 RANKED_METRICS = {k: v for k, v in METRICS.items() if k in UNSUPERVISED + SUPERVISED}
@@ -472,12 +471,7 @@ def rankings(results, ranked_models, path):
             continue
         per_condition[(condition, level)] = rank_methods(g.set_index("model")[UNSUPERVISED + SUPERVISED], RANKED_METRICS)
 
-    "Flat ranking without the Independence family (MI, GCN), from the leave-one-family-out aggregations"
-    for r in per_condition.values():
-        if "Flat -Independence" in r["lofo"]:
-            r["aggregations"][FLAT_NO_INDEPENDENCE] = r["lofo"]["Flat -Independence"]
-            r["aggregation_positions"][FLAT_NO_INDEPENDENCE] = r["lofo_positions"]["Flat -Independence"]
-    aggregations = ["Flat", FLAT_NO_INDEPENDENCE, "4-family", "3-family"]
+    aggregations = ["Flat", "4-family", "3-family"]
     positions = {a: pd.DataFrame({condition_label(*k): r["aggregation_positions"][a] for k, r in per_condition.items()})
                  for a in aggregations}
     ref = per_condition.get(("ref_sub", ""))
