@@ -150,10 +150,10 @@ class DataCollatorForDecVAEPretraining:
             frame_len = batch["input_values"].shape[-1]
             if batch.get("input_seq_values") is not None:
                 frames = batch["input_seq_values"].shape[-1]/frame_len
-                new_input_seq_values = torch.zeros((batch_size,batch["input_values"].shape[1],int(frames),frame_len),device = batch["input_seq_values"].device)
+                new_input_seq_values = torch.zeros((batch_size,batch["input_seq_values"].shape[1],int(frames),frame_len),device = batch["input_seq_values"].device)
             
                 # Split sequence into frames 
-                for o in range(batch["input_values"].shape[1]):
+                for o in range(batch["input_seq_values"].shape[1]):
                     sequence = batch["input_seq_values"][:,o,:].clone()
                     for f in range(int(frames)):
                         framed_sequence = sequence[:,f*frame_len:(f+1)*frame_len]
@@ -166,7 +166,8 @@ class DataCollatorForDecVAEPretraining:
                 assert self.data_training_args.mel_hops == 3
             for o in range(batch["input_values"].shape[1]):
                 batch["input_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
-                if batch.get("input_seq_values") is not None:
+            if batch.get("input_seq_values") is not None:
+                for o in range(batch["input_seq_values"].shape[1]):
                     batch["input_seq_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_seq_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
 
             if batch.get("input_seq_values") is not None:
@@ -407,7 +408,7 @@ class DataCollatorForDecVAEPretraining_NoFeatureExtraction:
         if len(batch["input_values"].shape) > 4 and batch["input_values"].shape[1] == 1:
             batch["input_values"] = batch["input_values"].squeeze(1)
 
-        if len(batch["input_seq_values"].shape) > 3 and batch["input_seq_values"].shape[1] == 1:
+        if batch.get("input_seq_values") is not None and len(batch["input_seq_values"].shape) > 3 and batch["input_seq_values"].shape[1] == 1:
             batch["input_seq_values"] = batch["input_seq_values"].squeeze(1)
 
         normalize_mel_batch(batch, self.input_type, self.data_training_args, device)
@@ -517,10 +518,10 @@ class DataCollatorForDecVAE_SSL_FineTuning:
             frame_len = batch["input_values"].shape[-1]
             if batch.get("input_seq_values") is not None:
                 frames = batch["input_seq_values"].shape[-1]/frame_len
-                new_input_seq_values = torch.zeros((batch_size,batch["input_values"].shape[1],int(frames),frame_len),device = batch["input_seq_values"].device)
+                new_input_seq_values = torch.zeros((batch_size,batch["input_seq_values"].shape[1],int(frames),frame_len),device = batch["input_seq_values"].device)
             
                 # Split sequence into frames 
-                for o in range(batch["input_values"].shape[1]):
+                for o in range(batch["input_seq_values"].shape[1]):
                     sequence = batch["input_seq_values"][:,o,:].clone()
                     for f in range(int(frames)):
                         framed_sequence = sequence[:,f*frame_len:(f+1)*frame_len]
@@ -533,7 +534,8 @@ class DataCollatorForDecVAE_SSL_FineTuning:
                 assert self.data_training_args.mel_hops == 3
             for o in range(batch["input_values"].shape[1]):
                 batch["input_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
-                if batch.get("input_seq_values") is not None:
+            if batch.get("input_seq_values") is not None:
+                for o in range(batch["input_seq_values"].shape[1]):
                     batch["input_seq_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_seq_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
 
             if batch.get("input_seq_values") is not None:
@@ -913,10 +915,10 @@ class DataCollatorForDecVAELatentPostAnalysis:
             frame_len = batch["input_values"].shape[-1]
             if batch.get("input_seq_values") is not None:
                 frames = batch["input_seq_values"].shape[-1]/frame_len
-                new_input_seq_values = torch.zeros((batch_size,batch["input_values"].shape[1],int(frames),frame_len),device = batch["input_seq_values"].device)
+                new_input_seq_values = torch.zeros((batch_size,batch["input_seq_values"].shape[1],int(frames),frame_len),device = batch["input_seq_values"].device)
             
                 # Split sequence into frames 
-                for o in range(batch["input_values"].shape[1]):
+                for o in range(batch["input_seq_values"].shape[1]):
                     sequence = batch["input_seq_values"][:,o,:].clone()
                     for f in range(int(frames)):
                         framed_sequence = sequence[:,f*frame_len:(f+1)*frame_len]
@@ -929,7 +931,8 @@ class DataCollatorForDecVAELatentPostAnalysis:
                 assert self.data_training_args.mel_hops == 3
             for o in range(batch["input_values"].shape[1]):
                 batch["input_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
-                if batch.get("input_seq_values") is not None:
+            if batch.get("input_seq_values") is not None:
+                for o in range(batch["input_seq_values"].shape[1]):
                     batch["input_seq_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_seq_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
 
             if batch.get("input_seq_values") is not None:
@@ -1122,7 +1125,7 @@ class DataCollatorForDecVAELatentPostAnalysis_NoFeatureExtraction:
         if len(batch["input_values"].shape) > 4 and batch["input_values"].shape[1] == 1:
             batch["input_values"] = batch["input_values"].squeeze(1)
 
-        if len(batch["input_seq_values"].shape) > 3 and batch["input_seq_values"].shape[1] == 1:
+        if batch.get("input_seq_values") is not None and len(batch["input_seq_values"].shape) > 3 and batch["input_seq_values"].shape[1] == 1:
             batch["input_seq_values"] = batch["input_seq_values"].squeeze(1)
 
         "Features were extracted at the preprocessing step - only normalize them here"
@@ -1163,7 +1166,8 @@ class DataCollatorForDecVAELatentPostAnalysis_NoFeatureExtraction:
         elif "VOC_ALS" in self.dataset_name:
             batch["alsfrs_total"] = torch.tensor(alsfrs_total, dtype=torch.long, device=device)
             batch["disease_duration"] = torch.tensor(disease_duration, dtype=torch.long, device=device)
-            batch["king_stage"] = torch.tensor(king_stage, dtype=torch.long, device=device)
+            "king_stage is stored as float and may arrive as numpy.float32, which torch cannot cast to long"
+            batch["king_stage"] = torch.tensor([int(k) for k in king_stage], dtype=torch.long, device=device)
             batch["alsfrs_speech"] = torch.tensor(alsfrs_speech, dtype=torch.long, device=device)
             batch["cantagallo"] = torch.tensor(cantagallo, dtype=torch.long, device=device)
             batch["phonemes"] = torch.tensor(phonemes, dtype=torch.long, device=device)
@@ -1313,10 +1317,10 @@ class DataCollatorForDecVAELatentDisentanglement:
             frame_len = batch["input_values"].shape[-1]
             if batch.get("input_seq_values") is not None:
                 frames = batch["input_seq_values"].shape[-1]/frame_len
-                new_input_seq_values = torch.zeros((batch_size,batch["input_values"].shape[1],int(frames),frame_len),device = batch["input_seq_values"].device)
+                new_input_seq_values = torch.zeros((batch_size,batch["input_seq_values"].shape[1],int(frames),frame_len),device = batch["input_seq_values"].device)
             
                 # Split sequence into frames 
-                for o in range(batch["input_values"].shape[1]):
+                for o in range(batch["input_seq_values"].shape[1]):
                     sequence = batch["input_seq_values"][:,o,:].clone()
                     for f in range(int(frames)):
                         framed_sequence = sequence[:,f*frame_len:(f+1)*frame_len]
@@ -1329,7 +1333,8 @@ class DataCollatorForDecVAELatentDisentanglement:
                 assert self.data_training_args.mel_hops == 3
             for o in range(batch["input_values"].shape[1]):
                 batch["input_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
-                if batch.get("input_seq_values") is not None:
+            if batch.get("input_seq_values") is not None:
+                for o in range(batch["input_seq_values"].shape[1]):
                     batch["input_seq_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_seq_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
 
             if batch.get("input_seq_values") is not None:
@@ -1529,10 +1534,10 @@ class DataCollatorForDecVAELatentTraversals:
             frame_len = batch["input_values"].shape[-1]
             if batch.get("input_seq_values") is not None:
                 frames = batch["input_seq_values"].shape[-1]/frame_len
-                new_input_seq_values = torch.zeros((batch_size,batch["input_values"].shape[1],int(frames),frame_len),device = batch["input_seq_values"].device)
+                new_input_seq_values = torch.zeros((batch_size,batch["input_seq_values"].shape[1],int(frames),frame_len),device = batch["input_seq_values"].device)
             
                 # Split sequence into frames 
-                for o in range(batch["input_values"].shape[1]):
+                for o in range(batch["input_seq_values"].shape[1]):
                     sequence = batch["input_seq_values"][:,o,:].clone()
                     for f in range(int(frames)):
                         framed_sequence = sequence[:,f*frame_len:(f+1)*frame_len]
@@ -1549,7 +1554,8 @@ class DataCollatorForDecVAELatentTraversals:
                     batch["input_values"][:,o,...] = mels.reshape(mels.shape[0],-1).unsqueeze(1)
                 else:
                     batch["input_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
-                if batch.get("input_seq_values") is not None:
+            if batch.get("input_seq_values") is not None:
+                for o in range(batch["input_seq_values"].shape[1]):
                     batch["input_seq_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_seq_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
 
             if batch.get("input_seq_values") is not None:
@@ -1957,10 +1963,10 @@ class DataCollatorForDecVAELatentVisualization:
             frame_len = batch["input_values"].shape[-1]
             if batch.get("input_seq_values") is not None:
                 frames = batch["input_seq_values"].shape[-1]/frame_len
-                new_input_seq_values = torch.zeros((batch_size,batch["input_values"].shape[1],int(frames),frame_len),device = batch["input_seq_values"].device)
+                new_input_seq_values = torch.zeros((batch_size,batch["input_seq_values"].shape[1],int(frames),frame_len),device = batch["input_seq_values"].device)
             
                 # Split sequence into frames 
-                for o in range(batch["input_values"].shape[1]):
+                for o in range(batch["input_seq_values"].shape[1]):
                     sequence = batch["input_seq_values"][:,o,:].clone()
                     for f in range(int(frames)):
                         framed_sequence = sequence[:,f*frame_len:(f+1)*frame_len]
@@ -1973,7 +1979,8 @@ class DataCollatorForDecVAELatentVisualization:
                 assert self.data_training_args.mel_hops == 3
             for o in range(batch["input_values"].shape[1]):
                 batch["input_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
-                if batch.get("input_seq_values") is not None:
+            if batch.get("input_seq_values") is not None:
+                for o in range(batch["input_seq_values"].shape[1]):
                     batch["input_seq_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_seq_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
 
             if batch.get("input_seq_values") is not None:

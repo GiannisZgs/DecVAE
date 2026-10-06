@@ -63,9 +63,53 @@ warnings.simplefilter("ignore")
 #os.environ["TORCH_USE_CUDA_DSA"] = "1"
 #os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 
-JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/sim_vowels/latent_evaluations/config_latent_anal_sim_vowels.json" #for debugging purposes only
+JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/sim_coupled/latent_evaluations/config_latent_anal_sim_coupled.json" #for debugging purposes only
 
 logger = get_logger(__name__)
+
+def gather_sim_coupled_z(dataloader, representation_function, config, data_training_args):
+    """
+    Encode a sim_coupled split the way the test loop of main() does, keeping the frame-branch (Z) latents.
+
+    Returns:
+        dict: mu_components_z (NoC, frames, dim), mu_originals_z (frames, dim), mu_projections_z (frames, dim)
+            or None, lag and gain (frames,) - all over the frames kept after the overlap mask
+    """
+    gathered = {"mu_components_z": [], "mu_originals_z": [], "mu_projections_z": [], "lag": [], "gain": []}
+    with torch.no_grad():
+        for batch in dataloader:
+            batch_size = batch["input_values"].shape[0]
+            mask_indices_seq_length = batch["input_values"].shape[2]
+            sub_attention_mask = batch.pop("sub_attention_mask", None)
+            overlap_mask_batch = batch.pop("overlap_mask", None)
+            if overlap_mask_batch is None or not data_training_args.discard_label_overlaps:
+                overlap_mask_batch = torch.zeros_like(sub_attention_mask, dtype=torch.bool)
+            else:
+                "Frames corresponding to padding are set as True in the overlap and discarded"
+                padded = sub_attention_mask.sum(dim = -1)
+                for b in range(batch_size):
+                    overlap_mask_batch[b,padded[b]:] = 1
+                overlap_mask_batch = overlap_mask_batch.bool()
+            batch["mask_time_indices"] = torch.ones((batch_size, mask_indices_seq_length), dtype=torch.bool, device=batch["mask_time_indices"].device)
+            gathered["lag"].append(batch.pop("lag_labels")[~overlap_mask_batch])
+            gathered["gain"].append(batch.pop("gain_labels")[~overlap_mask_batch])
+
+            outputs = representation_function(**batch)
+            del batch
+
+            overlap_mask_batch = overlap_mask_batch[sub_attention_mask]
+            gathered["mu_components_z"].append(torch.masked_select(outputs.mu_components_z,~overlap_mask_batch[None,:,None]).reshape(outputs.mu_components_z.shape[0],-1,outputs.mu_components_z.shape[-1]).detach().cpu())
+            gathered["mu_originals_z"].append(torch.masked_select(outputs.mu_originals_z,~overlap_mask_batch[:,None]).reshape(-1,outputs.mu_originals_z.shape[-1]).detach().cpu())
+            if hasattr(outputs,'used_projected_components_z') and config.project_OCs:
+                gathered["mu_projections_z"].append(torch.masked_select(outputs.mu_projections_z,~overlap_mask_batch[:,None]).reshape(-1,outputs.mu_projections_z.shape[-1]).detach().cpu())
+
+    return {
+        "mu_components_z": torch.cat(gathered["mu_components_z"], dim = 1),
+        "mu_originals_z": torch.cat(gathered["mu_originals_z"], dim = 0),
+        "mu_projections_z": torch.cat(gathered["mu_projections_z"], dim = 0) if gathered["mu_projections_z"] else None,
+        "lag": torch.cat(gathered["lag"]),
+        "gain": torch.cat(gathered["gain"]),
+    }
 
 def main():
     "Parse the arguments"       
@@ -132,6 +176,9 @@ def main():
 
         if data_training_args.dataset_name == "VOC_ALS":
             vectorized_datasets["dev"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["dev"]])
+        if data_training_args.dataset_name == "sim_coupled":
+            "Independent-factors split - an unseen set, encoded and evaluated on its own"
+            vectorized_datasets["indep"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["indep"]])
 
         if min_length > 0.0:
             vectorized_datasets = vectorized_datasets.filter(
@@ -164,7 +211,10 @@ def main():
             betas = "_bs01"
         else:
             betas = "_bs" + str(int(training_obj_args.beta_kl_prior_s))
-    if "vowels" in data_training_args.dataset_name:
+    if data_training_args.dataset_name == "sim_coupled":
+        "The checkpoints sit directly in the pre-training output_dir"
+        checkpoint_dir = data_training_args.parent_dir
+    elif "vowels" in data_training_args.dataset_name:
         checkpoint_dir = os.path.join(data_training_args.parent_dir,
             "snr" + str(data_training_args.sim_snr_db) \
             + betas + "_NoC" + str(decomp_args.NoC) + "_" + data_training_args.input_type + "_" + model_type + "-bs" + str(data_training_args.per_device_train_batch_size))
@@ -270,12 +320,19 @@ def main():
                 batch_size=data_training_args.per_device_eval_batch_size
             )
             test_dataloader = DataLoader(
-                vectorized_datasets["test"].with_format("numpy"), 
+                vectorized_datasets["test"].with_format("numpy"),
                 shuffle=False,
-                collate_fn=data_collator, 
+                collate_fn=data_collator,
                 batch_size=data_training_args.per_device_eval_batch_size
             )
-        
+            if data_training_args.dataset_name == "sim_coupled":
+                indep_dataloader = DataLoader(
+                    vectorized_datasets["indep"].with_format("numpy"),
+                    shuffle=False,
+                    collate_fn=data_collator,
+                    batch_size=data_training_args.per_device_eval_batch_size
+                )
+
 
         "Prepare everything with HF accelerator"
         if data_training_args.dataset_name in ["VOC_ALS", "iemocap"]:
@@ -287,6 +344,8 @@ def main():
             representation_function, eval_dataloader, test_dataloader = accelerator.prepare(
                 representation_function, eval_dataloader, test_dataloader
             ) #train_dataloader
+            if data_training_args.dataset_name == "sim_coupled":
+                indep_dataloader = accelerator.prepare(indep_dataloader)
 
         "Measure total loading time"
         start_time = time.time()
@@ -317,7 +376,12 @@ def main():
                     if hasattr(batch,"speaker_vt_factor"):
                         speaker_vt_factor_batch = batch.pop("speaker_vt_factor")
                     
-                    vowel_labels_batch = [[ph for i,ph in enumerate(batch) if not overlap_mask_batch[j,i]] for j,batch in enumerate(vowel_labels_batch)] 
+                    vowel_labels_batch = [[ph for i,ph in enumerate(batch) if not overlap_mask_batch[j,i]] for j,batch in enumerate(vowel_labels_batch)]
+
+                elif data_training_args.dataset_name == "sim_coupled":
+                    batch["mask_time_indices"] = torch.ones((batch_size, mask_indices_seq_length), dtype=torch.bool, device=batch["mask_time_indices"].device)
+                    lag_labels_batch = batch.pop("lag_labels")[~overlap_mask_batch]
+                    gain_labels_batch = batch.pop("gain_labels")[~overlap_mask_batch]
 
                 elif data_training_args.dataset_name in ["timit", "iemocap"]:
                     batch["mask_time_indices"] = sub_attention_mask.clone()
@@ -361,6 +425,10 @@ def main():
                     else:
                         speaker_vt_factor_frame = torch.cat((speaker_vt_factor_frame,torch.cat([torch.tensor([factor for j in range(sum(~overlap_mask_batch[i]))]) for i,factor in enumerate(speaker_vt_factor_batch)])),dim = 0)
                         speaker_vt_factor_seq = torch.cat((speaker_vt_factor_seq,speaker_vt_factor_batch),dim = 0)
+
+                elif data_training_args.dataset_name == "sim_coupled":
+                    lag_labels = lag_labels_batch.clone() if step == 0 else torch.cat((lag_labels, lag_labels_batch))
+                    gain_labels = gain_labels_batch.clone() if step == 0 else torch.cat((gain_labels, gain_labels_batch))
 
                 elif data_training_args.dataset_name in ["timit", "iemocap"]:
                     if "timit" in data_training_args.dataset_name:
@@ -490,6 +558,11 @@ def main():
                             speaker_vt_factor_batch = batch.pop("speaker_vt_factor")
                         vowel_labels_batch = [[ph for i,ph in enumerate(batch) if not overlap_mask_batch[j,i]] for j,batch in enumerate(vowel_labels_batch)] 
 
+                    elif data_training_args.dataset_name == "sim_coupled":
+                        batch["mask_time_indices"] = torch.ones((batch_size, mask_indices_seq_length), dtype=torch.bool, device=batch["mask_time_indices"].device)
+                        lag_labels_batch = batch.pop("lag_labels")[~overlap_mask_batch]
+                        gain_labels_batch = batch.pop("gain_labels")[~overlap_mask_batch]
+
                     elif data_training_args.dataset_name == "timit":
                         batch["mask_time_indices"] = sub_attention_mask.clone()
                         phonemes39_batch = batch.pop("phonemes39", None)
@@ -515,6 +588,10 @@ def main():
                         else:
                             speaker_vt_factor_frame_test = torch.cat((speaker_vt_factor_frame_test,torch.cat([torch.tensor([factor for j in range(sum(~overlap_mask_batch[i]))]) for i,factor in enumerate(speaker_vt_factor_batch)])),dim = 0)
                             speaker_vt_factor_seq_test = torch.cat((speaker_vt_factor_seq_test,speaker_vt_factor_batch),dim = 0)
+
+                    elif data_training_args.dataset_name == "sim_coupled":
+                        lag_labels_test = lag_labels_batch.clone() if step == 0 else torch.cat((lag_labels_test, lag_labels_batch))
+                        gain_labels_test = gain_labels_batch.clone() if step == 0 else torch.cat((gain_labels_test, gain_labels_batch))
 
                     elif "timit" in data_training_args.dataset_name:
                         if step == 0:
@@ -574,6 +651,16 @@ def main():
                                 mu_projections_s_test = torch.cat((mu_projections_s_test,outputs.mu_projections_s.detach().cpu()),dim = 0)
 
 
+        if data_training_args.dataset_name == "sim_coupled" and (config.dual_branched_latent or config.only_z_branch):
+            "Independent-factors split: encoded on its own, frame branch only - there is no sequence-level factor"
+            indep = gather_sim_coupled_z(indep_dataloader, representation_function, config, data_training_args)
+            mu_components_z_indep = indep["mu_components_z"]
+            mu_originals_z_indep = indep["mu_originals_z"]
+            mu_projections_z_indep = indep["mu_projections_z"]
+            lag_labels_indep = indep["lag"]
+            gain_labels_indep = indep["gain"]
+            del indep
+
         end_time = time.time()
         elapsed_time = end_time - start_time
         print(f"Total loading time: {elapsed_time: .4f} seconds")
@@ -590,6 +677,24 @@ def main():
                 mu_joint_components_z_test = torch.cat([b.reshape(1,-1) for b in mu_components_z_test.transpose(0,1)])
                 all_embs_test = torch.cat([mu_originals_z_test.unsqueeze(0),mu_components_z_test])
                 mu_all_z_test = torch.cat([b.reshape(1,-1) for b in all_embs_test.transpose(0,1)])
+            if data_training_args.dataset_name == "sim_coupled":
+                mu_joint_components_z_indep = torch.cat([b.reshape(1,-1) for b in mu_components_z_indep.transpose(0,1)])
+                all_embs_indep = torch.cat([mu_originals_z_indep.unsqueeze(0),mu_components_z_indep])
+                mu_all_z_indep = torch.cat([b.reshape(1,-1) for b in all_embs_indep.transpose(0,1)])
+
+                "(latent_type, dev+test pool part, test part, unseen set), in the order the other datasets are evaluated"
+                sim_coupled_latents = []
+                if "OCs_joint_emb" in data_training_args.aggregations_to_use:
+                    sim_coupled_latents.append(("OCs_joint_emb", mu_joint_components_z, mu_joint_components_z_test, mu_joint_components_z_indep))
+                if config.project_OCs and "OCs_proj" in data_training_args.aggregations_to_use:
+                    sim_coupled_latents.append(("OCs_proj", mu_projections_z, mu_projections_z_test, mu_projections_z_indep))
+                if "all" in data_training_args.aggregations_to_use:
+                    sim_coupled_latents.append(("all", mu_all_z, mu_all_z_test, mu_all_z_indep))
+                if "X" in data_training_args.aggregations_to_use:
+                    sim_coupled_latents.append(("X", mu_originals_z, mu_originals_z_test, mu_originals_z_indep))
+                if "OCs" in data_training_args.aggregations_to_use:
+                    for i in range(decomp_args.NoC):
+                        sim_coupled_latents.append((f'OC{i+1}', mu_components_z[i], mu_components_z_test[i], mu_components_z_indep[i]))
         if config.dual_branched_latent or config.only_s_branch:
             if not config.use_first_agg and not config.use_second_agg:
                 "If no aggregation strategy is used, then sequence case is same as frame - same shape"
@@ -613,7 +718,25 @@ def main():
         "Now use train/val representations to get the evaluation metrics"
         "Linear/non-linear classification"
         if data_training_args.classify:
-            if "vowels" in data_training_args.dataset_name:
+            if data_training_args.dataset_name == "sim_coupled":
+                "Frame-level factors only. y carries (target, other factor) - stratified splits use their joint cell;"
+                "the unseen set is only predicted"
+                if config.dual_branched_latent or config.only_z_branch:
+                    factors = {"lag": (lag_labels, lag_labels_test, lag_labels_indep),
+                               "gain": (gain_labels, gain_labels_test, gain_labels_indep)}
+                    for latent_type, X, X_test, X_indep in sim_coupled_latents:
+                        for target, other in (("lag", "gain"), ("gain", "lag")):
+                            if target not in data_training_args.classification_tasks and "all" not in data_training_args.classification_tasks:
+                                continue
+                            prediction_eval(data_training_args,config,
+                                X = X, X_test = X_test,
+                                y = torch.stack((factors[target][0], factors[other][0]), dim = 1),
+                                y_test = torch.stack((factors[target][1], factors[other][1]), dim = 1),
+                                checkpoint = ckp, latent_type=latent_type, target = target,
+                                X_indep = X_indep, y_indep = torch.stack((factors[target][2], factors[other][2]), dim = 1)
+                            )
+
+            elif "vowels" in data_training_args.dataset_name:
                 if config.dual_branched_latent or config.only_z_branch:
                     
                     if "OCs_joint_emb" in data_training_args.aggregations_to_use:
@@ -1336,6 +1459,11 @@ def main():
                 y_seq_test = pd.DataFrame(speaker_vt_factor_seq_test.cpu().numpy(),columns=["speaker_seq"])
                 y_seq_train = pd.DataFrame(speaker_vt_factor_seq.cpu().numpy(),columns=["speaker_seq"])
 
+            elif data_training_args.dataset_name == "sim_coupled" and (config.dual_branched_latent or config.only_z_branch):
+                y_frame_train = pd.DataFrame(torch.stack((lag_labels, gain_labels), dim = 1).cpu().numpy(),columns=["lag","gain"])
+                y_frame_test = pd.DataFrame(torch.stack((lag_labels_test, gain_labels_test), dim = 1).cpu().numpy(),columns=["lag","gain"])
+                y_frame_indep = pd.DataFrame(torch.stack((lag_labels_indep, gain_labels_indep), dim = 1).cpu().numpy(),columns=["lag","gain"])
+
             elif data_training_args.dataset_name in ["timit"]:
                 speaker_id_frame_test = speaker_id_frame_test.to(phonemes39_test.device)
                 speaker_id_frame = speaker_id_frame.to(phonemes39_test.device)
@@ -1426,6 +1554,15 @@ def main():
                             mu_test = None, y_test = None, target = ["phoneme","speaker_frame","cat_emotion_frame"]
                         )
 
+
+                elif data_training_args.dataset_name == "sim_coupled":
+                    "Check lag/gain disentanglement in z - test pool, plus the unseen set as a separate _indep result"
+                    for latent_type, mu, mu_test, mu_indep in sim_coupled_latents:
+                        compute_disentanglement_metrics(data_training_args,config,checkpoint = ckp,
+                            latent_type=latent_type, mu_train = mu, y_train = y_frame_train,
+                            mu_test = mu_test, y_test = y_frame_test, target = ["lag","gain"],
+                            mu_indep = mu_indep, y_indep = y_frame_indep
+                        )
 
                 else: #SimVowels and TIMIT
                     if "OCs_joint_emb" in data_training_args.aggregations_to_use:
@@ -1526,6 +1663,10 @@ def main():
                             mu_test = None, y_test = None, target = ["speaker_seq","cat_emotion_seq"]
                         )
 
+
+                elif data_training_args.dataset_name == "sim_coupled":
+                    "No sequence-level factor in sim_coupled - nothing to evaluate in s"
+                    pass
 
                 else: #SimVowels and TIMIT
 

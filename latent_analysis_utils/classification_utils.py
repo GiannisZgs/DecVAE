@@ -18,6 +18,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.decomposition import PCA
 from sklearn.dummy import DummyClassifier
 from sklearn.cluster import KMeans
+from disentanglement_utils.disentanglement_eval import joint_cell
 
 from tqdm.auto import tqdm
 import time
@@ -109,7 +110,16 @@ def calculate_unweighted_accuracy(y_true, y_pred):
 
 
 "Goals of this analysis: perform clustering, perform classification"
-def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,latent_type,target = "vowel"):
+def indep_scores(y_true, y_pred):
+    "Scores of a fitted model on the unseen set"
+    return {
+        'Indep_Accuracy': accuracy_score(y_true, y_pred),
+        'Indep_F1_Score': f1_score(y_true, y_pred, average='weighted'),
+        'Indep_F1_Macro': f1_score(y_true, y_pred, average='macro'),
+    }
+
+
+def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,latent_type,target = "vowel", X_indep = None, y_indep = None):
     """
     Perform classification and clustering evaluation on latent representations.
     Supports both unsupervised k-Means clustering and supervised classification through machine learning classifiers.
@@ -127,6 +137,12 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
         latent_type: Refers to the type of latent aggregation of individual subspaces to obtain final latent prior approximation.
             Can be 'all', 'X', 'OCs_joint', 'OCs_proj'; affects only the name of the saved results files.
         target: Target variable for classification (default is "vowel")
+        X_indep: Latent representations of an unseen set (optional, sim_coupled's independent split)
+        y_indep: Labels of the unseen set (optional)
+
+    For sim_coupled, y, y_test and y_indep hold (target factor, other factor) per frame, and every stratified
+    split uses their joint cell. The unseen set never enters a split: each fold's fitted models predict it
+    (Indep_* columns), and k-means clusters it on its own (_indep files).
     """
 
 
@@ -156,8 +172,10 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
     latent_dim = X.shape[1]
     colnames_X = ["X" + str(i) for i in range(latent_dim)]
     X = pd.DataFrame(data = X, columns = colnames_X)
-    if X_test is not None:   
+    if X_test is not None:
         X_test = pd.DataFrame(data = X_test, columns = colnames_X)
+    if X_indep is not None:
+        X_indep = pd.DataFrame(data = X_indep.cpu() if torch.is_tensor(X_indep) else X_indep, columns = colnames_X)
 
     if "vowels" in data_training_args.dataset_name:        
         if data_training_args.sim_vowels_number == 5:
@@ -357,6 +375,27 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
         else:
             y_test_unsup = None
 
+    elif data_training_args.dataset_name == "sim_coupled":
+        "Columns: (target factor, other factor). Class indices are shared across sets, so they are used as they are"
+        def _split_factors(values):
+            values = np.asarray(values.detach().cpu() if torch.is_tensor(values) else values).astype(np.int64)
+            return values[:, 0], joint_cell(values.T)
+        y, strat = _split_factors(y)
+        y_unsup = pd.DataFrame(data = LabelEncoder().fit_transform(y), columns=[target])
+        y = pd.DataFrame(data = y, columns=[target])
+        if y_test is not None:
+            y_test, strat_test = _split_factors(y_test)
+            y_test_unsup = pd.DataFrame(data = LabelEncoder().fit_transform(y_test), columns=[target])
+            y_test = pd.DataFrame(data = y_test, columns=[target])
+            strat_merged = np.concatenate([strat, strat_test])
+        else:
+            y_test_unsup = None
+            strat_merged = strat
+        if y_indep is not None:
+            y_indep, _ = _split_factors(y_indep)
+            y_indep_unsup = pd.DataFrame(data = LabelEncoder().fit_transform(y_indep), columns=[target])
+            y_indep = pd.DataFrame(data = y_indep, columns=[target])
+
     "Unsupervised Classification - K-Means"
     if data_training_args.unsup_eval:
         results_unsup = []
@@ -494,7 +533,7 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                         num_clusters, num_clusters, rs=rs,
                         feature_method='None', feat_params=feature_methods['None']
                     )
-                elif data_training_args.dataset_name in ["VOC_ALS", "iemocap"]:
+                elif data_training_args.dataset_name in ["VOC_ALS", "iemocap", "sim_coupled"]:
                     if y_test is None:
                         results = _unsup_evaluation(
                             X, y[target], X_test, y_test, 
@@ -816,6 +855,39 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                         f"{label_prefix}_train_unweighted_acc_ci": unsup_stats['train_ci_unweighted_acc']
                     })
 
+        if X_indep is not None:
+            "Unseen set: clustered on its own, as the test set is, and scored against its own labels"
+            results_unsup.clear()
+            unsup_stats_indep = perform_unsupervised_evaluation_with_multiple_seeds(
+                X_indep, None, y_indep_unsup, None,
+                len(np.unique(y_indep_unsup)), data_training_args, target
+            )
+            indep_dict = {
+                'Classifier': 'KMeans',
+                'Mean_Indep_Accuracy': unsup_stats_indep['train_mean_acc'],
+                'Indep_CI_95': unsup_stats_indep['train_ci_acc'],
+                'Std_Indep_Accuracy': unsup_stats_indep['train_std_acc'],
+                'Mean_Indep_F1_Score': unsup_stats_indep['train_mean_f1'],
+                'Indep_CI_95_F1': unsup_stats_indep['train_ci_f1'],
+                'Std_Indep_F1_Score': unsup_stats_indep['train_std_f1'],
+                'Mean_Indep_F1_Score_Macro': unsup_stats_indep['train_mean_f1_macro'],
+                'Indep_CI_95_F1_Macro': unsup_stats_indep['train_ci_f1_macro'],
+                'Std_Indep_F1_Score_Macro': unsup_stats_indep['train_std_f1_macro'],
+                'Feature_Method': 'None'
+            }
+            pd.DataFrame([indep_dict]).to_csv(os.path.join(current_result_dir, f'{base_fname}_unsupervised_kmeans_summary_indep.csv'), index=True)
+            unsup_stats_indep['detailed_results'].rename(columns=lambda c: c.replace('Train_', 'Indep_')).to_csv(
+                os.path.join(current_result_dir, f'{base_fname}_unsupervised_kmeans_by_random_state_indep.csv'), index=False)
+            if is_wandb_available() and data_training_args.with_wandb:
+                wandb.log({
+                    f"{label_prefix}_indep_acc_mean": unsup_stats_indep['train_mean_acc'],
+                    f"{label_prefix}_indep_acc_ci": unsup_stats_indep['train_ci_acc'],
+                    f"{label_prefix}_indep_f1_mean": unsup_stats_indep['train_mean_f1'],
+                    f"{label_prefix}_indep_f1_ci": unsup_stats_indep['train_ci_f1'],
+                    f"{label_prefix}_indep_f1_macro_mean": unsup_stats_indep['train_mean_f1_macro'],
+                    f"{label_prefix}_indep_f1_macro_ci": unsup_stats_indep['train_ci_f1_macro']
+                })
+
     "Frame Speaker/Phoneme Identification - Supervised"
     if data_training_args.sup_eval and (target != "speaker_seq" or data_training_args.dataset_name not in ["timit","VOC_ALS"]):
         all_cv_results = []
@@ -850,6 +922,10 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                     print("Warning: No speaker information provided. Using standard stratification.")
                     skf = StratifiedKFold(n_splits=data_training_args.classif_eval_cv_splits, shuffle=True, random_state=rs)
                     skf_list = list(skf.split(X_merged, y_merged))
+            elif data_training_args.dataset_name == "sim_coupled":
+                "Stratified on the joint (lag, gain) cell"
+                skf = StratifiedKFold(n_splits=data_training_args.classif_eval_cv_splits, shuffle=True, random_state=rs)
+                skf_list = list(skf.split(X_merged, strat_merged))
             else:
                 # Setup 5-fold cross-validation with this random state
                 skf = StratifiedKFold(n_splits=data_training_args.classif_eval_cv_splits, shuffle=True, random_state=rs)
@@ -926,8 +1002,8 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                         # Stratified sampling: use subset of the dataset for dev and train
                         sss = StratifiedShuffleSplit(n_splits=1, test_size=data_training_args.dev_data_percent,
                                             train_size=data_training_args.train_data_percent, random_state=rs)
-                
-                        for train_idx, dev_idx in sss.split(X_train, y_train):
+
+                        for train_idx, dev_idx in sss.split(X_train, strat_merged[train_index] if data_training_args.dataset_name == "sim_coupled" else y_train):
                             X_dev = X_train.iloc[dev_idx]
                             y_dev = y_train.iloc[dev_idx]
                             X_train_subset = X_train.iloc[train_idx]
@@ -999,7 +1075,10 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                 X_test_subset = X_test
                 y_test_subset = y_test
                 if "timit" in data_training_args.dataset_name and 'phoneme48' in target:
-                    y_39_test_subset = y_39_test    
+                    y_39_test_subset = y_39_test
+                if data_training_args.dataset_name == "sim_coupled":
+                    "Joint cells of the dev part, for the inner hyperparameter CV"
+                    strat_dev = strat_merged[train_index][np.asarray(dev_idx)]
 
                 # Run classifiers for this fold
                 fold_results = []
@@ -1033,7 +1112,9 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                         'Test_F1_Score': test_f1,
                         'Test_F1_Macro': test_f1_macro,
                         'Test_Unweighted_Accuracy': unweighted_test_accuracy if 'emotion' in target else None,
-                    })          
+                    })
+                    if X_indep is not None:
+                        fold_results[-1].update(indep_scores(y_indep[target], dummy.predict(X_indep)))
                     print(f"DummyClassifier with strategy='{strategy}'")
                     print(f"Test Accuracy: {test_accuracy:.4f}")
                     print(f"Test F1 Score: {test_f1:.4f}\n")
@@ -1103,6 +1184,8 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                             
                             # Inner cross-validation for hyperparameter tuning
                             inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=rs)
+                            if data_training_args.dataset_name == "sim_coupled":
+                                inner_cv = list(inner_cv.split(X_dev, strat_dev))
                             grid_search = GridSearchCV(
                                 estimator=pipeline,
                                 param_grid=params,
@@ -1150,6 +1233,9 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                             })
                             if 'emotion' in target:
                                 fold_results[-1]['Test_Unweighted_Accuracy'] = unweighted_test_accuracy
+                            if X_indep is not None:
+                                fold_results[-1].update(indep_scores(y_indep[target_col], final_pipeline.predict(X_indep)))
+                                print(f"Indep Accuracy: {fold_results[-1]['Indep_Accuracy']:.4f}")
 
 
                             print(f"Classifier: {cls_name}, Feature Method: {feat_name}, RS: {rs}")
@@ -1189,12 +1275,19 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                 'Fit_Time': ['mean']
             }).reset_index()
         else:
-            summary_df = results_df.groupby(['Classifier', 'Feature_Method']).agg({
+            agg_spec = {
                 'Test_Accuracy': ['mean', 'std', 'min', 'max'],
                 'Test_F1_Score': ['mean', 'std', 'min', 'max'],
                 'Test_F1_Macro': ['mean', 'std', 'min', 'max'],
-                'Fit_Time': ['mean']
-            }).reset_index()
+            }
+            if X_indep is not None:
+                agg_spec.update({
+                    'Indep_Accuracy': ['mean', 'std', 'min', 'max'],
+                    'Indep_F1_Score': ['mean', 'std', 'min', 'max'],
+                    'Indep_F1_Macro': ['mean', 'std', 'min', 'max'],
+                })
+            agg_spec['Fit_Time'] = ['mean']
+            summary_df = results_df.groupby(['Classifier', 'Feature_Method']).agg(agg_spec).reset_index()
         
         # Calculate 95% confidence intervals
         n_samples = data_training_args.classif_eval_cv_splits * data_training_args.random_states  # random states * 5 folds
@@ -1207,6 +1300,10 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
         summary_df['Test_F1_Macro_CI'] = z_score * (summary_df[('Test_F1_Macro', 'std')] / np.sqrt(n_samples))
         if 'emotion' in target:
             summary_df['Test_Unweighted_Accuracy_CI'] = z_score * (summary_df[('Test_Unweighted_Accuracy', 'std')] / np.sqrt(n_samples))
+        if X_indep is not None and 'emotion' not in target:
+            summary_df['Indep_Accuracy_CI'] = z_score * (summary_df[('Indep_Accuracy', 'std')] / np.sqrt(n_samples))
+            summary_df['Indep_F1_Score_CI'] = z_score * (summary_df[('Indep_F1_Score', 'std')] / np.sqrt(n_samples))
+            summary_df['Indep_F1_Macro_CI'] = z_score * (summary_df[('Indep_F1_Macro', 'std')] / np.sqrt(n_samples))
         # Flatten column names
         summary_df.columns = ['_'.join(col).strip('_') for col in summary_df.columns.values]
         
@@ -1264,6 +1361,13 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                 f"supervised_cv_{target}_{latent_type}_best_f1_macro": best_f1_macro,
                 f"supervised_cv_{target}_{latent_type}_best_f1_macro_ci": best_f1_macro_ci
             })
+            if X_indep is not None and 'emotion' not in target:
+                wandb.log({
+                    f"supervised_cv_{target}_{latent_type}_best_indep_accuracy": best_result['Indep_Accuracy_mean'],
+                    f"supervised_cv_{target}_{latent_type}_best_indep_accuracy_ci": best_result['Indep_Accuracy_CI'],
+                    f"supervised_cv_{target}_{latent_type}_best_indep_f1_macro": best_result['Indep_F1_Macro_mean'],
+                    f"supervised_cv_{target}_{latent_type}_best_indep_f1_macro_ci": best_result['Indep_F1_Macro_CI']
+                })
             if 'emotion' in target:
                 wandb.log({
                     f"supervised_cv_{target}_{latent_type}_best_unweighted_accuracy": best_unweighted_accuracy,

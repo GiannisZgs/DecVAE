@@ -85,7 +85,7 @@ def extract_fft_psd(batch, normalize=True, to_db = True, device=None, n_fft = No
 
             # Process each frame
             for b in range(batch_size):
-                for c in range(num_components):
+                for c in range(batch["input_seq_values"].shape[1]):
                     for f in range(frames_per_seq):
                         # Get signal for this frame
                         signal_data = batch["input_seq_values"][b, c, f].cpu().numpy()
@@ -127,7 +127,7 @@ def extract_fft_psd(batch, normalize=True, to_db = True, device=None, n_fft = No
             n_fft = 2* batch["input_seq_values"].shape[-1] - 1
 
             for b in range(batch_size):
-                for c in range(num_components):
+                for c in range(batch["input_seq_values"].shape[1]):
                     signal_data = batch["input_seq_values"][b, c].cpu().numpy()
                     
                     # Welch's method implementation (same as above)

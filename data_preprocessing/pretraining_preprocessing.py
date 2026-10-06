@@ -151,6 +151,43 @@ def prepare_pretraining_dataset(batch, feature_extractor, data_training_args, de
         batch["vowel_labels"] = np.array((vowels_interp))
         batch["speaker_vt_factor"] = batch["speaker_vocal_tract_factor"]
         batch['overlap_mask'] = np.array(overlap_mask)
+
+    elif data_training_args.dataset_name == "sim_coupled":
+        "Same frame assignment as sim_vowels (correct for RFS/stride = 5/4); a frame overlaps if either factor changes"
+        lag_list = batch["lag"]
+        gain_list = batch["gain"]
+        num_segments = len(lag_list)
+        segment_sample_len = int(len(sample["array"]) / num_segments)
+        stop_segments = [i*segment_sample_len + segment_sample_len for i in range(num_segments)]
+        lag_interp = []
+        gain_interp = []
+        overlap_mask = []
+        c = 0
+        for i in range(mask_indices_seq_length):
+            frame_stop = stop_indices[i]
+            if frame_stop-frame_len/2 <= stop_segments[c]:
+                lag_interp.append(lag_list[c])
+                gain_interp.append(gain_list[c])
+            else:
+                c+=1
+                if c == num_segments:
+                    "End of utterance"
+                    lag_interp.append(lag_list[c-1])
+                    gain_interp.append(gain_list[c-1])
+                    overlap_mask.append(False)
+                    break
+                else:
+                    lag_interp.append(lag_list[c])
+                    gain_interp.append(gain_list[c])
+            if frame_stop >= stop_segments[c] and c + 1 < num_segments:
+                overlap_mask.append(bool(lag_list[c] != lag_list[c+1] or gain_list[c] != gain_list[c+1]))
+            else:
+                overlap_mask.append(False)
+
+        batch["lag_labels"] = np.array(lag_interp)
+        batch["gain_labels"] = np.array(gain_interp)
+        batch['overlap_mask'] = np.array(overlap_mask)
+    
     
     elif data_training_args.dataset_name == "VOC_ALS":
         "A single audio file has the same labels"
@@ -186,7 +223,7 @@ def prepare_pretraining_dataset(batch, feature_extractor, data_training_args, de
         if batch['disease_duration'] is None:
             batch['disease_duration'] = -1   
         if batch['king_stage'] is None:
-            batch['king_stage'] = -1         
+            batch['king_stage'] = -1.0
         if batch['alsfrs_speech'] == '-':
             batch['alsfrs_speech'] = -1 
         
@@ -300,7 +337,7 @@ def prepare_pretraining_dataset(batch, feature_extractor, data_training_args, de
             attention_mask=attention_mask,
             remove_silence = decomp_args.remove_silence
         )
-    elif data_training_args.dataset_name in ["sim_vowels"]:
+    elif data_training_args.dataset_name in ["sim_vowels", "sim_coupled"]:
         decomposition_outcome = decomp_module(
             np.expand_dims(inputs.input_values[0],axis=0),
             mask_time_indices=all_ones_mask,
@@ -466,6 +503,42 @@ def prepare_extract_features_pretraining_dataset(batch, feature_extractor, data_
         batch["vowel_labels"] = np.array((vowels_interp))
         batch["speaker_vt_factor"] = batch["speaker_vocal_tract_factor"]
         batch['overlap_mask'] = np.array(overlap_mask)
+
+    elif data_training_args.dataset_name == "sim_coupled":
+        "Same frame assignment as sim_vowels (correct for RFS/stride = 5/4); a frame overlaps if either factor changes"
+        lag_list = batch["lag"]
+        gain_list = batch["gain"]
+        num_segments = len(lag_list)
+        segment_sample_len = int(len(sample["array"]) / num_segments)
+        stop_segments = [i*segment_sample_len + segment_sample_len for i in range(num_segments)]
+        lag_interp = []
+        gain_interp = []
+        overlap_mask = []
+        c = 0
+        for i in range(mask_indices_seq_length):
+            frame_stop = stop_indices[i]
+            if frame_stop-frame_len/2 <= stop_segments[c]:
+                lag_interp.append(lag_list[c])
+                gain_interp.append(gain_list[c])
+            else:
+                c+=1
+                if c == num_segments:
+                    "End of utterance"
+                    lag_interp.append(lag_list[c-1])
+                    gain_interp.append(gain_list[c-1])
+                    overlap_mask.append(False)
+                    break
+                else:
+                    lag_interp.append(lag_list[c])
+                    gain_interp.append(gain_list[c])
+            if frame_stop >= stop_segments[c] and c + 1 < num_segments:
+                overlap_mask.append(bool(lag_list[c] != lag_list[c+1] or gain_list[c] != gain_list[c+1]))
+            else:
+                overlap_mask.append(False)
+
+        batch["lag_labels"] = np.array(lag_interp)
+        batch["gain_labels"] = np.array(gain_interp)
+        batch['overlap_mask'] = np.array(overlap_mask)
     
     elif data_training_args.dataset_name == "VOC_ALS":
         "A single audio file has the same labels"
@@ -501,7 +574,7 @@ def prepare_extract_features_pretraining_dataset(batch, feature_extractor, data_
         if batch['disease_duration'] is None:
             batch['disease_duration'] = -1   
         if batch['king_stage'] is None:
-            batch['king_stage'] = -1         
+            batch['king_stage'] = -1.0
         if batch['alsfrs_speech'] == '-':
             batch['alsfrs_speech'] = -1 
         
@@ -615,7 +688,7 @@ def prepare_extract_features_pretraining_dataset(batch, feature_extractor, data_
             attention_mask=attention_mask,
             remove_silence = decomp_args.remove_silence
         )
-    elif data_training_args.dataset_name in ["sim_vowels"]:
+    elif data_training_args.dataset_name in ["sim_vowels", "sim_coupled"]:
         decomposition_outcome = decomp_module(
             np.expand_dims(inputs.input_values[0],axis=0),
             mask_time_indices=all_ones_mask,
@@ -643,10 +716,10 @@ def prepare_extract_features_pretraining_dataset(batch, feature_extractor, data_
         frame_len = batch["input_values"].shape[-1]
         if batch.get("input_seq_values") is not None:
             frames = batch["input_seq_values"].shape[-1]/frame_len
-            new_input_seq_values = torch.zeros((batch_size,batch["input_values"].shape[1],int(frames),frame_len),device = batch["input_seq_values"].device)
+            new_input_seq_values = torch.zeros((batch_size,batch["input_seq_values"].shape[1],int(frames),frame_len),device = batch["input_seq_values"].device)
         
             # Split sequence into frames 
-            for o in range(batch["input_values"].shape[1]):
+            for o in range(batch["input_seq_values"].shape[1]):
                 sequence = batch["input_seq_values"][:,o,:].clone()
                 for f in range(int(frames)):
                     framed_sequence = sequence[:,f*frame_len:(f+1)*frame_len]
@@ -673,7 +746,8 @@ def prepare_extract_features_pretraining_dataset(batch, feature_extractor, data_
                 )
             mel_spec_max.append(float(spec_max))
 
-            if batch.get("input_seq_values") is not None:
+        if batch.get("input_seq_values") is not None:
+            for o in range(batch["input_seq_values"].shape[1]):
                 batch["input_seq_values"][:,o,...], seq_spec_max = extract_mel_spectrogram(
                     batch["input_seq_values"][:,o,...],
                     config.fs,

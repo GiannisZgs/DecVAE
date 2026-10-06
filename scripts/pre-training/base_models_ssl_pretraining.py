@@ -29,7 +29,7 @@ from data_collation import DataCollatorForDecVAEPretraining, DataCollatorForDecV
 from config_files import DecVAEConfig
 from data_preprocessing import prepare_pretraining_dataset, prepare_extract_features_pretraining_dataset
 from args_configs import ModelArguments, DataTrainingArguments, DecompositionArguments, TrainingObjectiveArguments
-from dataset_loading import load_timit, load_sim_vowels, load_iemocap, load_voc_als
+from dataset_loading import load_timit, load_sim_vowels, load_sim_coupled, load_iemocap, load_voc_als
 from utils import (
     parse_args, 
     debugger_is_active,
@@ -67,19 +67,24 @@ import time
 #os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 #os.environ["TORCH_USE_CUDA_DSA"] = "1"
 
-JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/timit/pre-training/config_pretraining_timit_NoC4.json" #for debugging purposes only
+JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/sim_coupled/pre-training/config_pretraining_sim_coupled_NoC3.json" #for debugging purposes only
 #JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/sim_vowels/pre-training/config_pretraining_sim_vowels_NoC3.json" #for debugging purposes only
+#JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/sim_coupled/pre-training/config_pretraining_sim_coupled_NoC3.json" #for debugging purposes only
 
 logger = get_logger(__name__)
 
 "Hardcoded intervention: keep only this fraction of every TIMIT split. Set to None for the full dataset"
 TIMIT_SUBSET_FRACTION = None
+"Hardcoded intervention: keep only this fraction of every VOC-ALS split. Set to None for the full dataset"
+VOC_ALS_SUBSET_FRACTION = 0.05
+"Hardcoded intervention: keep only this fraction of every SimCoupled split (incl. indep). Set to None for the full dataset"
+SIM_COUPLED_SUBSET_FRACTION = 0.05
 
 
 def redirect_subset_outputs(data_training_args, fraction):
     "Point the cache files and output_dir of a subset run away from the full-dataset ones"
     suffix = f"_subset{fraction * 100:g}pct"
-    for attr in ("train_cache_file_name", "validation_cache_file_name", "test_cache_file_name", "dev_cache_file_name"):
+    for attr in ("train_cache_file_name", "validation_cache_file_name", "test_cache_file_name", "dev_cache_file_name", "indep_cache_file_name"):
         path = getattr(data_training_args, attr, None)
         if path is not None:
             stem = path[:-len(".arrow")] if path.endswith(".arrow") else path
@@ -113,7 +118,19 @@ def main():
         "A subset run must neither load nor overwrite the full-dataset cache and checkpoints"
         redirect_subset_outputs(data_training_args, TIMIT_SUBSET_FRACTION)
         print(f"TIMIT subset of {TIMIT_SUBSET_FRACTION:.2%}: cache and output_dir redirected to {data_training_args.output_dir}")
-    
+
+    use_voc_als_subset = "VOC_ALS" in data_training_args.dataset_name and VOC_ALS_SUBSET_FRACTION is not None
+    if use_voc_als_subset:
+        "A subset run must neither load nor overwrite the full-dataset cache and checkpoints"
+        redirect_subset_outputs(data_training_args, VOC_ALS_SUBSET_FRACTION)
+        print(f"VOC-ALS subset of {VOC_ALS_SUBSET_FRACTION:.2%}: cache and output_dir redirected to {data_training_args.output_dir}")
+
+    use_sim_coupled_subset = "sim_coupled" in data_training_args.dataset_name and SIM_COUPLED_SUBSET_FRACTION is not None
+    if use_sim_coupled_subset:
+        "A subset run must neither load nor overwrite the full-dataset cache and checkpoints"
+        redirect_subset_outputs(data_training_args, SIM_COUPLED_SUBSET_FRACTION)
+        print(f"SimCoupled subset of {SIM_COUPLED_SUBSET_FRACTION:.2%}: cache and output_dir redirected to {data_training_args.output_dir}")
+
     "Initialize the accelerator. Accelerator handles device placement for us"
     kwargs = DDPK(find_unused_parameters=True)
     accelerator = Accelerator(kwargs_handlers=[kwargs])
@@ -185,6 +202,10 @@ def main():
                 vectorized_datasets["dev"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["dev"]])
             except KeyError:
                 pass
+            try:
+                vectorized_datasets["indep"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["indep"]])
+            except KeyError:
+                pass
             if min_length > 0.0:
                 vectorized_datasets = vectorized_datasets.filter(
                     lambda x: x > min_length,
@@ -205,10 +226,21 @@ def main():
 
         elif "sim_vowels" in data_training_args.dataset_name:
             raw_datasets = load_sim_vowels(data_training_args)
-        
+
+        elif "sim_coupled" in data_training_args.dataset_name:
+            raw_datasets = load_sim_coupled(data_training_args)
+            if use_sim_coupled_subset:
+                raw_datasets = subset_raw_datasets(raw_datasets, SIM_COUPLED_SUBSET_FRACTION,
+                                                   seed=data_training_args.seed if data_training_args.seed is not None else 0)
+                print("SimCoupled subset sizes:", {split: raw_datasets[split].num_rows for split in raw_datasets})
+
         elif "VOC_ALS" in data_training_args.dataset_name:
             raw_datasets = load_voc_als(data_training_args)
-        
+            if use_voc_als_subset:
+                raw_datasets = subset_raw_datasets(raw_datasets, VOC_ALS_SUBSET_FRACTION,
+                                                   seed=data_training_args.seed if data_training_args.seed is not None else 0)
+                print("VOC-ALS subset sizes:", {split: raw_datasets[split].num_rows for split in raw_datasets})
+
         elif "iemocap" in data_training_args.dataset_name:
             raw_datasets = load_iemocap(data_training_args)
 
@@ -427,7 +459,11 @@ def main():
                     batch.pop("vowel_labels")
                 if hasattr(batch,"speaker_vt_factor"):
                     batch.pop("speaker_vt_factor")
-            
+            elif data_training_args.dataset_name == "sim_coupled":
+                batch["mask_time_indices"] = torch.ones((batch_size, mask_indices_seq_length), dtype=torch.bool, device=batch["mask_time_indices"].device)
+                batch.pop("lag_labels", None)
+                batch.pop("gain_labels", None)
+
             num_losses_orig = batch["mask_time_indices"].sum()
             sub_attention_mask = batch.pop("sub_attention_mask", None)
             sub_attention_mask = (
@@ -761,6 +797,10 @@ def main():
                             batch.pop("vowel_labels")
                         if hasattr(batch,"speaker_vt_factor"):
                             batch.pop("speaker_vt_factor")
+                    elif data_training_args.dataset_name == "sim_coupled":
+                        batch["mask_time_indices"] = torch.ones_like(batch["mask_time_indices"])
+                        batch.pop("lag_labels", None)
+                        batch.pop("gain_labels", None)
                     elif data_training_args.dataset_name == "timit":
                         batch["mask_time_indices"] = batch["sub_attention_mask"].clone()
                         if data_training_args.dataset_name == "timit":

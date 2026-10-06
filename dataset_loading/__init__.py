@@ -16,6 +16,7 @@
 
 from .timit import load_timit, load_traversal_subset_timit 
 from .sim_vowels import load_sim_vowels
+from .sim_coupled import load_sim_coupled
 from .iemocap import load_iemocap, load_iemocap_speaker_dependent, load_traversal_subset_iemocap
 from .VOC_ALS import load_voc_als, load_traversal_subset_voc_als
 
@@ -23,6 +24,7 @@ __all__ = [
     "load_timit",
     "load_traversal_subset_timit",
     "load_sim_vowels",
+    "load_sim_coupled",
     "load_iemocap",
     "load_iemocap_speaker_dependent",
     "load_traversal_subset_iemocap",
