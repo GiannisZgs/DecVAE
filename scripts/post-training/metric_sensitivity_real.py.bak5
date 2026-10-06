@@ -1,0 +1,589 @@
+#!/usr/bin/env python
+# coding=utf-8
+# Copyright 2025 Ioannis Ziogas <ziogioan@ieee.org>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Sensitivity of the disentanglement metrics and of the model rankings on the SimVowels eval dumps.
+
+Each condition (cyclic-shift null, factor imbalance, correlated factors, label noise, partial
+observability, dimensionality) is applied on its own to the saved latents of every model listed in
+the models file, and scored with compute_metric_suite. Width effects are measured with the chance
+level of Gaussian noise latents at several d, and with random subsets of a model's own dimensions.
+
+python scripts/post-training/metric_sensitivity_real.py --config_file config_files/sensitivity/config_metric_sensitivity_real.json
+Config keys: see DEFAULT_ARGS. The models file is a list of {"name", "dump", "in_ranking", "conditions", "label"};
+"conditions" is optional, defaults to STANDARD_CONDITIONS, and "dim_subset" runs only when listed.
+"label" is optional: the name shown in the figures, while "name" keys the results.
+"color" and "marker" are optional: a model's style in the figures, otherwise set by its position in the file.
+"""
+
+import json
+import logging
+import os
+import sys
+import types
+import zlib
+import numpy as np
+import pandas as pd
+from scipy.optimize import brentq
+from scipy.stats.contingency import association
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+from disentanglement_utils.metric_suite import compute_metric_suite, load_dump, args_from_sidecar
+from latent_analysis_utils.ranking_utils import METRICS, rank_methods, kendall_tau_rankings
+from utils import parse_args, debugger_is_active
+
+JSON_FILE_NAME_MANUAL = "config_files/sensitivity/config_metric_sensitivity_real.json" #for debugging purposes only
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_ARGS = {
+    "models_file": "config_files/sensitivity/models.json",
+    "output_dir": None,
+    "n_sub": 20000,
+    "n_null": 5,
+    "seed": 0,
+    "dci_random_state": 0,
+    "gcn_key": "gaussian_total_correlation",
+    "n_jobs": 1,
+    "conditions": None,  # subset of condition names to run, None runs all
+    "null_zero_check": False,
+    "subset_dims": [48, 96, 192, 320],  # k of the dim_subset condition, kept where k < d
+    "n_subset_draws": 5,
+    "chance_dims": [20, 48, 96, 192, 320, 768],
+    "n_chance_draws": 3,
+    "chance_include_model_dims": True,  # also score the chance level at every model's own d
+    "chance_reference_model": None,  # model whose ref_sub frames and labels the chance runs use, None is the first
+    "outputs_only": False,  # rebuild the tables and figures from real_results.csv alone, without loading any dump
+}
+
+SUPERVISED = ["DCI-D", "DCI-C", "DCI-I", "Modularity", "Explicitness", "IRS"]
+UNSUPERVISED = ["MI", "GCN"]
+RAW_KEYS = {
+    "MI": "mutual_info_score", "DCI-D": "disentanglement", "DCI-C": "completeness",
+    "DCI-I": "informativeness_test", "Modularity": "modularity_score",
+    "Explicitness": "explicitness_score_test", "IRS": "IRS",
+}
+GCN_KEYS = ["gaussian_total_correlation", "gaussian_total_correlation_norm"]
+
+CONDITIONS = [  # condition, level, parameter, where MI and GCN come from
+    ("ref_full", "", None, "self"),
+    ("null", "", None, "ref_full"),
+    ("ref_sub", "", None, "self"),
+    ("imbalance", "Zipf a = 1", 1.0, "ref_sub"),
+    ("imbalance", "Zipf a = 2", 2.0, "ref_sub"),
+    ("correlated", "V = 0.3", 0.3, "ref_sub"),
+    ("correlated", "V = 0.6", 0.6, "ref_sub"),
+    ("label_noise", "10%", 0.1, "ref_sub"),
+    ("label_noise", "30%", 0.3, "ref_sub"),
+    ("partial", "5 speaker groups", 5, "ref_sub"),
+    ("dimensionality", "+d noise dims", None, "self"),
+]
+COLUMNS = ["model", "condition", "level", "seed", "n_frames", "latent_dim", "MI", "GCN"] + GCN_KEYS + SUPERVISED + [
+    "mi_gcn_from", "cramers_v_achieved", "replacement", "shift", "zipf_a", "target_v", "lambda", "flip_rate",
+    "speaker_groups", "noise_sd", "subset_dims", "frames_from"]
+STANDARD_CONDITIONS = list(dict.fromkeys(c for c, _, _, _ in CONDITIONS))
+CHANCE_MODEL = "Gaussian noise"
+TRAJECTORY_ORDER = [(c, l) for c, l, _, _ in CONDITIONS if c != "null"]
+
+RANKED_METRICS = {k: v for k, v in METRICS.items() if k in UNSUPERVISED + SUPERVISED}
+
+PALETTE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948",
+           "#8c564b", "#0aa3c2", "#8c8c00", "#1f2a6b"]
+MARKERS = ["o", "s", "^", "D", "v", "P", "X", "*", "p", "h", "<", ">"]
+
+
+def load_config(path):
+    with open(path) as f:
+        cfg = json.load(f)
+    cfg = {k: v for k, v in cfg.items() if not k.startswith("comment")}
+    unknown = set(cfg) - set(DEFAULT_ARGS)
+    if unknown:
+        raise ValueError(f"Unknown keys in {path}: {sorted(unknown)}")
+    args = types.SimpleNamespace(**{**DEFAULT_ARGS, **cfg})
+    if args.output_dir is None:
+        raise ValueError(f"output_dir must be set in {path}")
+    return args
+
+
+def condition_label(condition, level):
+    return f"{condition} {level}".strip()
+
+
+def cell_index(ys):
+    "Vowel and speaker classes, and each frame's (vowel, speaker) cell"
+    vowels, v = np.unique(ys[0], return_inverse=True)
+    speakers, s = np.unique(ys[1], return_inverse=True)
+    return vowels, speakers, v, s
+
+
+def allocate(n, weights):
+    "Largest-remainder integer allocation of n over the weights"
+    exact = n * weights / weights.sum()
+    counts = np.floor(exact).astype(int)
+    counts[np.argsort(-(exact - counts))[: n - counts.sum()]] += 1
+    return counts
+
+
+def cell_counts(ys):
+    vowels, speakers, v, s = cell_index(ys)
+    return np.bincount(v * len(speakers) + s, minlength=len(vowels) * len(speakers)).reshape(len(vowels), -1).astype(float)
+
+
+def weighted_sample(ys, weights, n_sub, rng):
+    """Sample n_sub frames whose (vowel, speaker) cells follow weights.
+
+    Args:
+        weights: (n_vowels, n_speakers) target cell weights; cells without frames are dropped.
+    Returns:
+        Sorted original frame indices, and whether any cell needed sampling with replacement.
+    """
+    vowels, speakers, v, s = cell_index(ys)
+    cells = v * len(speakers) + s
+    present = np.bincount(cells, minlength=weights.size) > 0
+    w = weights.ravel() * present
+    counts = allocate(n_sub, w)
+    order = np.argsort(cells, kind="stable")
+    bounds = np.searchsorted(cells[order], np.arange(weights.size + 1))
+    chosen, replaced = [], False
+    for c in np.flatnonzero(counts):
+        members = order[bounds[c]:bounds[c + 1]]
+        replace = counts[c] > len(members)
+        replaced |= replace
+        chosen.append(rng.choice(members, size=counts[c], replace=replace))
+    return np.sort(np.concatenate(chosen)), bool(replaced)
+
+
+def cramers_v_pmf(p):
+    p = p[p.sum(axis=1) > 0][:, p.sum(axis=0) > 0]
+    p = p / p.sum()
+    phi2 = np.sum(p ** 2 / np.outer(p.sum(axis=1), p.sum(axis=0))) - 1
+    return np.sqrt(max(phi2, 0.0) / (min(p.shape) - 1))
+
+
+def speaker_vt_rank(speakers, sidecar):
+    "Rank of each speaker class in vocal-tract order, from the sidecar speaker_vt"
+    vt = np.array([sidecar["speaker_vt"][str(int(s))] for s in speakers])
+    return np.argsort(np.argsort(vt, kind="stable"), kind="stable")
+
+
+def flip_labels(y, p, rng):
+    "Flip a fraction p of the labels, each to a different class chosen at random"
+    classes, pos = np.unique(y, return_inverse=True)
+    flip = rng.random(len(y)) < p
+    new = pos.copy()
+    new[flip] = (pos[flip] + rng.integers(1, len(classes), size=flip.sum())) % len(classes)
+    return classes[new]
+
+
+def make_run(condition, param, draw, mus, ys, sidecar, ref_sub_idx, args):
+    """
+    Returns:
+        mus (d', n), ys (2, n), original frame indices, info dict.
+    """
+    n_frames = ys.shape[1]
+    rng = np.random.default_rng([args.seed, draw, zlib.crc32(condition.encode()), int(round((param or 0) * 100))])
+    info = {"replacement": False}
+
+    if condition == "ref_full":
+        return mus, ys, np.arange(n_frames), info
+    if condition in ("null", "null_shift0"):
+        shift = 0 if condition == "null_shift0" else int(null_shifts(n_frames, args)[draw])
+        info["shift"] = shift
+        return mus, np.roll(ys, shift, axis=1), np.arange(n_frames), info
+    if condition == "ref_sub":
+        return mus[:, ref_sub_idx], ys[:, ref_sub_idx], ref_sub_idx, info
+
+    vowels, speakers, _, _ = cell_index(ys)
+    if condition == "imbalance":
+        order_rng = np.random.default_rng(args.seed)
+        w_v = (order_rng.permutation(len(vowels)) + 1.0) ** -param
+        w_s = (order_rng.permutation(len(speakers)) + 1.0) ** -param
+        idx, info["replacement"] = weighted_sample(ys, np.outer(w_v, w_s), args.n_sub, rng)
+        info["zipf_a"] = param
+        return mus[:, idx], ys[:, idx], idx, info
+    if condition == "correlated":
+        pref = speaker_vt_rank(speakers, sidecar) % len(vowels)
+        match = (np.arange(len(vowels))[:, None] == pref[None, :]).astype(float)
+
+        def weights(lam):
+            return ((1 - lam) / len(vowels) + lam * match) / len(speakers)
+
+        lam = brentq(lambda l: cramers_v_pmf(weights(l)) - param, 0.0, 1.0)
+        idx, info["replacement"] = weighted_sample(ys, weights(lam), args.n_sub, rng)
+        info.update({"target_v": param, "lambda": lam})
+        return mus[:, idx], ys[:, idx], idx, info
+
+    idx = ref_sub_idx
+    sub_mus, sub_ys = mus[:, idx], ys[:, idx].copy()
+    if condition == "label_noise":
+        sub_ys[0] = flip_labels(sub_ys[0], param, np.random.default_rng([args.seed, 1, int(param * 100)]))
+        sub_ys[1] = flip_labels(sub_ys[1], param, np.random.default_rng([args.seed, 2, int(param * 100)]))
+        info["flip_rate"] = param
+        return sub_mus, sub_ys, idx, info
+    if condition == "partial":
+        _, speakers_sub, _, s = cell_index(sub_ys)
+        group = speaker_vt_rank(speakers_sub, sidecar) * param // len(speakers_sub)
+        sub_ys[1] = group[s]
+        info["speaker_groups"] = param
+        return sub_mus, sub_ys, idx, info
+    if condition == "dimensionality":
+        sd = float(np.median(sub_mus.std(axis=1)))
+        noise = rng.normal(0.0, sd, size=sub_mus.shape).astype(sub_mus.dtype)
+        info["noise_sd"] = sd
+        return np.concatenate([sub_mus, noise], axis=0), sub_ys, idx, info
+    if condition == "dim_subset":
+        dims = np.sort(rng.choice(sub_mus.shape[0], size=param, replace=False))
+        info["subset_dims"] = param
+        return sub_mus[dims], sub_ys, idx, info
+    raise ValueError(f"Unknown condition {condition}")
+
+
+def null_shifts(n_frames, args):
+    return np.random.default_rng([args.seed, 99]).integers(n_frames // 4, 3 * n_frames // 4 + 1, size=args.n_null)
+
+
+def score(mus, ys, n_train, sidecar, args, unsupervised):
+    res = compute_metric_suite(mus, ys, n_train, sidecar["targets"], args_from_sidecar(sidecar, args.n_jobs),
+                               random_state=args.dci_random_state, unsupervised=unsupervised)
+    row = {col: float(res[key]) for col, key in RAW_KEYS.items() if key in res}
+    for key in GCN_KEYS:
+        if key in res:
+            row[key] = float(res[key])
+    return row
+
+
+def append_row(row, key, args, csv_path, done):
+    row["GCN"] = row[args.gcn_key]
+    done[key] = row
+    logger.info(f"{row['model']} | {condition_label(row['condition'], row['level'])} {row['seed']}: "
+                + ", ".join(f"{m} {row[m]:.3f}" for m in SUPERVISED))
+    pd.DataFrame([row]).reindex(columns=COLUMNS).to_csv(csv_path, mode="a", header=not os.path.exists(csv_path), index=False)
+
+
+def run_model(model, args, csv_path, done):
+    """
+    Returns:
+        ys, ref_sub_idx and sidecar of the model's dump, for the chance runs.
+    """
+    mus, ys, n_train, sidecar = load_dump(model["dump"])
+    if sidecar.get("eval_shuffle", True):
+        raise ValueError(f"{model['name']}: the dump is not in utterance-contiguous order (eval_shuffle), "
+                         "the cyclic-shift null is not valid")
+    if not sidecar.get("speaker_vt"):
+        raise ValueError(f"{model['name']}: the sidecar has no speaker_vt map")
+    ref_sub_idx, ref_sub_replaced = weighted_sample(ys, cell_counts(ys), min(args.n_sub, ys.shape[1]),
+                                                    np.random.default_rng([args.seed, 7]))
+
+    allowed = [c for c in model.get("conditions", STANDARD_CONDITIONS) if not args.conditions or c in args.conditions]
+    runs = []
+    for condition, level, param, unsup_from in CONDITIONS:
+        if condition not in allowed:
+            continue
+        draws = range(args.n_null) if condition == "null" else [0]
+        runs += [(condition, level, param, unsup_from, d) for d in draws]
+    if "dim_subset" in allowed:
+        for k in args.subset_dims:
+            if k < mus.shape[0]:
+                runs += [("dim_subset", f"k = {k}", k, "self", d) for d in range(args.n_subset_draws)]
+    null_zero_check = args.null_zero_check and "ref_full" in allowed
+    if null_zero_check:
+        runs.insert(1, ("null_shift0", "", None, "self", 0))
+
+    carried = {}
+    for condition, level, param, unsup_from, draw in runs:
+        key = (model["name"], condition, level, draw)
+        if key in done:
+            carried[condition] = done[key]
+            continue
+        run_mus, run_ys, idx, info = make_run(condition, param, draw, mus, ys, sidecar, ref_sub_idx, args)
+        own_unsup = unsup_from == "self"
+        row = score(run_mus, run_ys, int(np.sum(idx < n_train)), sidecar, args, own_unsup)
+        if not own_unsup:
+            if unsup_from not in carried:
+                raise ValueError(f"{model['name']}: {condition} carries MI and GCN from {unsup_from}, which was not run")
+            for col in ["MI"] + GCN_KEYS:
+                row[col] = carried[unsup_from][col]
+        if condition == "ref_sub":
+            info["replacement"] = ref_sub_replaced
+        row.update({
+            "model": model["name"], "condition": condition, "level": level, "seed": draw,
+            "n_frames": run_ys.shape[1], "latent_dim": run_mus.shape[0],
+            "cramers_v_achieved": float(association(pd.crosstab(run_ys[0], run_ys[1]).to_numpy(), method="cramer")),
+            "mi_gcn_from": unsup_from, **info,
+        })
+        carried[condition] = row
+        append_row(row, key, args, csv_path, done)
+
+    if null_zero_check:
+        a, b = carried["null_shift0"], carried["ref_full"]
+        diff = {m: a[m] - b[m] for m in SUPERVISED + ["MI"] + GCN_KEYS if a[m] != b[m]}
+        if diff:
+            raise AssertionError(f"{model['name']}: null with shift 0 differs from ref_full: {diff}")
+        logger.info(f"{model['name']}: null with shift 0 equals ref_full exactly")
+    return ys, ref_sub_idx, sidecar
+
+
+def run_chance(ys, ref_sub_idx, sidecar, frames_from, dims, args, csv_path, done):
+    "Gaussian noise latents of each width d, scored on the ref_sub frames and labels of frames_from"
+    sub_ys = ys[:, ref_sub_idx]
+    n_train = int(np.sum(ref_sub_idx < sidecar["n_train"]))
+    cramers_v = float(association(pd.crosstab(sub_ys[0], sub_ys[1]).to_numpy(), method="cramer"))
+    for d in dims:
+        for draw in range(args.n_chance_draws):
+            key = (CHANCE_MODEL, "chance", f"d = {d}", draw)
+            if key in done:
+                continue
+            rng = np.random.default_rng([args.seed, draw, zlib.crc32(b"chance"), d])
+            mus = rng.standard_normal((d, sub_ys.shape[1]), dtype=np.float32)
+            row = score(mus, sub_ys, n_train, sidecar, args, True)
+            row.update({"model": CHANCE_MODEL, "condition": "chance", "level": f"d = {d}", "seed": draw,
+                        "n_frames": sub_ys.shape[1], "latent_dim": d, "cramers_v_achieved": cramers_v,
+                        "mi_gcn_from": "self", "replacement": False, "frames_from": frames_from})
+            append_row(row, key, args, csv_path, done)
+
+
+def null_summary(results):
+    rows = []
+    for model, g in results.groupby("model", sort=False):
+        null = g[g["condition"] == "null"]
+        ref = g[g["condition"] == "ref_full"]
+        if null.empty or ref.empty:
+            continue
+        for m in SUPERVISED:
+            mean, sd, value = null[m].mean(), null[m].std(ddof=1), ref[m].iloc[0]
+            rows.append({"model": model, "latent_dim": int(ref["latent_dim"].iloc[0]), "metric": m,
+                         "ref_full": value, "null_mean": mean, "null_sd": sd,
+                         "n_null": len(null), "calibrated": (value - mean) / (1 - mean)})
+    return pd.DataFrame(rows)
+
+
+def metric_deltas(results):
+    rows = []
+    for model, g in results.groupby("model", sort=False):
+        ref = g[g["condition"] == "ref_sub"]
+        if ref.empty:
+            continue
+        ref = ref.iloc[0]
+        for _, r in g[~g["condition"].isin(["ref_full", "null", "null_shift0", "ref_sub"])].iterrows():
+            rows.append({"model": model, "condition": r["condition"], "level": r["level"],
+                         **{m: r[m] - ref[m] for m in UNSUPERVISED + SUPERVISED}})
+    return pd.DataFrame(rows)
+
+
+def chance_excess(results):
+    "Each model's ref_sub and dim_subset scores against the Gaussian noise chance level at the same d"
+    chance = results[results["condition"] == "chance"].groupby("latent_dim")[UNSUPERVISED + SUPERVISED]
+    chance_mean, chance_sd = chance.mean(), chance.std(ddof=1)
+    rows = []
+    points = results[results["condition"].isin(["ref_sub", "dim_subset"])]
+    for (model, condition, level), g in points.groupby(["model", "condition", "level"], sort=False):
+        d = int(g["latent_dim"].iloc[0])
+        if d not in chance_mean.index:
+            continue
+        for m in UNSUPERVISED + SUPERVISED:
+            value, c = g[m].mean(), chance_mean.loc[d, m]
+            rows.append({"model": model, "condition": condition, "level": level, "latent_dim": d,
+                         "n_draws": len(g), "metric": m, "value": value,
+                         "value_sd": g[m].std(ddof=1) if len(g) > 1 else np.nan,
+                         "chance_mean": c, "chance_sd": chance_sd.loc[d, m], "excess": value - c,
+                         "calibrated": (value - c) / (1 - c) if m in SUPERVISED else np.nan})
+    return pd.DataFrame(rows)
+
+
+def model_styles(models):
+    "One color and marker per model, fixed by its position in the models file unless it sets its own"
+    if len(models) > min(len(PALETTE), len(MARKERS)) and not all("color" in m and "marker" in m for m in models[len(PALETTE):]):
+        raise ValueError(f"{len(models)} models but {min(len(PALETTE), len(MARKERS))} styles - set 'color' and "
+                         "'marker' for the extra models in the models file")
+    styles = {m["name"]: {"color": m.get("color", PALETTE[i % len(PALETTE)]), "marker": m.get("marker", MARKERS[i % len(MARKERS)])}
+              for i, m in enumerate(models)}
+    for key in ("color", "marker"):
+        values = pd.Series({name: st[key] for name, st in styles.items()})
+        shared = values[values.duplicated(keep=False)]
+        if len(shared):
+            logger.warning(f"Models sharing a {key}: {shared.to_dict()}")
+    return styles
+
+
+def plot_dimensionality(results, model_names, path, display=None, styles=None):
+    "Every metric against d: the chance level, the dim_subset curves, and each model's ref_sub score"
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    chance = results[results["condition"] == "chance"].groupby("latent_dim")[UNSUPERVISED + SUPERVISED]
+    chance_mean, chance_sd = chance.mean(), chance.std(ddof=1).fillna(0.0)
+    fig, axes = plt.subplots(2, 4, figsize=(17, 7.5), constrained_layout=True)
+    for ax, m in zip(axes.ravel(), UNSUPERVISED + SUPERVISED):
+        if not chance_mean.empty:
+            d = chance_mean.index.to_numpy()
+            ax.fill_between(d, chance_mean[m] - chance_sd[m], chance_mean[m] + chance_sd[m], color="0.85", linewidth=0)
+            ax.plot(d, chance_mean[m], color="0.45", linewidth=2, label=CHANCE_MODEL)
+        for name in model_names:
+            g = results[results["model"] == name]
+            ref = g[g["condition"] == "ref_sub"]
+            sub = g[g["condition"] == "dim_subset"].groupby("latent_dim")[m]
+            style = dict(**styles[name], markersize=8, markeredgecolor="white", markeredgewidth=0.7)
+            if len(g[g["condition"] == "dim_subset"]):
+                x = np.append(sub.mean().index.to_numpy(), ref["latent_dim"].to_numpy())
+                y = np.append(sub.mean().to_numpy(), ref[m].to_numpy())
+                err = np.append(sub.std(ddof=1).fillna(0.0).to_numpy(), np.zeros(len(ref)))
+                ax.errorbar(x, y, yerr=err, linewidth=2, capsize=2, label=(display or {}).get(name, name), **style)
+            elif len(ref):
+                ax.plot(ref["latent_dim"], ref[m], linestyle="none", label=(display or {}).get(name, name), **style)
+        ax.set_xscale("log", base=2)
+        if not chance_mean.empty:
+            ax.set_xticks(chance_mean.index, [str(int(t)) for t in chance_mean.index], fontsize=8)
+            ax.minorticks_off()
+        ax.set_title(m, fontsize=11)
+        ax.set_xlabel("Latent dimensionality d", fontsize=9)
+        ax.grid(color="0.9", linewidth=0.8)
+        for side in ("top", "right"):
+            ax.spines[side].set_visible(False)
+    handles = {}
+    for ax in axes.ravel():
+        for h, l in zip(*ax.get_legend_handles_labels()):
+            handles.setdefault(l, h)
+    fig.legend(handles.values(), handles.keys(), loc="outside lower center", ncol=min(len(handles), 5), frameon=False, fontsize=9)
+    fig.savefig(path, dpi=200)
+    fig.savefig(os.path.splitext(path)[0] + ".pdf")
+    plt.close(fig)
+
+
+def rankings(results, ranked_models, path):
+    ranked = results[results["model"].isin(ranked_models) & ~results["condition"].isin(["null", "null_shift0"])]
+    per_condition = {}
+    for condition, level in TRAJECTORY_ORDER:
+        g = ranked[(ranked["condition"] == condition) & (ranked["level"] == level)]
+        if g["model"].nunique() < 2:
+            continue
+        per_condition[(condition, level)] = rank_methods(g.set_index("model")[UNSUPERVISED + SUPERVISED], RANKED_METRICS)
+
+    aggregations = ["Flat", "4-family", "3-family"]
+    positions = {a: pd.DataFrame({condition_label(*k): r["aggregation_positions"][a] for k, r in per_condition.items()})
+                 for a in aggregations}
+    ref = per_condition.get(("ref_sub", ""))
+    taus = pd.DataFrame({a: {condition_label(*k): kendall_tau_rankings(r["aggregations"][a], ref["aggregations"][a])
+                             for k, r in per_condition.items()} for a in aggregations}) if ref else pd.DataFrame()
+
+    with pd.ExcelWriter(path, engine="openpyxl") as writer:
+        row = 0
+        for a in aggregations:
+            pd.DataFrame([[f"{a}: position (1 is best)"]]).to_excel(writer, sheet_name="Summary", startrow=row, header=False, index=False)
+            positions[a].to_excel(writer, sheet_name="Summary", startrow=row + 1)
+            row += len(positions[a]) + 4
+        pd.DataFrame([["Kendall's tau of the aggregation scores against ref_sub"]]).to_excel(
+            writer, sheet_name="Summary", startrow=row, header=False, index=False)
+        taus.to_excel(writer, sheet_name="Summary", startrow=row + 1)
+        for k, r in per_condition.items():
+            sheet = condition_label(*k).replace("%", "pct").replace("= ", "")[:31]
+            table = pd.concat([r["values"], r["metric_ranks"].add_suffix(" rank"), r["family_ranks"].add_suffix(" family rank"),
+                               r["aggregations"], r["aggregation_positions"].add_suffix(" position")], axis=1)
+            table.to_excel(writer, sheet_name=sheet)
+    return positions, taus
+
+
+def plot_trajectories(positions, path, display=None, styles=None):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    models = list(next(iter(positions.values())).index)
+    fig, axes = plt.subplots(1, len(positions), figsize=(5.2 * len(positions), 4.2), sharey=True, constrained_layout=True)
+    for ax, (name, pos) in zip(np.atleast_1d(axes), positions.items()):
+        x = np.arange(pos.shape[1])
+        for model in models:
+            ax.plot(x, pos.loc[model].to_numpy(dtype=float), **styles[model],
+                    linewidth=2, markersize=8, markeredgecolor="white", markeredgewidth=0.7, label=(display or {}).get(model, model))
+        ax.set_title(name, fontsize=11)
+        ax.set_xticks(x, pos.columns, rotation=45, ha="right", fontsize=8)
+        ax.set_yticks(range(1, len(models) + 1))
+        ax.set_ylim(len(models) + 0.5, 0.5)
+        ax.grid(axis="y", color="0.9", linewidth=0.8)
+        for side in ("top", "right"):
+            ax.spines[side].set_visible(False)
+    np.atleast_1d(axes)[0].set_ylabel("Rank position (1 is best)")
+    fig.legend(*np.atleast_1d(axes)[0].get_legend_handles_labels(), loc="outside lower center", ncol=len(models), frameon=False, fontsize=9)
+    fig.savefig(path, dpi=200)
+    fig.savefig(os.path.splitext(path)[0] + ".pdf")
+    plt.close(fig)
+
+
+def main():
+    "Parse the arguments"
+    if debugger_is_active():
+        args = load_config(JSON_FILE_NAME_MANUAL)
+    else:
+        args = load_config(parse_args().config_file)
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    with open(args.models_file, encoding="utf-8") as f:
+        models = json.load(f)
+    display = {m["name"]: m.get("label", m["name"]) for m in models}
+    styles = model_styles(models)
+    out_dir = os.path.join(args.output_dir, "metric_sensitivity")
+    os.makedirs(out_dir, exist_ok=True)
+    csv_path = os.path.join(out_dir, "real_results.csv")
+
+    done = {}
+    if os.path.exists(csv_path):
+        for r in pd.read_csv(csv_path, keep_default_na=False, na_values=[""]).to_dict("records"):
+            r["level"] = "" if pd.isna(r["level"]) else r["level"]
+            done[(r["model"], r["condition"], r["level"], int(r["seed"]))] = r
+
+    if args.outputs_only:
+        if not done:
+            raise FileNotFoundError(f"outputs_only needs the results of earlier runs in {csv_path}")
+        missing = [m["name"] for m in models if m["name"] not in {k[0] for k in done}]
+        if missing:
+            logger.warning(f"No results in {csv_path} for {missing}, so they are left out of the outputs")
+        logger.info("outputs_only: rebuilding the tables and figures from the saved results, nothing is computed")
+    else:
+        labels, reference = {}, {}
+        for model in models:
+            ys, ref_sub_idx, sidecar = run_model(model, args, csv_path, done)
+            labels[model["name"]] = ys
+            reference[model["name"]] = (ys, ref_sub_idx, sidecar)
+
+        dims = set(args.chance_dims or [])
+        if args.chance_include_model_dims:
+            dims |= {reference[m["name"]][2]["latent_dim"] for m in models}
+        if dims:
+            frames_from = args.chance_reference_model or models[0]["name"]
+            run_chance(*reference[frames_from], frames_from, sorted(dims), args, csv_path, done)
+        first = next(iter(labels.values()))
+        for name, ys in labels.items():
+            if ys.shape != first.shape or not np.array_equal(ys, first):
+                logger.warning(f"{name}: its frames or labels differ from {models[0]['name']}'s, so the "
+                               "subsamples are not the same frames across models")
+
+    results = pd.read_csv(csv_path, keep_default_na=False, na_values=[""])
+    results["level"] = results["level"].fillna("")
+    results["GCN"] = results[args.gcn_key]
+    results.reindex(columns=COLUMNS).to_csv(csv_path, index=False)
+
+    null_summary(results).to_csv(os.path.join(out_dir, "null_summary.csv"), index=False)
+    metric_deltas(results).to_csv(os.path.join(out_dir, "metric_deltas.csv"), index=False)
+    chance_excess(results).to_csv(os.path.join(out_dir, "chance_excess.csv"), index=False)
+    plot_dimensionality(results, [m["name"] for m in models], os.path.join(out_dir, "dimensionality_curves.png"), display, styles)
+    ranked_models = [m["name"] for m in models if m.get("in_ranking", True)]
+    positions, taus = rankings(results, ranked_models, os.path.join(out_dir, "rankings_by_condition.xlsx"))
+    plot_trajectories(positions, os.path.join(out_dir, "rank_trajectories.png"), display, styles)
+    logger.info(f"Kendall's tau against ref_sub:\n{taus}")
+    logger.info(f"Saved the outputs in {out_dir}")
+
+
+if __name__ == "__main__":
+    main()

@@ -24,7 +24,7 @@ import numpy as np
 import scipy
 from sklearn import ensemble
 
-def compute_dci(mus_train, ys_train, mus_test, ys_test, random_state=None):
+def compute_dci(mus_train, ys_train, mus_test, ys_test, random_state=None, mus_indep=None, ys_indep=None):
   """Computes the DCI scores on a fixed set of representations and labels.
 
   Args:
@@ -32,16 +32,22 @@ def compute_dci(mus_train, ys_train, mus_test, ys_test, random_state=None):
       shape (z_dim,num_observations).
     ys: Observed factors of variations.
     random_state: Seed of the gradient boosted trees.
+    mus_indep, ys_indep: Optional unseen set, scored by the same trees ("informativeness_indep").
 
   Returns:
     DCI score.
   Computes score based on both training and testing codes and factors."""
-  
+
   #mus needs to be same shape as labels (dim, num_samples)
   assert ys_train.shape[1] == mus_train.shape[1], "Wrong labels shape."
   scores = {}
-  importance_matrix, train_err, test_err = compute_importance_gbt(
-      mus_train, ys_train, mus_test, ys_test, random_state=random_state)
+  if mus_indep is None:
+    importance_matrix, train_err, test_err = compute_importance_gbt(
+        mus_train, ys_train, mus_test, ys_test, random_state=random_state)
+  else:
+    importance_matrix, train_err, test_err, indep_err = compute_importance_gbt(
+        mus_train, ys_train, mus_test, ys_test, random_state=random_state, x_indep=mus_indep, y_indep=ys_indep)
+    scores["informativeness_indep"] = indep_err
   assert importance_matrix.shape[0] == mus_train.shape[0]
   assert importance_matrix.shape[1] == ys_train.shape[0]
   scores["informativeness_train"] = train_err
@@ -51,20 +57,25 @@ def compute_dci(mus_train, ys_train, mus_test, ys_test, random_state=None):
   return scores
 
 
-def compute_importance_gbt(x_train, y_train, x_test, y_test, random_state=None):
-  """Compute importance based on gradient boosted trees."""
+def compute_importance_gbt(x_train, y_train, x_test, y_test, random_state=None, x_indep=None, y_indep=None):
+  """Compute importance based on gradient boosted trees. With x_indep, also returns the accuracy on it."""
   num_factors = y_train.shape[0]
   num_codes = x_train.shape[0]
   importance_matrix = np.zeros(shape=[num_codes, num_factors],
                                dtype=np.float64)
   train_loss = []
   test_loss = []
+  indep_loss = []
   for i in range(num_factors):
     model = ensemble.GradientBoostingClassifier(random_state=random_state) #HistGradientBoostingClassifier
     model.fit(x_train.T, y_train[i, :])
     importance_matrix[:, i] = np.abs(model.feature_importances_)
     train_loss.append(np.mean(model.predict(x_train.T) == y_train[i, :]))
     test_loss.append(np.mean(model.predict(x_test.T) == y_test[i, :]))
+    if x_indep is not None:
+      indep_loss.append(np.mean(model.predict(x_indep.T) == y_indep[i, :]))
+  if x_indep is not None:
+    return importance_matrix, np.mean(train_loss), np.mean(test_loss), np.mean(indep_loss)
   return importance_matrix, np.mean(train_loss), np.mean(test_loss)
 
 

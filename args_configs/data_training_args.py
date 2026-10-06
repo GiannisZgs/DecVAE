@@ -78,6 +78,10 @@ class DataTrainingArguments:
         default=None,
         metadata={"help": "Path to the pre-processed development data cached file name"},
     )
+    indep_cache_file_name: Optional[str] = field(
+        default=None,
+        metadata={"help": "Path to the pre-processed independent-factors data cached file name (sim_coupled)"},
+    )
     output_dir: Optional[str] = field(
         default=None,
         metadata={"help": "Where to store model logs and other data."},
@@ -447,6 +451,10 @@ class DataTrainingArgumentsPost:
     dev_cache_file_name: Optional[str] = field(
         default=None,
         metadata={"help": "Path to the pre-processed development data cached file name"},
+    )
+    indep_cache_file_name: Optional[str] = field(
+        default=None,
+        metadata={"help": "Path to the pre-processed independent-factors data cached file name (sim_coupled); evaluated as an unseen set only"},
     )
     output_dir: Optional[str] = field(
         default=None,

@@ -1,0 +1,841 @@
+#!/usr/bin/env python
+# coding=utf-8
+# Copyright 2025 Ioannis Ziogas <ziogioan@ieee.org>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Subspace-wise evidence and seed/fold stability on the frame latent Z ("all" = [X, OC1, ..., OCC]).
+
+For every model in the models file: prediction (P), ablation (A) and swap (T, O and matched controls)
+matrices per subspace and factor, entropy selectivity against a random-partition null, per-dimension
+probe importances across folds, and for SimVowels the alignment of the OC rows with the generator.
+Across seeds of one config: mean and std of every quantity, pairwise matrix correlation and CKA.
+
+python scripts/post-training/subspace_analysis.py --config_file config_files/subspace/config_subspace_analysis.json
+Config keys: see DEFAULT_ARGS. The models file is a list of {"name", "label", "dataset", "config",
+"decomposition", "beta", "seed", "n_blocks", "oc_order", "headline", "dump"}; "config" groups seeds.
+"""
+
+import json
+import logging
+import os
+import sys
+import time
+import types
+import warnings
+import zlib
+from itertools import combinations
+import numpy as np
+import pandas as pd
+from joblib import Parallel, delayed
+from sklearn.model_selection import GroupKFold, StratifiedKFold
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+from disentanglement_utils.metric_suite import load_dump
+from disentanglement_utils.dci import compute_importance_gbt
+from latent_analysis_utils.subspace_utils import (
+    block_indices, random_partition, cn_bacc, Probe, fit_full_probes, prediction_matrix, ablation_matrix,
+    swap_matrices, subspace_selectivity, factor_concentration, null_summary, fold_importance_stability,
+    block_importance, linear_cka, generator_expectation, alignment)
+from utils import parse_args, debugger_is_active
+
+JSON_FILE_NAME_MANUAL = "config_files/subspace/config_subspace_analysis.json" #for debugging purposes only
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_ARGS = {
+    "models_file": "config_files/subspace/models_subspace.json",
+    "output_dir": None,
+    "n_sub": 30000,
+    "n_folds": 5,
+    "fold_seed": 0,
+    "subsample_seed": 0,
+    "n_null": 20,
+    "null_folds": [0],
+    "null_seed": 0,
+    "max_pairs": 5000,
+    "min_pairs": 100,  # swap columns with fewer valid pairs are reported as NaN
+    "probe_C": 1.0,
+    "probe_max_iter": 1000,
+    "importance": "lr",  # "lr" (probe coefficients) or "gbt" (dci.compute_importance_gbt, slow)
+    "top_frac": 0.1,
+    "cka_between_configs": [],  # optional [[config_a, config_b], ...] of one dataset, first seed of each
+    "headline_config": None,  # SimVowels config of the main figure, None is the first headline model's
+    "n_jobs": 1,
+    "self_test": False,
+    "outputs_only": False,  # rebuild the tables and figures from per_model/ alone, without loading any dump
+    "datasets": {},
+}
+DATASET_KEYS = {"speaker_factor", "ground_truth", "vowel_classes", "n_sub", "swap_match", "extra_runs"}
+COMPUTE_KEYS = ["n_folds", "fold_seed", "subsample_seed", "n_null", "null_folds", "null_seed", "max_pairs",
+                "min_pairs", "probe_C", "probe_max_iter", "importance", "top_frac"]
+
+SEL = ["P", "A", "dT"]
+MATRICES = ["P", "A", "T", "T_ctrl", "dT", "O", "O_ctrl", "dO", "block_importance"]
+
+PALETTE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948",
+           "#8c564b", "#0aa3c2", "#8c8c00", "#1f2a6b"]
+MARKERS = ["o", "s", "^", "D", "v", "P", "X", "*", "p", "h", "<", ">"]
+
+
+def load_config(path):
+    with open(path) as f:
+        cfg = json.load(f)
+    cfg = {k: v for k, v in cfg.items() if not k.startswith("comment")}
+    unknown = set(cfg) - set(DEFAULT_ARGS)
+    if unknown:
+        raise ValueError(f"Unknown keys in {path}: {sorted(unknown)}")
+    args = types.SimpleNamespace(**{**DEFAULT_ARGS, **cfg})
+    for ds, ds_cfg in args.datasets.items():
+        unknown = set(ds_cfg) - DATASET_KEYS
+        if unknown:
+            raise ValueError(f"Unknown keys for dataset {ds} in {path}: {sorted(unknown)}")
+    if args.importance not in ("lr", "gbt"):
+        raise ValueError(f"importance must be 'lr' or 'gbt', got {args.importance}")
+    if args.output_dir is None:
+        raise ValueError(f"output_dir must be set in {path}")
+    return args
+
+
+def load_models(path, args):
+    with open(path, encoding="utf-8") as f:
+        models = json.load(f)
+    names = [m["name"] for m in models]
+    if len(set(names)) != len(names):
+        raise ValueError(f"Duplicate model names in {path}")
+    for m in models:
+        missing = {"name", "dataset", "config", "seed", "n_blocks", "dump"} - set(m)
+        if missing:
+            raise ValueError(f"{m.get('name')}: missing keys {sorted(missing)} in {path}")
+        if m["dataset"] not in args.datasets:
+            raise ValueError(f"{m['name']}: dataset {m['dataset']} has no entry in the config's datasets")
+        if m.get("oc_order", "ascending") not in ("ascending", "descending"):
+            raise ValueError(f"{m['name']}: oc_order must be 'ascending' or 'descending'")
+        m.setdefault("label", m["name"])
+        m.setdefault("oc_order", "ascending")
+        m.setdefault("headline", False)
+    return models
+
+
+def jsonable(o):
+    if isinstance(o, dict):
+        return {str(k): jsonable(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [jsonable(v) for v in o]
+    if isinstance(o, np.ndarray):
+        return jsonable(o.tolist())
+    if isinstance(o, np.generic):
+        return o.item()
+    return o
+
+
+def mean_std(values):
+    "nan-aware mean and std (ddof = 1) over the first axis"
+    a = np.asarray(values, float)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        mean = np.nanmean(a, axis=0)
+        std = np.nanstd(a, axis=0, ddof=1) if len(a) > 1 else np.full(a.shape[1:], np.nan)
+    return mean, std
+
+
+def block_names(n_blocks):
+    return ["X"] + [f"OC{i}" for i in range(1, n_blocks)]
+
+
+def stratified_subsample(y, n, rng):
+    "Sorted indices of n frames, allocated over the classes of y in proportion to their counts"
+    if n >= len(y):
+        return np.arange(len(y))
+    classes, inv = np.unique(y, return_inverse=True)
+    counts = np.bincount(inv)
+    exact = n * counts / counts.sum()
+    take = np.floor(exact).astype(int)
+    take[np.argsort(-(exact - take))[: n - take.sum()]] += 1
+    chosen = [rng.choice(np.flatnonzero(inv == c), size=take[c], replace=False) for c in range(len(classes)) if take[c]]
+    return np.sort(np.concatenate(chosen))
+
+
+def encode(Y):
+    "Labels of every factor as 0..K-1, and K per factor"
+    enc = np.zeros(Y.shape, dtype=np.int64)
+    n_classes = []
+    for f in range(Y.shape[0]):
+        u, enc[f] = np.unique(Y[f], return_inverse=True)
+        n_classes.append(len(u))
+    return enc, n_classes
+
+
+def make_folds(speaker, split, n_folds, fold_seed):
+    X = np.zeros((len(speaker), 1))
+    if split == "stratified_speaker":
+        return list(StratifiedKFold(n_folds, shuffle=True, random_state=fold_seed).split(X, speaker))
+    if split == "group_speaker":
+        return list(GroupKFold(n_folds).split(X, groups=speaker))
+    raise ValueError(f"Unknown split {split}")
+
+
+def null_partitions(latent_dim, n_blocks, args):
+    "The same partitions for every model with the same latent_dim and n_blocks"
+    rng = np.random.default_rng([args.null_seed, latent_dim, n_blocks])
+    return [random_partition(latent_dim, n_blocks, rng) for _ in range(args.n_null)]
+
+
+def block_matrices(Z, Y, tr, te, groups, n_classes, full_probes, full_scores, opts, match, rng, log=None):
+    kw = {"C": opts["C"], "max_iter": opts["max_iter"]}
+    P = prediction_matrix(Z, Y, tr, te, groups, n_classes, log=log, **kw)
+    A = ablation_matrix(Z, Y, tr, te, groups, n_classes, full_scores, log=log, **kw)
+    sw = swap_matrices(Z, Y, te, groups, full_probes, rng, opts["max_pairs"], match)
+    thin = sw["n_pairs"] < opts["min_pairs"]
+    for k in ("T", "O", "T_ctrl", "O_ctrl"):
+        sw[k][:, thin] = np.nan
+    return {"P": P, "A": A, **sw, "dT": sw["T"] - sw["T_ctrl"], "dO": sw["O"] - sw["O_ctrl"]}
+
+
+def null_partition(Z, Y, tr, te, part, n_classes, full_probes, full_scores, opts, match, seed):
+    log = []
+    M = block_matrices(Z, Y, tr, te, part, n_classes, full_probes, full_scores, opts, match,
+                       np.random.default_rng(seed), log)
+    return {m: subspace_selectivity(M[m]) for m in SEL}, len(log) - sum(log), len(log)
+
+
+def analyse_fold(Z, Y, tr, te, groups, n_classes, args, fold, match=None, null_parts=None, sim=None):
+    """P, A and swap matrices, selectivity and importances of one fold.
+
+    Returns:
+        Fold results dict, and (F, D) per-dimension importances.
+    """
+    opts = {"C": args.probe_C, "max_iter": args.probe_max_iter, "max_pairs": args.max_pairs, "min_pairs": args.min_pairs}
+    D, F, G = Z.shape[1], Y.shape[0], len(groups)
+    log = []
+    full_probes = fit_full_probes(Z, Y, tr, n_classes, C=args.probe_C, max_iter=args.probe_max_iter)
+    log += [p.converged for p in full_probes]
+    full_scores = np.array([cn_bacc(Y[f, te], full_probes[f].predict(Z[te]), n_classes[f]) for f in range(F)])
+    if args.importance == "lr":
+        imp = np.stack([p.importance(D) for p in full_probes])
+    else:
+        imp = compute_importance_gbt(Z[tr].T, Y[:, tr], Z[te].T, Y[:, te], random_state=args.fold_seed)[0].T
+
+    res = {"fold": fold, "n_train": len(tr), "n_test": len(te), "full_scores": full_scores}
+    res.update(block_matrices(Z, Y, tr, te, groups, n_classes, full_probes, full_scores, opts, match,
+                              np.random.default_rng([args.fold_seed, fold, 1]), log))
+    res["block_importance"] = block_importance(imp, groups)
+    res["selectivity"] = {m: {"all": subspace_selectivity(res[m]), "OCs": subspace_selectivity(res[m], rows=range(1, G))}
+                          for m in SEL}
+    res["concentration"] = {m: factor_concentration(res[m]) for m in SEL}
+    res["n_probes"], res["n_nonconverged"] = len(log), len(log) - sum(log)
+
+    if null_parts is not None:
+        jobs = Parallel(n_jobs=args.n_jobs)(
+            delayed(null_partition)(Z, Y, tr, te, part, n_classes, full_probes, full_scores, opts, match,
+                                    [args.null_seed, fold, j, 2])
+            for j, part in enumerate(null_parts))
+        null_sel = {m: [j[0][m] for j in jobs] for m in SEL}
+        res["null"] = {"sel": null_sel, "n_probes": sum(j[2] for j in jobs), "n_nonconverged": sum(j[1] for j in jobs),
+                       "summary": {m: null_summary(res["selectivity"][m]["all"], null_sel[m]) for m in SEL}}
+
+    if sim is not None:
+        G_exp = generator_expectation(sim["vowel_names"][te], sim["speaker_vt"][te])
+        res["G"] = G_exp
+        res["alignment"] = {}
+        for m in SEL:
+            oc = res[m][1:][:, [sim["vowel"], sim["speaker"]]]
+            if sim["reverse"]:
+                oc = oc[::-1]
+            res["alignment"][m] = alignment(oc, G_exp)
+    return res, imp
+
+
+def summarise_folds(folds, imps, args):
+    s = {}
+    for m in MATRICES:
+        mean, std = mean_std([f[m] for f in folds])
+        s[m] = {"mean": mean, "std": std}
+    s["full_scores"] = dict(zip(("mean", "std"), mean_std([f["full_scores"] for f in folds])))
+    s["selectivity"] = {m: {r: dict(zip(("mean", "std"), mean_std([f["selectivity"][m][r] for f in folds])))
+                            for r in ("all", "OCs")} for m in SEL}
+    s["concentration"] = {m: dict(zip(("mean", "std"), mean_std([f["concentration"][m] for f in folds]))) for m in SEL}
+    null_folds = [f for f in folds if "null" in f]
+    if null_folds:
+        s["null"] = {m: {k: float(np.mean([f["null"]["summary"][m][k] for f in null_folds]))
+                         for k in ("own", "null_mean", "null_std", "gap", "z", "percentile")} for m in SEL}
+    if "alignment" in folds[0]:
+        s["G"] = dict(zip(("mean", "std"), mean_std([f["G"] for f in folds])))
+        s["alignment"] = {m: {k: float(np.nanmean([f["alignment"][m][k] for f in folds]))
+                              for k in ("mae", "pearson", "dominant_agree")} for m in SEL}
+        for m in SEL:
+            s["alignment"][m]["vowel_share_obs"] = mean_std([f["alignment"][m]["vowel_share_obs"] for f in folds])[0]
+            s["alignment"][m]["vowel_share_exp"] = mean_std([f["alignment"][m]["vowel_share_exp"] for f in folds])[0]
+    s["fold_stability"] = fold_importance_stability(imps, args.top_frac) if len(imps) > 1 else None
+    n_probes = sum(f["n_probes"] for f in folds)
+    s["nonconverged_frac"] = sum(f["n_nonconverged"] for f in folds) / n_probes
+    null_probes = sum(f["null"]["n_probes"] for f in null_folds)
+    s["null_nonconverged_frac"] = sum(f["null"]["n_nonconverged"] for f in null_folds) / null_probes if null_probes else None
+    return s
+
+
+def run_analysis(Z, Y, speaker, factors, n_classes, groups, run, args, match, null_parts, sim):
+    folds = make_folds(speaker, run["split"], args.n_folds, args.fold_seed)
+    fold_res, imps = [], []
+    for k, (tr, te) in enumerate(folds):
+        t0 = time.time()
+        res, imp = analyse_fold(Z, Y, tr, te, groups, n_classes, args, k, match,
+                                null_parts if k in args.null_folds else None, sim)
+        fold_res.append(res)
+        imps.append(imp)
+        logger.info(f"  fold {k}: full {np.round(res['full_scores'], 3).tolist()}, "
+                    f"sel(P) {res['selectivity']['P']['all']:.3f}, sel(dT) {res['selectivity']['dT']['all']:.3f}, "
+                    f"pairs {res['n_pairs'].tolist()} ({time.time() - t0:.0f}s)")
+    imps = np.stack(imps)
+    summary = summarise_folds(fold_res, imps, args)
+    if summary["nonconverged_frac"] > 0.05:
+        logger.warning(f"  {summary['nonconverged_frac']:.1%} of the probes did not converge, raise probe_max_iter")
+    return {"split": run["split"], "factors": list(run["factors"]), "n_classes": list(n_classes),
+            "folds": fold_res, "summary": summary}, imps
+
+
+def model_settings(model, ds_cfg, n_sub, args):
+    return jsonable({**{k: getattr(args, k) for k in COMPUTE_KEYS}, "n_sub": n_sub, "dataset_cfg": ds_cfg,
+                     "dump": model["dump"], "n_blocks": model["n_blocks"], "oc_order": model["oc_order"]})
+
+
+def process_model(model, args, refs, out_dir):
+    "Load one dump, run every analysis on the dataset's common subsample, save per_model/ and importances/"
+    ds_cfg = args.datasets[model["dataset"]]
+    n_sub = ds_cfg.get("n_sub", args.n_sub)
+    #Load results if already exist
+    json_path = os.path.join(out_dir, "per_model", f"{model['name']}.json")
+    settings = model_settings(model, ds_cfg, n_sub, args)
+
+    mus, Y_raw, _, sidecar = load_dump(model["dump"])
+    Z = mus.T
+    factors = list(sidecar["targets"])
+    if sidecar["dataset_name"] != model["dataset"]:
+        raise ValueError(f"{model['name']}: dump is {sidecar['dataset_name']}, models file says {model['dataset']}")
+    if sidecar.get("latent_type") != "all":
+        raise ValueError(f"{model['name']}: dump latent_type is {sidecar.get('latent_type')}, expected 'all'")
+    D, n_blocks = Z.shape[1], model["n_blocks"]
+    groups = block_indices(D, n_blocks)
+    speaker_factor = ds_cfg["speaker_factor"]
+    if speaker_factor not in factors:
+        raise ValueError(f"{model['name']}: speaker factor {speaker_factor} not in the dump targets {factors}")
+
+    ref = refs.get(model["dataset"])
+    if ref is None:
+        sub = stratified_subsample(Y_raw[factors.index(speaker_factor)], n_sub, np.random.default_rng(args.subsample_seed))
+        refs[model["dataset"]] = {"Y": Y_raw, "sub": sub, "name": model["name"]}
+    else:
+        if Y_raw.shape != ref["Y"].shape or not np.array_equal(Y_raw, ref["Y"]):
+            raise ValueError(f"{model['name']}: frames or labels differ from {ref['name']}'s; all models of "
+                             f"{model['dataset']} must share the same frames")
+        sub = ref["sub"]
+    frames_crc = zlib.crc32(sub.tobytes() + np.ascontiguousarray(Y_raw[:, sub]).tobytes())
+
+    if os.path.exists(json_path):
+        with open(json_path) as f:
+            old = json.load(f)
+        if old.get("settings") == settings and old.get("frames_crc") == frames_crc:
+            logger.info(f"{model['name']}: results with the same settings in {json_path}, skipped")
+            return
+        logger.info(f"{model['name']}: settings or frames changed, recomputing")
+
+    logger.info(f"{model['name']}: {len(sub)} of {Z.shape[0]} frames, D = {D}, {n_blocks} blocks, factors {factors}")
+    Zs, Ys_raw = np.ascontiguousarray(Z[sub]), Y_raw[:, sub]
+    Ys, n_classes = encode(Ys_raw)
+    speaker = Ys[factors.index(speaker_factor)]
+    "Create random partitions of the subspaces - Random subspaces"
+    parts = null_partitions(D, n_blocks, args)
+
+    runs = [("main", {"split": "stratified_speaker", "factors": factors})]
+    runs += [(r["tag"], r) for r in ds_cfg.get("extra_runs", [])]
+    out_runs, npz = {}, {}
+    for tag, run in runs:
+        idx = [factors.index(f) for f in run["factors"]]
+        run_factors = list(run["factors"])
+        match = None
+        if ds_cfg.get("swap_match"):
+            match = {run_factors.index(f): [run_factors.index(x) for x in keep if x in run_factors]
+                     for f, keep in ds_cfg["swap_match"].items() if f in run_factors}
+        sim = None
+        if ds_cfg.get("ground_truth") == "simvowels_formants" and "vowel" in run_factors and speaker_factor in run_factors:
+            vowel_classes = np.array(ds_cfg["vowel_classes"])
+            sim = {"vowel_names": vowel_classes[Ys_raw[factors.index("vowel")]],
+                   "speaker_vt": np.array([sidecar["speaker_vt"][str(int(s))] for s in Ys_raw[factors.index(speaker_factor)]]),
+                   "vowel": run_factors.index("vowel"), "speaker": run_factors.index(speaker_factor),
+                   "reverse": model["oc_order"] == "descending"}
+            if n_blocks - 1 != 3:
+                logger.warning(f"{model['name']}: {n_blocks - 1} OCs, the generator alignment needs 3, skipped")
+                sim = None
+        logger.info(f"{model['name']} | {tag}: split {run['split']}, factors {run_factors}, match {match}")
+        out_runs[tag], npz[f"imps_{tag}"] = run_analysis(Zs, Ys[idx], speaker, run_factors, [n_classes[i] for i in idx],
+                                                         groups, run, args, match, parts, sim)
+
+    npz["cka_Z"] = Zs
+    npz["cka_frames"] = sub
+    record = {key: model.get(key) for key in ("name", "label", "dataset", "config", "decomposition", "beta", "seed",
+                                              "n_blocks", "oc_order", "headline", "dump")}
+    record.update({"settings": settings, "frames_crc": frames_crc, "factors": factors, "latent_dim": D,
+                   "blocks": block_names(n_blocks), "n_frames_total": int(Z.shape[0]), "n_sub": int(len(sub)),
+                   "runs": out_runs})
+    np.savez(os.path.join(out_dir, "importances", f"{model['name']}.npz"), **npz)
+    with open(json_path, "w") as f:
+        json.dump(jsonable(record), f, indent=1)
+    logger.info(f"{model['name']}: saved {json_path}")
+
+
+def self_test(args):
+    "Synthetic latent with known block structure; asserts the expected P, selectivity, swap and null"
+    rng = np.random.default_rng(0)
+    N, w = 6000, 16
+    y0, y1 = rng.integers(0, 5, N), rng.integers(0, 10, N)
+    Z = rng.standard_normal((N, 4 * w))
+    Z[:, :w] += rng.standard_normal((5, w))[y0]
+    Z[:, w:2 * w] += rng.standard_normal((10, w))[y1]
+    Z[:, 2 * w:3 * w] += rng.standard_normal((5, w))[y0] + rng.standard_normal((10, w))[y1]
+    Y = np.stack([y0, y1])
+    groups = block_indices(4 * w, 4)
+    tr, te = make_folds(y1, "stratified_speaker", args.n_folds, args.fold_seed)[0]
+    res, _ = analyse_fold(Z, Y, tr, te, groups, [5, 10], args, 0, None, null_partitions(4 * w, 4, args), None)
+    P, dT = res["P"], res["dT"]
+    perm_scores = []
+    for _ in range(5):
+        yp = rng.permutation(y0)
+        perm = Probe(groups[0], C=args.probe_C, max_iter=args.probe_max_iter).fit(Z[tr], yp[tr])
+        perm_scores.append(cn_bacc(yp[te], perm.predict(Z[te]), 5))
+    perm_score = float(np.mean(perm_scores))
+    sel_oc = subspace_selectivity(P, rows=[0, 1])
+    logger.info(f"P:\n{np.round(P, 3)}\ndT:\n{np.round(dT, 3)}")
+    logger.info(f"sel(P) {res['selectivity']['P']['all']:.3f}, blocks 0-1 {sel_oc:.3f}, null "
+                f"{min(res['null']['sel']['P']):.3f} to {max(res['null']['sel']['P']):.3f}, permuted labels {perm_score:.3f}, "
+                f"pairs {res['n_pairs'].tolist()}")
+    checks = {
+        "P block 0": P[0, 0] > 0.5 and P[0, 1] < 0.1,
+        "P block 1": P[1, 1] > 0.5 and P[1, 0] < 0.1,
+        "P block 3": np.all(P[3] < 0.05),
+        "selectivity blocks 0-1 > 0.8": sel_oc > 0.8,
+        "own selectivity above every null partition": res["selectivity"]["P"]["all"] > max(res["null"]["sel"]["P"]),
+        "dT block 0": dT[0, 0] > dT[0, 1],
+        "dT block 1": dT[1, 1] > dT[1, 0],
+        "permuted labels at chance": perm_score < 0.05,
+    }
+    for name, ok in checks.items():
+        logger.info(f"{'PASS' if ok else 'FAIL'}: {name}")
+    if not all(checks.values()):
+        raise AssertionError(f"Self-test failed: {[k for k, ok in checks.items() if not ok]}")
+    logger.info("Self-test passed")
+
+
+def load_records(models, out_dir):
+    records = []
+    for m in models:
+        path = os.path.join(out_dir, "per_model", f"{m['name']}.json")
+        if not os.path.exists(path):
+            logger.warning(f"No results in {path}, {m['name']} is left out of the outputs")
+            continue
+        with open(path) as f:
+            rec = json.load(f)
+        rec["label"] = m["label"]
+        records.append(rec)
+    return records
+
+
+def meta(rec, run):
+    return {"model": rec["name"], "dataset": rec["dataset"], "config": rec["config"], "seed": rec["seed"], "run": run}
+
+
+def write_tables(records, out_dir):
+    mat_rows, sel_rows, null_rows, stab_rows, align_rows = [], [], [], [], []
+    for rec in records:
+        for run, r in rec["runs"].items():
+            base = meta(rec, run)
+            factors, blocks, s = r["factors"], rec["blocks"], r["summary"]
+            entries = [(f["fold"], f) for f in r["folds"]] + [("mean", {m: s[m]["mean"] for m in MATRICES}),
+                                                                ("std", {m: s[m]["std"] for m in MATRICES})]
+            for fold, f in entries:
+                for m in MATRICES:
+                    M = np.asarray(f[m], float)
+                    for g, b in enumerate(blocks):
+                        for j, fac in enumerate(factors):
+                            mat_rows.append({**base, "fold": fold, "matrix": m, "subspace": b, "factor": fac, "value": M[g, j]})
+            for f in r["folds"]:
+                for m in SEL:
+                    for measure in ("all", "OCs"):
+                        sel_rows.append({**base, "fold": f["fold"], "matrix": m, "measure": f"sel_{measure}", "factor": "",
+                                         "value": f["selectivity"][m][measure]})
+                    for j, fac in enumerate(factors):
+                        sel_rows.append({**base, "fold": f["fold"], "matrix": m, "measure": "concentration", "factor": fac,
+                                         "value": f["concentration"][m][j]})
+                if "null" in f:
+                    for m in SEL:
+                        null_rows.append({**base, "fold": f["fold"], "matrix": m, **f["null"]["summary"][m],
+                                          "n_null": len(f["null"]["sel"][m])})
+                if "alignment" in f:
+                    for g, formant in enumerate(("F1", "F2", "F3")):
+                        for c, name in enumerate(("eta2_vowel", "eta2_speaker")):
+                            align_rows.append({**base, "fold": f["fold"], "matrix": "G", "oc": formant, "quantity": name,
+                                               "value": f["G"][g][c]})
+                    for m in SEL:
+                        a = f["alignment"][m]
+                        for c in range(len(a["vowel_share_obs"])):
+                            for q in ("vowel_share_obs", "vowel_share_exp"):
+                                align_rows.append({**base, "fold": f["fold"], "matrix": m, "oc": f"OC{c + 1}", "quantity": q,
+                                                   "value": a[q][c]})
+                        for q in ("mae", "pearson", "dominant_agree"):
+                            align_rows.append({**base, "fold": f["fold"], "matrix": m, "oc": "", "quantity": q, "value": a[q]})
+            if s["fold_stability"] is not None:
+                for j, fac in enumerate(factors):
+                    stab_rows.append({**base, "factor": fac, "spearman": s["fold_stability"]["spearman"][j],
+                                      "topk_jaccard": s["fold_stability"]["topk_jaccard"][j],
+                                      "assignment_consistency": s["fold_stability"]["assignment_consistency"],
+                                      "nonconverged_frac": s["nonconverged_frac"]})
+    for name, rows in (("matrices_long", mat_rows), ("selectivity", sel_rows), ("null_summary", null_rows),
+                       ("fold_stability", stab_rows), ("alignment", align_rows)):
+        pd.DataFrame(rows).to_csv(os.path.join(out_dir, f"{name}.csv"), index=False)
+
+
+def scalars(rec):
+    "Fold-averaged scalars and matrix entries of one model, keyed by quantity name"
+    out = {}
+    for run, r in rec["runs"].items():
+        p = "" if run == "main" else f"{run}:"
+        s, factors = r["summary"], r["factors"]
+        for j, fac in enumerate(factors):
+            out[f"{p}full_score:{fac}"] = s["full_scores"]["mean"][j]
+        for m in SEL:
+            for measure in ("all", "OCs"):
+                out[f"{p}sel_{measure}:{m}"] = s["selectivity"][m][measure]["mean"]
+            for j, fac in enumerate(factors):
+                out[f"{p}concentration:{m}:{fac}"] = s["concentration"][m]["mean"][j]
+            if "null" in s:
+                for k in ("null_mean", "null_std", "gap", "z", "percentile"):
+                    out[f"{p}null_{k}:{m}"] = s["null"][m][k]
+            if "alignment" in s:
+                for k in ("mae", "pearson", "dominant_agree"):
+                    out[f"{p}align_{k}:{m}"] = s["alignment"][m][k]
+        if s["fold_stability"] is not None:
+            for j, fac in enumerate(factors):
+                out[f"{p}fold_spearman:{fac}"] = s["fold_stability"]["spearman"][j]
+                out[f"{p}fold_topk_jaccard:{fac}"] = s["fold_stability"]["topk_jaccard"][j]
+            out[f"{p}fold_assignment_consistency"] = s["fold_stability"]["assignment_consistency"]
+        out[f"{p}nonconverged_frac"] = s["nonconverged_frac"]
+        for m in MATRICES:
+            M = np.asarray(s[m]["mean"], float)
+            for g, b in enumerate(rec["blocks"]):
+                for j, fac in enumerate(factors):
+                    out[f"{p}{m}|{b}|{fac}"] = M[g, j]
+    return out
+
+
+def config_groups(records):
+    groups = {}
+    for rec in records:
+        groups.setdefault((rec["dataset"], rec["config"]), []).append(rec)
+    return {k: sorted(v, key=lambda r: r["seed"]) for k, v in groups.items()}
+
+
+def cka_matrix(rec_a, rec_b, out_dir):
+    if rec_a["frames_crc"] != rec_b["frames_crc"]:
+        raise ValueError(f"{rec_a['name']} and {rec_b['name']} were not run on the same frames, no CKA")
+    Za = np.load(os.path.join(out_dir, "importances", f"{rec_a['name']}.npz"))["cka_Z"].astype(np.float64)
+    Zb = np.load(os.path.join(out_dir, "importances", f"{rec_b['name']}.npz"))["cka_Z"].astype(np.float64)
+    ga, gb = block_indices(Za.shape[1], rec_a["n_blocks"]), block_indices(Zb.shape[1], rec_b["n_blocks"])
+    return np.array([[linear_cka(Za[:, i], Zb[:, j]) for j in gb] for i in ga])
+
+
+def cka_rows(C, blocks):
+    diag, off = np.diag(C), C[~np.eye(len(C), dtype=bool)] if C.shape[0] == C.shape[1] else C.ravel()
+    rows = {"cka_diag_mean": float(diag.mean()), "cka_offdiag_mean": float(off.mean())}
+    rows.update({f"cka_diag:{b}": float(v) for b, v in zip(blocks, diag)})
+    return rows
+
+
+def seed_tables(records, args, out_dir):
+    """seed_summary.csv, seed_consistency.csv and cka_long.csv.
+
+    Returns:
+        Mean CKA matrix over seed pairs, per (dataset, config) with more than one seed.
+    """
+    summary_rows, cons_rows, cka_long, cka_mean = [], [], [], {}
+    groups = config_groups(records)
+    for (ds, config), recs in groups.items():
+        values = pd.DataFrame([scalars(r) for r in recs])
+        for q in values.columns:
+            v = values[q].astype(float)
+            summary_rows.append({"dataset": ds, "config": config, "quantity": q, "mean": v.mean(),
+                                 "std": v.std(ddof=1) if v.notna().sum() > 1 else np.nan, "n": int(v.notna().sum()),
+                                 "seeds": ",".join(str(r["seed"]) for r in recs)})
+        if len(recs) < 2:
+            continue
+        base = {"dataset": ds, "config": config, "n_seeds": len(recs)}
+        for m in SEL:
+            rs = []
+            for a, b in combinations(recs, 2):
+                va = np.asarray(a["runs"]["main"]["summary"][m]["mean"], float).ravel()
+                vb = np.asarray(b["runs"]["main"]["summary"][m]["mean"], float).ravel()
+                ok = np.isfinite(va) & np.isfinite(vb)
+                rs.append(np.corrcoef(va[ok], vb[ok])[0, 1])
+            cons_rows += [{**base, "quantity": f"pearson_mean:{m}", "value": float(np.mean(rs))},
+                          {**base, "quantity": f"pearson_min:{m}", "value": float(np.min(rs))}]
+        mats = []
+        for a, b in combinations(recs, 2):
+            C = cka_matrix(a, b, out_dir)
+            mats.append(C)
+            for i, ba in enumerate(a["blocks"]):
+                for j, bb in enumerate(b["blocks"]):
+                    cka_long.append({"dataset": ds, "config_a": config, "config_b": config, "seed_a": a["seed"],
+                                     "seed_b": b["seed"], "block_a": ba, "block_b": bb, "value": C[i, j]})
+        cka_mean[(ds, config)] = np.mean(mats, axis=0)
+        cons_rows += [{**base, "quantity": q, "value": v} for q, v in cka_rows(cka_mean[(ds, config)], recs[0]["blocks"]).items()]
+
+    for config_a, config_b in args.cka_between_configs:
+        pair = [(k, v[0]) for k, v in groups.items() if k[1] in (config_a, config_b)]
+        if len(pair) != 2 or pair[0][0][0] != pair[1][0][0]:
+            logger.warning(f"cka_between_configs: {config_a} and {config_b} not found once each in one dataset, skipped")
+            continue
+        a, b = (dict(pair)[k] for k in sorted(dict(pair), key=lambda k: [config_a, config_b].index(k[1])))
+        C = cka_matrix(a, b, out_dir)
+        for i, ba in enumerate(a["blocks"]):
+            for j, bb in enumerate(b["blocks"]):
+                cka_long.append({"dataset": a["dataset"], "config_a": config_a, "config_b": config_b, "seed_a": a["seed"],
+                                 "seed_b": b["seed"], "block_a": ba, "block_b": bb, "value": C[i, j]})
+        cons_rows += [{"dataset": a["dataset"], "config": f"{config_a} vs {config_b}", "n_seeds": 1, "quantity": q, "value": v}
+                      for q, v in cka_rows(C, a["blocks"]).items()]
+
+    pd.DataFrame(summary_rows).to_csv(os.path.join(out_dir, "seed_summary.csv"), index=False)
+    pd.DataFrame(cons_rows).to_csv(os.path.join(out_dir, "seed_consistency.csv"), index=False)
+    pd.DataFrame(cka_long).to_csv(os.path.join(out_dir, "cka_long.csv"), index=False)
+    return cka_mean
+
+
+def style_axes(ax):
+    ax.grid(color="0.9", linewidth=0.8)
+    ax.set_axisbelow(True)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+
+
+def heatmap(ax, M, row_labels, col_labels, title, std=None, vmin=None, vmax=None, cmap="Blues"):
+    M = np.asarray(M, float)
+    vmin = min(0.0, np.nanmin(M)) if vmin is None else vmin
+    vmax = max(np.nanmax(M), vmin + 1e-6) if vmax is None else vmax
+    ax.imshow(M, cmap=cmap, vmin=vmin, vmax=vmax, aspect="auto")
+    for i in range(M.shape[0]):
+        for j in range(M.shape[1]):
+            if not np.isfinite(M[i, j]):
+                ax.text(j, i, "n/a", ha="center", va="center", fontsize=8, color="0.4")
+                continue
+            txt = f"{M[i, j]:.2f}"
+            if std is not None and np.isfinite(std[i][j]):
+                txt += f"\n±{std[i][j]:.2f}"
+            dark = (M[i, j] - vmin) / (vmax - vmin) > 0.6
+            ax.text(j, i, txt, ha="center", va="center", fontsize=8, color="white" if dark else "0.1")
+    ax.set_xticks(range(len(col_labels)), col_labels, fontsize=8)
+    ax.set_yticks(range(len(row_labels)), row_labels, fontsize=8)
+    ax.set_title(title, fontsize=10)
+    for side in ax.spines.values():
+        side.set_visible(False)
+
+
+def save_fig(fig, path):
+    import matplotlib.pyplot as plt
+    fig.savefig(path + ".png", dpi=200)
+    fig.savefig(path + ".pdf")
+    plt.close(fig)
+
+
+def seed_matrix(recs, m, run="main"):
+    "Mean over seeds of the fold-averaged matrix, and its std over seeds (over folds if one seed)"
+    means = [np.asarray(r["runs"][run]["summary"][m]["mean"], float) for r in recs]
+    if len(recs) > 1:
+        return mean_std(means)
+    return means[0], np.asarray(recs[0]["runs"][run]["summary"][m]["std"], float)
+
+
+def sim_config_order(records):
+    groups = config_groups([r for r in records if r["dataset"] == "sim_vowels"])
+    return list(groups.items())
+
+
+def strip_selectivity(ax, sim_groups, m, title):
+    "Own selectivity per seed against the pooled random-partition null of each configuration"
+    rng = np.random.default_rng(0)
+    for x, ((_, config), recs) in enumerate(sim_groups):
+        null = [v for r in recs for f in r["runs"]["main"]["folds"] if "null" in f for v in f["null"]["sel"][m]]
+        if null:
+            ax.plot(x + rng.uniform(-0.15, 0.15, len(null)), null, linestyle="none", marker="o", markersize=3,
+                    color="0.7", label="random partitions")
+        for i, r in enumerate(recs):
+            ax.plot(x + 0.25, r["runs"]["main"]["summary"]["selectivity"][m]["all"]["mean"], linestyle="none",
+                    marker=MARKERS[i % len(MARKERS)], markersize=8, color=PALETTE[x % len(PALETTE)],
+                    markeredgecolor="white", markeredgewidth=0.7, label=f"seed index {i}")
+    ax.set_xticks(range(len(sim_groups)), [recs[0]["label"] for _, recs in sim_groups], rotation=45, ha="right", fontsize=7)
+    ax.set_title(title, fontsize=10)
+    style_axes(ax)
+
+
+def plot_simvowels(records, cka_mean, args, path):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    sim = [r for r in records if r["dataset"] == "sim_vowels"]
+    headline = args.headline_config or next((r["config"] for r in sim if r.get("headline")), None)
+    recs = sorted([r for r in sim if r["config"] == headline], key=lambda r: r["seed"])
+    if not recs or "G" not in recs[0]["runs"]["main"]["summary"]:
+        logger.warning("No SimVowels headline results with a generator alignment, subspace_simvowels skipped")
+        return
+    factors, blocks = recs[0]["runs"]["main"]["factors"], recs[0]["blocks"]
+    fig, axes = plt.subplot_mosaic([["G", "P", "A", "dT"], ["sP", "sdT", "C", "."]], figsize=(17, 8.5),
+                                   constrained_layout=True)
+    G = np.mean([r["runs"]["main"]["summary"]["G"]["mean"] for r in recs], axis=0)
+    heatmap(axes["G"], G, ["F1", "F2", "F3"], ["vowel", "speaker"], "(a) Generator expectation (η²)", vmin=0, vmax=1)
+    for key, m, title in (("P", "P", "(b) Prediction P"), ("A", "A", "(c) Ablation A"), ("dT", "dT", "(d) Swap T − Tc")):
+        M, S = seed_matrix(recs, m)
+        heatmap(axes[key], M, blocks, factors, f"{title}, {recs[0]['label']} (n = {len(recs)})", std=S)
+    sim_groups = sim_config_order(records)
+    strip_selectivity(axes["sP"], sim_groups, "P", "(e) Selectivity of P vs random partitions")
+    strip_selectivity(axes["sdT"], sim_groups, "dT", "(e) Selectivity of T − Tc vs random partitions")
+    handles = {}
+    for key in ("sP", "sdT"):
+        for h, l in zip(*axes[key].get_legend_handles_labels()):
+            handles.setdefault(l, h)
+    axes["sP"].legend(handles.values(), handles.keys(), fontsize=7, frameon=False)
+    if ("sim_vowels", headline) in cka_mean:
+        heatmap(axes["C"], cka_mean[("sim_vowels", headline)], blocks, blocks, "(f) CKA across seeds (mean of pairs)",
+                vmin=0, vmax=1)
+    else:
+        axes["C"].set_visible(False)
+    save_fig(fig, path)
+
+
+def plot_configs(records, path):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    sim_groups = sim_config_order(records)
+    if not sim_groups:
+        return
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.6), constrained_layout=True)
+    panels = [("sel", "P", "Selectivity of P"), ("sel", "dT", "Selectivity of T − Tc"), ("mae", "dT", "Alignment MAE of T − Tc")]
+    for ax, (kind, m, title) in zip(axes, panels):
+        for x, (_, recs) in enumerate(sim_groups):
+            if kind == "sel":
+                own = [r["runs"]["main"]["summary"]["selectivity"][m]["all"]["mean"] for r in recs]
+                null = [v for r in recs for f in r["runs"]["main"]["folds"] if "null" in f for v in f["null"]["sel"][m]]
+                if null:
+                    ax.errorbar(x, np.mean(null), yerr=np.std(null, ddof=1) if len(null) > 1 else 0, color="0.65",
+                                linewidth=6, alpha=0.5, label="random partitions (mean ± std)")
+            else:
+                own = [r["runs"]["main"]["summary"].get("alignment", {}).get(m, {}).get("mae", np.nan) for r in recs]
+            sd = np.std(own, ddof=1) if len(own) > 1 else 0
+            ax.errorbar(x, np.mean(own), yerr=sd, linestyle="none", marker="o", markersize=8, capsize=3,
+                        color=PALETTE[x % len(PALETTE)], markeredgecolor="white", markeredgewidth=0.7)
+        ax.set_xticks(range(len(sim_groups)), [recs[0]["label"] for _, recs in sim_groups], rotation=45, ha="right", fontsize=7)
+        ax.set_title(title, fontsize=10)
+        style_axes(ax)
+    h, l = axes[0].get_legend_handles_labels()
+    if h:
+        axes[0].legend(h[:1], l[:1], fontsize=7, frameon=False)
+    save_fig(fig, path)
+
+
+def plot_fold_stability(records, args, out_dir, path):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    sim = [r for r in records if r["dataset"] == "sim_vowels"]
+    headline = args.headline_config or next((r["config"] for r in sim if r.get("headline")), None)
+    recs = sorted([r for r in sim if r["config"] == headline], key=lambda r: r["seed"])
+    if not recs:
+        return
+    rec = recs[0]
+    imps = np.load(os.path.join(out_dir, "importances", f"{rec['name']}.npz"))["imps_main"]
+    K, F, D = imps.shape
+    stab = rec["runs"]["main"]["summary"]["fold_stability"]
+    width = D // rec["n_blocks"]
+    fig, axes = plt.subplots(F, 1, figsize=(14, 1.2 + 0.45 * K * F), constrained_layout=True, squeeze=False)
+    for f, ax in enumerate(axes[:, 0]):
+        im = imps[:, f] / imps[:, f].max(axis=1, keepdims=True)
+        ax.imshow(im, cmap="Blues", vmin=0, vmax=1, aspect="auto", interpolation="nearest")
+        for g in range(1, rec["n_blocks"]):
+            ax.axvline(g * width - 0.5, color="0.2", linewidth=1)
+        ax.set_xticks([(g + 0.5) * width - 0.5 for g in range(rec["n_blocks"])], rec["blocks"], fontsize=8)
+        ax.set_yticks(range(K), [f"fold {k}" for k in range(K)], fontsize=7)
+        title = f"{rec['label']}, seed {rec['seed']}: {rec['runs']['main']['factors'][f]}"
+        if stab is not None:
+            title += (f" (Spearman {stab['spearman'][f]:.2f}, top-{args.top_frac:.0%} Jaccard {stab['topk_jaccard'][f]:.2f},"
+                      f" same dominant factor {stab['assignment_consistency']:.0%})")
+        ax.set_title(title, fontsize=9)
+    save_fig(fig, path)
+
+
+def plot_real(records, path):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    rows = [(r, run) for r in records if r["dataset"] != "sim_vowels" for run in r["runs"]]
+    if not rows:
+        return
+    fig, axes = plt.subplots(len(rows), 2, figsize=(11, 0.6 + 2.6 * len(rows)), constrained_layout=True, squeeze=False)
+    for (rec, run), ax_row in zip(rows, axes):
+        r = rec["runs"][run]
+        for ax, m in zip(ax_row, ("P", "dT")):
+            s = r["summary"]
+            title = f"{rec['label']} [{run}]: {'P' if m == 'P' else 'T − Tc'}, sel {s['selectivity'][m]['all']['mean']:.2f}"
+            if "null" in s:
+                title += f" (null {s['null'][m]['null_mean']:.2f} ± {s['null'][m]['null_std']:.2f})"
+            heatmap(ax, s[m]["mean"], rec["blocks"], r["factors"], title, std=s[m]["std"])
+    save_fig(fig, path)
+
+
+def main():
+    "Parse the arguments"
+    if debugger_is_active():
+        args = load_config(JSON_FILE_NAME_MANUAL)
+    else:
+        args = load_config(parse_args().config_file)
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    if args.self_test:
+        self_test(args)
+        return
+
+    models = load_models(args.models_file, args)
+    out_dir = args.output_dir
+    for sub in ("per_model", "importances"):
+        os.makedirs(os.path.join(out_dir, sub), exist_ok=True)
+
+    if args.outputs_only:
+        logger.info("outputs_only: rebuilding the tables and figures from the saved results, nothing is computed")
+    else:
+        refs = {}
+        for model in models:
+            process_model(model, args, refs, out_dir)
+
+    records = load_records(models, out_dir)
+    if not records:
+        raise FileNotFoundError(f"No per-model results in {os.path.join(out_dir, 'per_model')}")
+    write_tables(records, out_dir)
+    cka_mean = seed_tables(records, args, out_dir)
+    plot_simvowels(records, cka_mean, args, os.path.join(out_dir, "subspace_simvowels"))
+    plot_configs(records, os.path.join(out_dir, "subspace_configs"))
+    plot_fold_stability(records, args, out_dir, os.path.join(out_dir, "subspace_fold_stability"))
+    plot_real(records, os.path.join(out_dir, "subspace_real"))
+    logger.info(f"Saved the outputs in {out_dir}")
+
+
+if __name__ == "__main__":
+    main()

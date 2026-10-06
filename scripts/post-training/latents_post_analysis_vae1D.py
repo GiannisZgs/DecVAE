@@ -34,7 +34,7 @@ from config_files import DecVAEConfig
 from sklearn.decomposition import PCA, FastICA, KernelPCA 
 import joblib
 from args_configs import ModelArgumentsPost, DataTrainingArgumentsPost, DecompositionArguments, TrainingObjectiveArguments
-from dataset_loading import load_timit, load_sim_vowels, load_iemocap, load_voc_als
+from dataset_loading import load_timit, load_sim_vowels, load_sim_coupled, load_iemocap, load_voc_als
 from data_preprocessing import prepare_extract_features_vae_pretraining_dataset
 from utils import parse_args, debugger_is_active, extract_epoch
 from utils.cache_utils import build_cache_file_names, build_map_cache_file_names
@@ -73,7 +73,8 @@ os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 os.environ["TORCH_USE_CUDA_DSA"] = "1"
 os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 
-JSON_FILE_NAME_MANUAL = "config_files/sensitivity/dumps/config_dump_beta_vae_sim_vowels.json" #for debugging purposes only
+#JSON_FILE_NAME_MANUAL = "config_files/sensitivity/dumps/config_dump_beta_vae_sim_vowels.json" #for debugging purposes only
+JSON_FILE_NAME_MANUAL = "config_files/VAEs/sim_vowels/latent_evaluations/config_vae1d_latent_anal_sim_vowels.json" #for debugging purposes only
 #JSON_FILE_NAME_MANUAL = "config_files/VAEs/voc_als/latent_evaluations/config_vae1d_latent_anal_voc_als.json" #for debugging purposes only
 SAVE_DIR_PLOTS = '/home/giannis/Documents/DecSSL/R_vis/latent_quality/low_dim_vis_latents/' #'/home/giannis/Documents/DecSSL/R_vis/latent_quality/low_dim_vis_latents/'
 
@@ -91,6 +92,12 @@ def main():
     delattr(data_training_args,"comment_data_args")
     delattr(training_obj_args,"comment_tr_obj_args")
     delattr(decomp_args,"comment_decomp_args")
+
+    if model_args.vae_seq_pooling not in (None, "mean"):
+        raise ValueError(f"vae_seq_pooling must be None or 'mean', got '{model_args.vae_seq_pooling}'.")
+    if model_args.vae_seq_pooling is not None and model_args.raw_mels and model_args.eigenprojection is not None:
+        raise ValueError("vae_seq_pooling is not supported with an eigenprojection of the raw features - "
+                         "use latents_post_analysis_eigenprojection.py, which pools with projection_seq_pooling.")
 
     "Initialize the accelerator. Accelerator handles device placement for us"
     kwargs = DDPK(find_unused_parameters=True)
@@ -147,6 +154,9 @@ def main():
 
             if data_training_args.dataset_name == "VOC_ALS":
                 vectorized_datasets["dev"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["dev"]])
+            if data_training_args.dataset_name == "sim_coupled":
+                "Independent-factors split - an unseen set, encoded and evaluated on its own"
+                vectorized_datasets["indep"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["indep"]])
 
             if min_length > 0.0:
                 vectorized_datasets = vectorized_datasets.filter(
@@ -164,6 +174,8 @@ def main():
             raw_datasets = load_timit(data_training_args)
         elif "sim_vowels" in data_training_args.dataset_name:
             raw_datasets = load_sim_vowels(data_training_args)
+        elif "sim_coupled" in data_training_args.dataset_name:
+            raw_datasets = load_sim_coupled(data_training_args)
         elif "VOC_ALS" in data_training_args.dataset_name:
             raw_datasets = load_voc_als(data_training_args)
         elif "iemocap" in data_training_args.dataset_name:
@@ -220,7 +232,7 @@ def main():
         str_input_type = "mel"
     elif "waveform" in model_args.vae_input_type:
         str_input_type = "waveform"
-    if "vowels" in data_training_args.dataset_name:
+    if "vowels" in data_training_args.dataset_name or data_training_args.dataset_name == "sim_coupled":
         checkpoint_dir = os.path.join(data_training_args.parent_dir,
             "snr" + str(data_training_args.sim_snr_db) \
             + beta + "_" + model_type + "_" + str_input_type + "_bs" + str(data_training_args.per_device_train_batch_size))
@@ -389,11 +401,18 @@ def main():
                 batch_size=data_training_args.per_device_eval_batch_size
             )
             test_dataloader = DataLoader(
-                vectorized_datasets["test"].with_format("numpy"), 
+                vectorized_datasets["test"].with_format("numpy"),
                 shuffle=False,
-                collate_fn=data_collator, 
+                collate_fn=data_collator,
                 batch_size=data_training_args.per_device_eval_batch_size
             )
+            if data_training_args.dataset_name == "sim_coupled":
+                indep_dataloader = DataLoader(
+                    vectorized_datasets["indep"].with_format("numpy"),
+                    shuffle=False,
+                    collate_fn=data_collator,
+                    batch_size=data_training_args.per_device_eval_batch_size
+                )
 
         if data_training_args.dataset_name in ["VOC_ALS", "iemocap"]:
             "Evaluates on a single set"
@@ -405,6 +424,11 @@ def main():
             representation_function, train_dataloader, eval_dataloader, test_dataloader = accelerator.prepare(
                 representation_function, train_dataloader, eval_dataloader, test_dataloader
             )
+            if data_training_args.dataset_name == "sim_coupled":
+                indep_dataloader = accelerator.prepare(indep_dataloader)
+
+        "Pooled embeddings, one per utterance, for the sequence-level targets"
+        z_seq, z_seq_test = None, None
 
         "Only for the cases of ICA, PCA, kPCA, get the training data"
         if model_args.raw_mels and model_args.eigenprojection is not None and data_training_args.dataset_name not in ["VOC_ALS", "iemocap"]:
@@ -748,6 +772,12 @@ def main():
                         z_mean = z_mean_batch.detach().cpu()
                     else:
                         z_mean = torch.cat((z_mean,z_mean_batch.detach().cpu()),dim = 0)
+                    if model_args.vae_seq_pooling == "mean":
+                        "Mean over every frame of the padded sequence, as the frozen SSL baselines and DecVAE's SequenceAggregator do"
+                        if outputs[0].dim() != 3:
+                            raise ValueError(f"vae_seq_pooling needs (batch, frames, dim) embeddings, got shape {tuple(outputs[0].shape)}")
+                        z_seq_batch = outputs[0].mean(dim=1).detach().cpu()
+                        z_seq = z_seq_batch if z_seq is None else torch.cat((z_seq, z_seq_batch), dim=0)
                     
             if model_args.raw_mels and model_args.eigenprojection is not None:
                 
@@ -813,6 +843,11 @@ def main():
                             speaker_vt_factor_batch = batch.pop("speaker_vt_factor")
                         
                         vowel_labels_batch = [[ph for i,ph in enumerate(batch) if not overlap_mask_batch[j,i]] for j,batch in enumerate(vowel_labels_batch)] 
+
+                    elif data_training_args.dataset_name == "sim_coupled":
+                        batch["mask_time_indices"] = torch.ones((batch_size, mask_indices_seq_length), dtype=torch.bool, device=batch["mask_time_indices"].device)
+                        lag_labels_batch = batch.pop("lag_labels")[~overlap_mask_batch]
+                        gain_labels_batch = batch.pop("gain_labels")[~overlap_mask_batch]
 
                     elif data_training_args.dataset_name in ["timit"]:
                         batch["mask_time_indices"] = sub_attention_mask.clone()
@@ -892,6 +927,10 @@ def main():
                             speaker_vt_factor_frame = torch.cat((speaker_vt_factor_frame,torch.cat([torch.tensor([factor for j in range(sum(~overlap_mask_batch[i]))]) for i,factor in enumerate(speaker_vt_factor_batch)])),dim = 0)
                             speaker_vt_factor_seq = torch.cat((speaker_vt_factor_seq,speaker_vt_factor_batch),dim = 0)
 
+                    elif data_training_args.dataset_name == "sim_coupled":
+                        lag_labels = lag_labels_batch.clone() if step == 0 else torch.cat((lag_labels, lag_labels_batch))
+                        gain_labels = gain_labels_batch.clone() if step == 0 else torch.cat((gain_labels, gain_labels_batch))
+
                     elif "timit" in data_training_args.dataset_name:
                         if step == 0:
                             phonemes39 = phonemes39_batch.clone()
@@ -915,136 +954,169 @@ def main():
                         z_mean = z_mean_batch.detach().cpu()
                     else:
                         z_mean = torch.cat((z_mean,z_mean_batch.detach().cpu()),dim = 0)
+                    if model_args.vae_seq_pooling == "mean":
+                        "Mean over every frame of the padded sequence, as the frozen SSL baselines and DecVAE's SequenceAggregator do"
+                        if outputs[0].dim() != 3:
+                            raise ValueError(f"vae_seq_pooling needs (batch, frames, dim) embeddings, got shape {tuple(outputs[0].shape)}")
+                        z_seq_batch = outputs[0].mean(dim=1).detach().cpu()
+                        z_seq = z_seq_batch if z_seq is None else torch.cat((z_seq, z_seq_batch), dim=0)
 
                 if model_args.eigenprojection is not None:
                     "Transform dev set"
                     z_mean = torch.tensor(eigenprojection_function.transform(z_mean))
 
-                "Test set for loop"
-                for step, batch in enumerate(test_dataloader):
-                    x = batch["input_values"]
-                    batch_size = batch["input_values"].shape[0]
-                    mask_indices_seq_length = batch["sub_attention_mask"].shape[1]
-                    sub_attention_mask = batch.pop("sub_attention_mask", None)
-                    attention_mask = batch["attention_mask"].bool()
-                    overlap_mask_batch = batch.pop("overlap_mask", None)
-                    if hasattr(batch,"reconstruction_NRMSEs"):
-                        batch.pop("reconstruction_NRMSEs", None)
-                    if hasattr(batch,"reconstruction_NRMSE_seq"):
-                        batch.pop("reconstruction_NRMSE_seq", None)
-                    if hasattr(batch,"correlograms"):
-                        batch.pop("correlograms", None)
-                    if hasattr(batch,"correlogram_seq"):
-                        batch.pop("correlogram_seq", None)
-                    batch["global_step"] = 0
-                    assert overlap_mask_batch != None if data_training_args.dataset_name in ["timit"] else True
-                    if overlap_mask_batch is None or not data_training_args.discard_label_overlaps:
-                        overlap_mask_batch = torch.zeros_like(sub_attention_mask).astype(torch.bool)
-                    else:
-                        "Frames corresponding to padding are set as True in the overlap and discarded"
-                        padded = sub_attention_mask.sum(dim = -1)
-                        for b in range(batch_size):
-                            overlap_mask_batch[b,padded[b]:] = 1
-                        overlap_mask_batch = overlap_mask_batch.bool()
-                    if data_training_args.dataset_name == "sim_vowels":
-                        batch["mask_time_indices"] = torch.ones((batch_size, mask_indices_seq_length), dtype=torch.bool, device=batch["mask_time_indices"].device)                
-                        if hasattr(batch,"vowel_labels"):
-                            vowel_labels_batch = batch.pop("vowel_labels")
-                        if hasattr(batch,"speaker_vt_factor"):
-                            speaker_vt_factor_batch = batch.pop("speaker_vt_factor")
-                        vowel_labels_batch = [[ph for i,ph in enumerate(batch) if not overlap_mask_batch[j,i]] for j,batch in enumerate(vowel_labels_batch)] 
+                "Test set for loop - for sim_coupled it runs again over the unseen set, encoded identically"
+                test_splits = [("test", test_dataloader)]
+                if data_training_args.dataset_name == "sim_coupled":
+                    test_splits.append(("indep", indep_dataloader))
+                for split_name, split_dataloader in test_splits:
+                    if split_name == "indep":
+                        "Keep the test-set results; the loop below rebuilds the *_test names for the unseen set"
+                        z_mean_kept, lag_labels_kept, gain_labels_kept, z_seq_kept = z_mean_test, lag_labels_test, gain_labels_test, z_seq_test
+                        z_seq_test = None
+                    for step, batch in enumerate(split_dataloader):
+                        x = batch["input_values"]
+                        batch_size = batch["input_values"].shape[0]
+                        mask_indices_seq_length = batch["sub_attention_mask"].shape[1]
+                        sub_attention_mask = batch.pop("sub_attention_mask", None)
+                        attention_mask = batch["attention_mask"].bool()
+                        overlap_mask_batch = batch.pop("overlap_mask", None)
+                        if hasattr(batch,"reconstruction_NRMSEs"):
+                            batch.pop("reconstruction_NRMSEs", None)
+                        if hasattr(batch,"reconstruction_NRMSE_seq"):
+                            batch.pop("reconstruction_NRMSE_seq", None)
+                        if hasattr(batch,"correlograms"):
+                            batch.pop("correlograms", None)
+                        if hasattr(batch,"correlogram_seq"):
+                            batch.pop("correlogram_seq", None)
+                        batch["global_step"] = 0
+                        assert overlap_mask_batch != None if data_training_args.dataset_name in ["timit"] else True
+                        if overlap_mask_batch is None or not data_training_args.discard_label_overlaps:
+                            overlap_mask_batch = torch.zeros_like(sub_attention_mask).astype(torch.bool)
+                        else:
+                            "Frames corresponding to padding are set as True in the overlap and discarded"
+                            padded = sub_attention_mask.sum(dim = -1)
+                            for b in range(batch_size):
+                                overlap_mask_batch[b,padded[b]:] = 1
+                            overlap_mask_batch = overlap_mask_batch.bool()
+                        if data_training_args.dataset_name == "sim_vowels":
+                            batch["mask_time_indices"] = torch.ones((batch_size, mask_indices_seq_length), dtype=torch.bool, device=batch["mask_time_indices"].device)                
+                            if hasattr(batch,"vowel_labels"):
+                                vowel_labels_batch = batch.pop("vowel_labels")
+                            if hasattr(batch,"speaker_vt_factor"):
+                                speaker_vt_factor_batch = batch.pop("speaker_vt_factor")
+                            vowel_labels_batch = [[ph for i,ph in enumerate(batch) if not overlap_mask_batch[j,i]] for j,batch in enumerate(vowel_labels_batch)] 
 
-                    elif data_training_args.dataset_name in ["timit"]:
-                        batch["mask_time_indices"] = sub_attention_mask.clone()
-                        if data_training_args.dataset_name == "timit":
-                            phonemes39_batch = batch.pop("phonemes39", None)
-                            phonemes48_batch = batch.pop("phonemes48", None)
+                        elif data_training_args.dataset_name == "sim_coupled":
+                            batch["mask_time_indices"] = torch.ones((batch_size, mask_indices_seq_length), dtype=torch.bool, device=batch["mask_time_indices"].device)
+                            lag_labels_batch = batch.pop("lag_labels")[~overlap_mask_batch]
+                            gain_labels_batch = batch.pop("gain_labels")[~overlap_mask_batch]
 
-                            phonemes39_batch = phonemes39_batch[~overlap_mask_batch]
-                            phonemes48_batch = phonemes48_batch[~overlap_mask_batch]
+                        elif data_training_args.dataset_name in ["timit"]:
+                            batch["mask_time_indices"] = sub_attention_mask.clone()
+                            if data_training_args.dataset_name == "timit":
+                                phonemes39_batch = batch.pop("phonemes39", None)
+                                phonemes48_batch = batch.pop("phonemes48", None)
 
-                        batch.pop("start_phonemes", None)
-                        batch.pop("stop_phonemes", None)
-                        speaker_id_batch = list(batch.pop("speaker_id", None))
+                                phonemes39_batch = phonemes39_batch[~overlap_mask_batch]
+                                phonemes48_batch = phonemes48_batch[~overlap_mask_batch]
 
-                    if model_args.vae_type == "VAE_1D_FC":
-                        if model_args.vae_input_type == "waveform_ocs":
-                            if model_args.raw_mels:
-                                batch["input_values"] = batch["input_values"][:,1:,:,:].transpose(1,2).reshape(batch_size,batch["input_values"].shape[2],-1)
-                                "Reshape"
-                            else:
-                                raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with waveform_ocs input type")
-                        elif model_args.vae_input_type == "waveform_all":
-                            if model_args.raw_mels:
-                                batch["input_values"] = batch["input_values"].transpose(1,2).reshape(batch_size,batch["input_values"].shape[2],-1)
-                            else:
-                                raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with waveform_all input type")
-                        elif model_args.vae_input_type == "mel_ocs":
-                            if model_args.raw_mels:
-                                "Features were extracted at preprocessing and normalized in the collator - take the components without the original signal"
-                                new_input_values = batch["input_values"][:,1:,...]
-                                batch["input_values"] = new_input_values.transpose(1,2).reshape(batch_size,new_input_values.shape[2],-1)
-                            else:
-                                raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with mel_ocs input type")
-                        elif model_args.vae_input_type == "mel_all":
-                            if model_args.raw_mels:
-                                "Features were extracted at preprocessing and normalized in the collator - take the components including the original signal"
-                                new_input_values = batch["input_values"]
-                                batch["input_values"] = new_input_values.transpose(1,2).reshape(batch_size,new_input_values.shape[2],-1)
-                            else:
-                                raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with mel_all input type")
-                        elif model_args.vae_input_type == "waveform":
-                            batch["input_values"] = batch["input_values"][:,0,:,:]
-                        elif model_args.vae_input_type == "mel":
-                            batch["input_values"] = batch["input_values"][:,0,:,:]
-                        batch["attention_mask"] = sub_attention_mask
+                            batch.pop("start_phonemes", None)
+                            batch.pop("stop_phonemes", None)
+                            speaker_id_batch = list(batch.pop("speaker_id", None))
+
+                        if model_args.vae_type == "VAE_1D_FC":
+                            if model_args.vae_input_type == "waveform_ocs":
+                                if model_args.raw_mels:
+                                    batch["input_values"] = batch["input_values"][:,1:,:,:].transpose(1,2).reshape(batch_size,batch["input_values"].shape[2],-1)
+                                    "Reshape"
+                                else:
+                                    raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with waveform_ocs input type")
+                            elif model_args.vae_input_type == "waveform_all":
+                                if model_args.raw_mels:
+                                    batch["input_values"] = batch["input_values"].transpose(1,2).reshape(batch_size,batch["input_values"].shape[2],-1)
+                                else:
+                                    raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with waveform_all input type")
+                            elif model_args.vae_input_type == "mel_ocs":
+                                if model_args.raw_mels:
+                                    "Features were extracted at preprocessing and normalized in the collator - take the components without the original signal"
+                                    new_input_values = batch["input_values"][:,1:,...]
+                                    batch["input_values"] = new_input_values.transpose(1,2).reshape(batch_size,new_input_values.shape[2],-1)
+                                else:
+                                    raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with mel_ocs input type")
+                            elif model_args.vae_input_type == "mel_all":
+                                if model_args.raw_mels:
+                                    "Features were extracted at preprocessing and normalized in the collator - take the components including the original signal"
+                                    new_input_values = batch["input_values"]
+                                    batch["input_values"] = new_input_values.transpose(1,2).reshape(batch_size,new_input_values.shape[2],-1)
+                                else:
+                                    raise ValueError("model_args.raw_mels should be True for VAE_1D_FC with mel_all input type")
+                            elif model_args.vae_input_type == "waveform":
+                                batch["input_values"] = batch["input_values"][:,0,:,:]
+                            elif model_args.vae_input_type == "mel":
+                                batch["input_values"] = batch["input_values"][:,0,:,:]
+                            batch["attention_mask"] = sub_attention_mask
         
-                    if not model_args.raw_mels:
-                        outputs = representation_function(**batch)
-                    else:
-                        outputs = [batch["input_values"]]
-                    del batch
-
-                    if "vowels" in data_training_args.dataset_name:
-                        if step == 0:
-                            vowel_labels_test = torch.cat([torch.tensor(v) for v in vowel_labels_batch]) 
+                        if not model_args.raw_mels:
+                            outputs = representation_function(**batch)
                         else:
-                            vowel_labels_test = torch.cat((vowel_labels_test,torch.cat([torch.tensor(v) for v in vowel_labels_batch])))
-                        if step == 0:
-                            speaker_vt_factor_frame_test = torch.cat([torch.tensor([factor for j in range(sum(~overlap_mask_batch[i]))]) for i,factor in enumerate(speaker_vt_factor_batch)])
-                            speaker_vt_factor_seq_test = speaker_vt_factor_batch.clone()
-                        else:
-                            speaker_vt_factor_frame_test = torch.cat((speaker_vt_factor_frame_test,torch.cat([torch.tensor([factor for j in range(sum(~overlap_mask_batch[i]))]) for i,factor in enumerate(speaker_vt_factor_batch)])),dim = 0)
-                            speaker_vt_factor_seq_test = torch.cat((speaker_vt_factor_seq_test,speaker_vt_factor_batch),dim = 0) 
+                            outputs = [batch["input_values"]]
+                        del batch
 
-                    elif "timit" in data_training_args.dataset_name:
-                        if "timit" in data_training_args.dataset_name:
+                        if "vowels" in data_training_args.dataset_name:
                             if step == 0:
-                                phonemes39_test = phonemes39_batch.clone()
-                                phonemes48_test = phonemes48_batch.clone()
+                                vowel_labels_test = torch.cat([torch.tensor(v) for v in vowel_labels_batch]) 
                             else:
-                                phonemes39_test = torch.cat((phonemes39_test,phonemes39_batch))
-                                phonemes48_test = torch.cat((phonemes48_test,phonemes48_batch))
+                                vowel_labels_test = torch.cat((vowel_labels_test,torch.cat([torch.tensor(v) for v in vowel_labels_batch])))
+                            if step == 0:
+                                speaker_vt_factor_frame_test = torch.cat([torch.tensor([factor for j in range(sum(~overlap_mask_batch[i]))]) for i,factor in enumerate(speaker_vt_factor_batch)])
+                                speaker_vt_factor_seq_test = speaker_vt_factor_batch.clone()
+                            else:
+                                speaker_vt_factor_frame_test = torch.cat((speaker_vt_factor_frame_test,torch.cat([torch.tensor([factor for j in range(sum(~overlap_mask_batch[i]))]) for i,factor in enumerate(speaker_vt_factor_batch)])),dim = 0)
+                                speaker_vt_factor_seq_test = torch.cat((speaker_vt_factor_seq_test,speaker_vt_factor_batch),dim = 0) 
+
+                        elif data_training_args.dataset_name == "sim_coupled":
+                            lag_labels_test = lag_labels_batch.clone() if step == 0 else torch.cat((lag_labels_test, lag_labels_batch))
+                            gain_labels_test = gain_labels_batch.clone() if step == 0 else torch.cat((gain_labels_test, gain_labels_batch))
+
+                        elif "timit" in data_training_args.dataset_name:
+                            if "timit" in data_training_args.dataset_name:
+                                if step == 0:
+                                    phonemes39_test = phonemes39_batch.clone()
+                                    phonemes48_test = phonemes48_batch.clone()
+                                else:
+                                    phonemes39_test = torch.cat((phonemes39_test,phonemes39_batch))
+                                    phonemes48_test = torch.cat((phonemes48_test,phonemes48_batch))
                                 
-                        if step == 0:
-                            speaker_id_frame_test = torch.cat([torch.tensor([factor for j in range(sum(~overlap_mask_batch[i]))]) for i,factor in enumerate(speaker_id_batch)]) #torch.stack([factor for i,factor in enumerate(speaker_vt_factor_batch) for _ in used_indices[i]])
-                            speaker_id_seq_test = torch.stack(speaker_id_batch) 
+                            if step == 0:
+                                speaker_id_frame_test = torch.cat([torch.tensor([factor for j in range(sum(~overlap_mask_batch[i]))]) for i,factor in enumerate(speaker_id_batch)]) #torch.stack([factor for i,factor in enumerate(speaker_vt_factor_batch) for _ in used_indices[i]])
+                                speaker_id_seq_test = torch.stack(speaker_id_batch) 
+                            else:
+                                speaker_id_frame_test = torch.cat((speaker_id_frame_test,torch.cat([torch.tensor([factor for j in range(sum(~overlap_mask_batch[i]))]) for i,factor in enumerate(speaker_id_batch)])),dim = 0)
+                                speaker_id_seq_test = torch.cat((speaker_id_seq_test,torch.stack(speaker_id_batch)),dim = 0)
+
+                        "Gather latents for evaluations"
+                        if data_training_args.dataset_name == "sim_vowels":
+                            overlap_mask_batch = overlap_mask_batch[sub_attention_mask].view(batch_size,-1)
+                        z_mean_batch = torch.masked_select(outputs[0],~overlap_mask_batch[...,None]).reshape(-1,outputs[0].shape[-1])
+                        if step == 0:                    
+                            z_mean_test = z_mean_batch.detach().cpu()
                         else:
-                            speaker_id_frame_test = torch.cat((speaker_id_frame_test,torch.cat([torch.tensor([factor for j in range(sum(~overlap_mask_batch[i]))]) for i,factor in enumerate(speaker_id_batch)])),dim = 0)
-                            speaker_id_seq_test = torch.cat((speaker_id_seq_test,torch.stack(speaker_id_batch)),dim = 0)
+                            z_mean_test = torch.cat((z_mean_test,z_mean_batch.detach().cpu()),dim = 0)
+                        if model_args.vae_seq_pooling == "mean":
+                            "Mean over every frame of the padded sequence, as the frozen SSL baselines and DecVAE's SequenceAggregator do"
+                            if outputs[0].dim() != 3:
+                                raise ValueError(f"vae_seq_pooling needs (batch, frames, dim) embeddings, got shape {tuple(outputs[0].shape)}")
+                            z_seq_batch = outputs[0].mean(dim=1).detach().cpu()
+                            z_seq_test = z_seq_batch if z_seq_test is None else torch.cat((z_seq_test, z_seq_batch), dim=0)
 
-                    "Gather latents for evaluations"
-                    if data_training_args.dataset_name == "sim_vowels":
-                        overlap_mask_batch = overlap_mask_batch[sub_attention_mask].view(batch_size,-1)
-                    z_mean_batch = torch.masked_select(outputs[0],~overlap_mask_batch[...,None]).reshape(-1,outputs[0].shape[-1])
-                    if step == 0:                    
-                        z_mean_test = z_mean_batch.detach().cpu()
-                    else:
-                        z_mean_test = torch.cat((z_mean_test,z_mean_batch.detach().cpu()),dim = 0)
+                    if model_args.eigenprojection is not None:
+                        "Transform test set"
+                        z_mean_test = torch.tensor(eigenprojection_function.transform(z_mean_test))
 
-                if model_args.eigenprojection is not None:
-                    "Transform test set"
-                    z_mean_test = torch.tensor(eigenprojection_function.transform(z_mean_test))
+                    if split_name == "indep":
+                        z_mean_indep, lag_labels_indep, gain_labels_indep = z_mean_test, lag_labels_test, gain_labels_test
+                        z_mean_test, lag_labels_test, gain_labels_test, z_seq_test = z_mean_kept, lag_labels_kept, gain_labels_kept, z_seq_kept
 
         end_time = time.time()
         elapsed_time = end_time - start_time
@@ -1058,7 +1130,22 @@ def main():
         #Create combined labels - Speaker-vowel
         #Comparisons inside speaker / inside vowel
         if data_training_args.classify:
-            if "vowels" in data_training_args.dataset_name:        
+            if data_training_args.dataset_name == "sim_coupled":
+                "Frame-level factors only. y carries (target, other factor) - stratified splits use their joint cell;"
+                "the unseen set is only predicted"
+                factors = {"lag": (lag_labels, lag_labels_test, lag_labels_indep),
+                           "gain": (gain_labels, gain_labels_test, gain_labels_indep)}
+                for target, other in (("lag", "gain"), ("gain", "lag")):
+                    if target not in data_training_args.classification_tasks and "all" not in data_training_args.classification_tasks:
+                        continue
+                    prediction_eval(data_training_args,config,
+                        X = z_mean, X_test = z_mean_test,
+                        y = torch.stack((factors[target][0], factors[other][0]), dim = 1),
+                        y_test = torch.stack((factors[target][1], factors[other][1]), dim = 1),
+                        checkpoint = ckp, latent_type="z",target = target,
+                        X_indep = z_mean_indep, y_indep = torch.stack((factors[target][2], factors[other][2]), dim = 1)
+                    )
+            elif "vowels" in data_training_args.dataset_name:
                 if "vowel" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:        
                     "Check vowels in z"
                     prediction_eval(data_training_args,config,
@@ -1066,7 +1153,7 @@ def main():
                         y = vowel_labels, y_test = vowel_labels_test,
                         checkpoint = ckp, latent_type="z",target = "vowel"
                     )
-                if "speaker" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
+                if "speaker_frame" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
                     "Check speakers in z"
                     prediction_eval(data_training_args,config,
                         X = z_mean, X_test = z_mean_test,
@@ -1082,7 +1169,7 @@ def main():
                         y = phonemes48, y_test = phonemes48_test,
                         checkpoint = ckp, latent_type="z",target = "phoneme48" 
                     )
-                if "speaker" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
+                if "speaker_frame" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
                     "Check speakers in z"
                     prediction_eval(data_training_args,config,
                         X = z_mean, X_test = z_mean_test,
@@ -1098,7 +1185,7 @@ def main():
                         y = phonemes, y_test = None,
                         checkpoint = ckp, latent_type="z",target = "phoneme" 
                     )
-                if "speaker" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
+                if "speaker_frame" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
                     "Check speaker identification in z" 
                     prediction_eval(data_training_args,config,
                         X = z_mean, X_test = None,
@@ -1121,7 +1208,7 @@ def main():
                         y = phonemes_frame, y_test = None,
                         checkpoint = ckp, latent_type="z",target = "phoneme_frame" 
                     )
-                if "speaker" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
+                if "speaker_frame" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
                     "Check speaker identification in z"
                     prediction_eval(data_training_args,config,
                         X = z_mean, X_test = None,
@@ -1164,6 +1251,28 @@ def main():
                         checkpoint = ckp, latent_type="OCs_joint_emb",target = "alsfrs_speech_frame"
                     )
 
+            "Sequence-level targets, read off the pooled embeddings"
+            if z_seq is not None:
+                tasks = data_training_args.classification_tasks
+                if "vowels" in data_training_args.dataset_name:
+                    seq_targets = [(speaker_vt_factor_seq, speaker_vt_factor_seq_test, "speaker_seq", "speaker_seq")]
+                elif "timit" in data_training_args.dataset_name:
+                    seq_targets = [(speaker_id_seq, speaker_id_seq_test, "speaker_seq", "speaker_seq")]
+                elif "iemocap" in data_training_args.dataset_name:
+                    seq_targets = [(speaker_id_seq, None, "speaker_seq", "speaker_seq"),
+                                   (torch.stack((emotion_seq, speaker_id_seq), dim = 1), None, ["cat_emotion_seq", "speaker_seq"], "emotion_seq")]
+                else:
+                    print(f"No sequence-level classification targets are set up for {data_training_args.dataset_name}")
+                    seq_targets = []
+                for y, y_test, target, task in seq_targets:
+                    if task not in tasks and "all" not in tasks:
+                        continue
+                    prediction_eval(data_training_args,config,
+                        X = z_seq, X_test = z_seq_test,
+                        y = y, y_test = y_test,
+                        checkpoint = ckp, latent_type="z",target = target
+                    )
+
         "Disentanglement evaluation"
         if data_training_args.measure_disentanglement:
             if "vowels" in data_training_args.dataset_name:
@@ -1173,6 +1282,11 @@ def main():
                 y_frame_train = pd.DataFrame(y_frame_train.cpu().numpy(),columns=["vowel","speaker_frame"])
                 y_seq_test = pd.DataFrame(speaker_vt_factor_seq_test.cpu().numpy(),columns=["speaker_seq"])
                 y_seq_train = pd.DataFrame(speaker_vt_factor_seq.cpu().numpy(),columns=["speaker_seq"])
+
+            elif data_training_args.dataset_name == "sim_coupled":
+                y_frame_train = pd.DataFrame(torch.stack((lag_labels, gain_labels), dim = 1).cpu().numpy(),columns=["lag","gain"])
+                y_frame_test = pd.DataFrame(torch.stack((lag_labels_test, gain_labels_test), dim = 1).cpu().numpy(),columns=["lag","gain"])
+                y_frame_indep = pd.DataFrame(torch.stack((lag_labels_indep, gain_labels_indep), dim = 1).cpu().numpy(),columns=["lag","gain"])
 
             elif "timit" in data_training_args.dataset_name:
                 speaker_id_frame_test = speaker_id_frame_test.to(phonemes39_test.device)
@@ -1225,7 +1339,23 @@ def main():
                     latent_type="z", mu_train = z_mean, y_train = y_frame_train, 
                     mu_test = None, y_test = None, target = ["phoneme","speaker_frame","cat_emotion_frame"]
                 )
-            else:    
+
+                "Sequence-level disentanglement, emotion against speaker, off the pooled embeddings"
+                if z_seq is None:
+                    print("Skipping the sequence-level disentanglement - vae_seq_pooling is not set, so there are no pooled embeddings to evaluate")
+                else:
+                    compute_disentanglement_metrics(data_training_args,config,checkpoint = ckp,
+                        latent_type="z_seq", mu_train = z_seq, y_train = y_seq_train,
+                        mu_test = None, y_test = None, target = ["speaker_seq","cat_emotion_seq"]
+                    )
+            elif data_training_args.dataset_name == "sim_coupled":
+                "Check lag/gain disentanglement in z - test pool, plus the unseen set as a separate _indep result"
+                compute_disentanglement_metrics(data_training_args,config,checkpoint = ckp,
+                    latent_type="z", mu_train = z_mean, y_train = y_frame_train,
+                    mu_test = z_mean_test, y_test = y_frame_test, target = ["lag","gain"],
+                    mu_indep = z_mean_indep, y_indep = y_frame_indep
+                )
+            else:
                 "Check vowels/speakers disentanglement in z"
                 compute_disentanglement_metrics(data_training_args,config,checkpoint = ckp,
                     latent_type="z", mu_train = z_mean, y_train = y_frame_train, 

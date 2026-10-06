@@ -22,8 +22,10 @@ the models file, and scored with compute_metric_suite. Width effects are measure
 level of Gaussian noise latents at several d, and with random subsets of a model's own dimensions.
 
 python scripts/post-training/metric_sensitivity_real.py --config_file config_files/sensitivity/config_metric_sensitivity_real.json
-Config keys: see DEFAULT_ARGS. The models file is a list of {"name", "dump", "in_ranking", "conditions"};
+Config keys: see DEFAULT_ARGS. The models file is a list of {"name", "dump", "in_ranking", "conditions", "label"};
 "conditions" is optional, defaults to STANDARD_CONDITIONS, and "dim_subset" runs only when listed.
+"label" is optional: the name shown in the figures, while "name" keys the results.
+"color" and "marker" are optional: a model's style in the figures, otherwise set by its position in the file.
 """
 
 import json
@@ -59,10 +61,11 @@ DEFAULT_ARGS = {
     "null_zero_check": False,
     "subset_dims": [48, 96, 192, 320],  # k of the dim_subset condition, kept where k < d
     "n_subset_draws": 5,
-    "chance_dims": [48, 96, 192, 320, 768],
+    "chance_dims": [20, 48, 96, 192, 320, 768],
     "n_chance_draws": 3,
     "chance_include_model_dims": True,  # also score the chance level at every model's own d
     "chance_reference_model": None,  # model whose ref_sub frames and labels the chance runs use, None is the first
+    "outputs_only": False,  # rebuild the tables and figures from real_results.csv alone, without loading any dump
 }
 
 SUPERVISED = ["DCI-D", "DCI-C", "DCI-I", "Modularity", "Explicitness", "IRS"]
@@ -92,12 +95,14 @@ COLUMNS = ["model", "condition", "level", "seed", "n_frames", "latent_dim", "MI"
     "speaker_groups", "noise_sd", "subset_dims", "frames_from"]
 STANDARD_CONDITIONS = list(dict.fromkeys(c for c, _, _, _ in CONDITIONS))
 CHANCE_MODEL = "Gaussian noise"
+FLAT_NO_INDEPENDENCE = "Flat (no MI, GCN)"
 TRAJECTORY_ORDER = [(c, l) for c, l, _, _ in CONDITIONS if c != "null"]
 
 RANKED_METRICS = {k: v for k, v in METRICS.items() if k in UNSUPERVISED + SUPERVISED}
 
-PALETTE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
-MARKERS = ["o", "s", "^", "D", "v", "P", "X", "*"]
+PALETTE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948",
+           "#8c564b", "#0aa3c2", "#8c8c00", "#1f2a6b"]
+MARKERS = ["o", "s", "^", "D", "v", "P", "X", "*", "p", "h", "<", ">"]
 
 
 def load_config(path):
@@ -398,7 +403,22 @@ def chance_excess(results):
     return pd.DataFrame(rows)
 
 
-def plot_dimensionality(results, model_names, path):
+def model_styles(models):
+    "One color and marker per model, fixed by its position in the models file unless it sets its own"
+    if len(models) > min(len(PALETTE), len(MARKERS)) and not all("color" in m and "marker" in m for m in models[len(PALETTE):]):
+        raise ValueError(f"{len(models)} models but {min(len(PALETTE), len(MARKERS))} styles - set 'color' and "
+                         "'marker' for the extra models in the models file")
+    styles = {m["name"]: {"color": m.get("color", PALETTE[i % len(PALETTE)]), "marker": m.get("marker", MARKERS[i % len(MARKERS)])}
+              for i, m in enumerate(models)}
+    for key in ("color", "marker"):
+        values = pd.Series({name: st[key] for name, st in styles.items()})
+        shared = values[values.duplicated(keep=False)]
+        if len(shared):
+            logger.warning(f"Models sharing a {key}: {shared.to_dict()}")
+    return styles
+
+
+def plot_dimensionality(results, model_names, path, display=None, styles=None):
     "Every metric against d: the chance level, the dim_subset curves, and each model's ref_sub score"
     import matplotlib
     matplotlib.use("Agg")
@@ -411,20 +431,19 @@ def plot_dimensionality(results, model_names, path):
         if not chance_mean.empty:
             d = chance_mean.index.to_numpy()
             ax.fill_between(d, chance_mean[m] - chance_sd[m], chance_mean[m] + chance_sd[m], color="0.85", linewidth=0)
-            ax.plot(d, chance_mean[m], color="0.45", linewidth=2, marker="o", markersize=4, label=CHANCE_MODEL)
-        for i, name in enumerate(model_names):
+            ax.plot(d, chance_mean[m], color="0.45", linewidth=2, label=CHANCE_MODEL)
+        for name in model_names:
             g = results[results["model"] == name]
             ref = g[g["condition"] == "ref_sub"]
             sub = g[g["condition"] == "dim_subset"].groupby("latent_dim")[m]
-            style = dict(color=PALETTE[i % len(PALETTE)], marker=MARKERS[i % len(MARKERS)], markersize=6,
-                         markeredgecolor="white", markeredgewidth=1)
+            style = dict(**styles[name], markersize=8, markeredgecolor="white", markeredgewidth=0.7)
             if len(g[g["condition"] == "dim_subset"]):
                 x = np.append(sub.mean().index.to_numpy(), ref["latent_dim"].to_numpy())
                 y = np.append(sub.mean().to_numpy(), ref[m].to_numpy())
                 err = np.append(sub.std(ddof=1).fillna(0.0).to_numpy(), np.zeros(len(ref)))
-                ax.errorbar(x, y, yerr=err, linewidth=2, capsize=2, label=name, **style)
+                ax.errorbar(x, y, yerr=err, linewidth=2, capsize=2, label=(display or {}).get(name, name), **style)
             elif len(ref):
-                ax.plot(ref["latent_dim"], ref[m], linestyle="none", label=name, **style)
+                ax.plot(ref["latent_dim"], ref[m], linestyle="none", label=(display or {}).get(name, name), **style)
         ax.set_xscale("log", base=2)
         if not chance_mean.empty:
             ax.set_xticks(chance_mean.index, [str(int(t)) for t in chance_mean.index], fontsize=8)
@@ -453,7 +472,12 @@ def rankings(results, ranked_models, path):
             continue
         per_condition[(condition, level)] = rank_methods(g.set_index("model")[UNSUPERVISED + SUPERVISED], RANKED_METRICS)
 
-    aggregations = ["Flat", "4-family", "3-family"]
+    "Flat ranking without the Independence family (MI, GCN), from the leave-one-family-out aggregations"
+    for r in per_condition.values():
+        if "Flat -Independence" in r["lofo"]:
+            r["aggregations"][FLAT_NO_INDEPENDENCE] = r["lofo"]["Flat -Independence"]
+            r["aggregation_positions"][FLAT_NO_INDEPENDENCE] = r["lofo_positions"]["Flat -Independence"]
+    aggregations = ["Flat", FLAT_NO_INDEPENDENCE, "4-family", "3-family"]
     positions = {a: pd.DataFrame({condition_label(*k): r["aggregation_positions"][a] for k, r in per_condition.items()})
                  for a in aggregations}
     ref = per_condition.get(("ref_sub", ""))
@@ -477,7 +501,7 @@ def rankings(results, ranked_models, path):
     return positions, taus
 
 
-def plot_trajectories(positions, path):
+def plot_trajectories(positions, path, display=None, styles=None):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -486,9 +510,9 @@ def plot_trajectories(positions, path):
     fig, axes = plt.subplots(1, len(positions), figsize=(5.2 * len(positions), 4.2), sharey=True, constrained_layout=True)
     for ax, (name, pos) in zip(np.atleast_1d(axes), positions.items()):
         x = np.arange(pos.shape[1])
-        for i, model in enumerate(models):
-            ax.plot(x, pos.loc[model].to_numpy(dtype=float), color=PALETTE[i % len(PALETTE)], marker=MARKERS[i % len(MARKERS)],
-                    linewidth=2, markersize=6, markeredgecolor="white", markeredgewidth=1, label=model)
+        for model in models:
+            ax.plot(x, pos.loc[model].to_numpy(dtype=float), **styles[model],
+                    linewidth=2, markersize=8, markeredgecolor="white", markeredgewidth=0.7, label=(display or {}).get(model, model))
         ax.set_title(name, fontsize=11)
         ax.set_xticks(x, pos.columns, rotation=45, ha="right", fontsize=8)
         ax.set_yticks(range(1, len(models) + 1))
@@ -511,8 +535,10 @@ def main():
         args = load_config(parse_args().config_file)
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    with open(args.models_file) as f:
+    with open(args.models_file, encoding="utf-8") as f:
         models = json.load(f)
+    display = {m["name"]: m.get("label", m["name"]) for m in models}
+    styles = model_styles(models)
     out_dir = os.path.join(args.output_dir, "metric_sensitivity")
     os.makedirs(out_dir, exist_ok=True)
     csv_path = os.path.join(out_dir, "real_results.csv")
@@ -523,23 +549,31 @@ def main():
             r["level"] = "" if pd.isna(r["level"]) else r["level"]
             done[(r["model"], r["condition"], r["level"], int(r["seed"]))] = r
 
-    labels, reference = {}, {}
-    for model in models:
-        ys, ref_sub_idx, sidecar = run_model(model, args, csv_path, done)
-        labels[model["name"]] = ys
-        reference[model["name"]] = (ys, ref_sub_idx, sidecar)
+    if args.outputs_only:
+        if not done:
+            raise FileNotFoundError(f"outputs_only needs the results of earlier runs in {csv_path}")
+        missing = [m["name"] for m in models if m["name"] not in {k[0] for k in done}]
+        if missing:
+            logger.warning(f"No results in {csv_path} for {missing}, so they are left out of the outputs")
+        logger.info("outputs_only: rebuilding the tables and figures from the saved results, nothing is computed")
+    else:
+        labels, reference = {}, {}
+        for model in models:
+            ys, ref_sub_idx, sidecar = run_model(model, args, csv_path, done)
+            labels[model["name"]] = ys
+            reference[model["name"]] = (ys, ref_sub_idx, sidecar)
 
-    dims = set(args.chance_dims or [])
-    if args.chance_include_model_dims:
-        dims |= {reference[m["name"]][2]["latent_dim"] for m in models}
-    if dims:
-        frames_from = args.chance_reference_model or models[0]["name"]
-        run_chance(*reference[frames_from], frames_from, sorted(dims), args, csv_path, done)
-    first = next(iter(labels.values()))
-    for name, ys in labels.items():
-        if ys.shape != first.shape or not np.array_equal(ys, first):
-            logger.warning(f"{name}: its frames or labels differ from {models[0]['name']}'s, so the "
-                           "subsamples are not the same frames across models")
+        dims = set(args.chance_dims or [])
+        if args.chance_include_model_dims:
+            dims |= {reference[m["name"]][2]["latent_dim"] for m in models}
+        if dims:
+            frames_from = args.chance_reference_model or models[0]["name"]
+            run_chance(*reference[frames_from], frames_from, sorted(dims), args, csv_path, done)
+        first = next(iter(labels.values()))
+        for name, ys in labels.items():
+            if ys.shape != first.shape or not np.array_equal(ys, first):
+                logger.warning(f"{name}: its frames or labels differ from {models[0]['name']}'s, so the "
+                               "subsamples are not the same frames across models")
 
     results = pd.read_csv(csv_path, keep_default_na=False, na_values=[""])
     results["level"] = results["level"].fillna("")
@@ -549,10 +583,10 @@ def main():
     null_summary(results).to_csv(os.path.join(out_dir, "null_summary.csv"), index=False)
     metric_deltas(results).to_csv(os.path.join(out_dir, "metric_deltas.csv"), index=False)
     chance_excess(results).to_csv(os.path.join(out_dir, "chance_excess.csv"), index=False)
-    plot_dimensionality(results, [m["name"] for m in models], os.path.join(out_dir, "dimensionality_curves.png"))
+    plot_dimensionality(results, [m["name"] for m in models], os.path.join(out_dir, "dimensionality_curves.png"), display, styles)
     ranked_models = [m["name"] for m in models if m.get("in_ranking", True)]
     positions, taus = rankings(results, ranked_models, os.path.join(out_dir, "rankings_by_condition.xlsx"))
-    plot_trajectories(positions, os.path.join(out_dir, "rank_trajectories.png"))
+    plot_trajectories(positions, os.path.join(out_dir, "rank_trajectories.png"), display, styles)
     logger.info(f"Kendall's tau against ref_sub:\n{taus}")
     logger.info(f"Saved the outputs in {out_dir}")
 

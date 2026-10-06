@@ -38,7 +38,7 @@ from scipy.special import gammaln
 import numba
 from numba import njit, prange
 
-def compute_disentanglement_metrics(data_training_args,config,checkpoint, latent_type,mu_train, y_train, mu_test = None, y_test = None,target = None):
+def compute_disentanglement_metrics(data_training_args,config,checkpoint, latent_type,mu_train, y_train, mu_test = None, y_test = None,target = None, mu_indep = None, y_indep = None):
     """
     Main function for computing all disentanglement evaluation metrics.
     Args:
@@ -52,8 +52,12 @@ def compute_disentanglement_metrics(data_training_args,config,checkpoint, latent
         mu_test: Latent mu representations of the test set data (optional).
         y_test: Ground truth labels for the test set (optional).
         target: Target generative factors for evaluation (optional).
+        mu_indep: Latent mu representations of an unseen set (optional, sim_coupled's independent split).
+        y_indep: Ground truth labels for the unseen set (optional).
 
     If test data are not provided (mu_test, y_test), a train/test split will be performed on the train data.
+    The unseen set never enters a split: the fitted parts are trained on the training split and scored on it,
+    the fit-free metrics are computed on it alone, and its results are written to a separate _indep file.
     """
     
     if is_wandb_available() and data_training_args.with_wandb:
@@ -75,8 +79,10 @@ def compute_disentanglement_metrics(data_training_args,config,checkpoint, latent
     mu_train = pd.DataFrame(data = mu_train, columns = colnames_X)
     if mu_test is not None:
         mu_test = pd.DataFrame(data = mu_test, columns = colnames_X)
+    if mu_indep is not None:
+        mu_indep = pd.DataFrame(data = mu_indep, columns = colnames_X)
 
-    if "vowels" in data_training_args.dataset_name:        
+    if "vowels" in data_training_args.dataset_name:
         if data_training_args.sim_vowels_number == 5:
             int_to_vowel = {
                 '0': 'a', '1': 'e', '2': 'I', '3': 'aw', '4': 'u'
@@ -176,17 +182,27 @@ def compute_disentanglement_metrics(data_training_args,config,checkpoint, latent
         y_train = np.array(y_train[target]).transpose()
         if y_test is not None:
             y_test = np.array(y_test[target]).transpose()
+    elif data_training_args.dataset_name == "sim_coupled":
+        "Class indices already - (factors, frames)"
+        y_train = np.array(y_train[target]).astype(np.int64).transpose()
+        if y_test is not None:
+            y_test = np.array(y_test[target]).astype(np.int64).transpose()
+        if y_indep is not None:
+            y_indep = np.array(y_indep[target]).astype(np.int64).transpose()
 
     "Make sure that all arrays are in the correct dimensions"
     mu_train = np.array(mu_train.transpose())
     if mu_test is not None:
         mu_test = np.array(mu_test.transpose())
+    if mu_indep is not None:
+        mu_indep = np.array(mu_indep.transpose())
 
     if getattr(data_training_args, "eval_dump_only", False):
         speaker_vt = None
         if "vowels" in data_training_args.dataset_name and ("speaker" in target1 or "speaker" in target2):
             speaker_vt = {int(i): float(speaker_groups[int(s[2:]) - 1].mean()) for i, s in enumerate(le_speakers.classes_)}
-        _dump_eval_arrays(data_training_args, latent_type, target, mu_train, y_train, mu_test, y_test, speaker_vt)
+        _dump_eval_arrays(data_training_args, latent_type, target, mu_train, y_train, mu_test, y_test, speaker_vt,
+                          mu_indep=mu_indep, y_indep=y_indep)
         return {}
 
     "Train/test split if test set is not provided"
@@ -240,6 +256,22 @@ def compute_disentanglement_metrics(data_training_args,config,checkpoint, latent
         y_test = y_test.transpose()
         y_train = y_train.transpose()
 
+    elif data_training_args.dataset_name == "sim_coupled":
+        "Stratify on the joint (lag, gain) cell. The unseen set is not part of the split"
+        mus = np.concatenate((mu_train,mu_test),axis=1).transpose()
+        ys = np.concatenate((y_train,y_test),axis=1).transpose()
+        sss = StratifiedShuffleSplit(n_splits=1, test_size=data_training_args.dev_data_percent,train_size=data_training_args.train_data_percent, random_state=42)
+        stratify_targets = joint_cell(ys.transpose())
+        for train_index, dev_index in sss.split(mus, stratify_targets):
+            mu_test = mus[dev_index,:]
+            y_test = ys[dev_index,:]
+            mu_train = mus[train_index,:]
+            y_train = ys[train_index,:]
+        mu_test = mu_test.transpose()
+        mu_train = mu_train.transpose()
+        y_test = y_test.transpose()
+        y_train = y_train.transpose()
+
     "1. Unsupervised metrics"
     start_time_unsup = time.time()
     unsupervised_scores = kl_distance_mi.unsupervised_metrics(np.concatenate((mu_train,mu_test),axis=1), total_corr=True, wass_corr = False, n_jobs = data_training_args.disentanglement_num_workers)
@@ -255,6 +287,10 @@ def compute_disentanglement_metrics(data_training_args,config,checkpoint, latent
     if "vowels" in data_training_args.dataset_name:
         "No cross-validation in simulations"
         dci_scores = dci.compute_dci(mu_train, y_train, mu_test, y_test)
+    elif data_training_args.dataset_name == "sim_coupled":
+        "No cross-validation in simulations; the same trees also score the unseen set"
+        dci_scores = dci.compute_dci(mu_train, y_train, mu_test, y_test, mus_indep=mu_indep, ys_indep=y_indep)
+        informativeness_indep = dci_scores.pop("informativeness_indep", None)
     else:
         #mus_combined = np.concatenate((mu_train, mu_test), axis=1)
         #ys_combined = np.concatenate((y_train, y_test), axis=1)
@@ -279,7 +315,7 @@ def compute_disentanglement_metrics(data_training_args,config,checkpoint, latent
     if len(target) > 1:
         "4. Modularity and Explicitness - Trains logistic regression"
         start_time_mod_expl = time.time()
-        if "vowels" not in data_training_args.dataset_name:
+        if "vowels" not in data_training_args.dataset_name and data_training_args.dataset_name != "sim_coupled":
             mod_expl_scores = modularity_explicitness.compute_modularity_explicitness(mu_train, y_train, mu_test, y_test,
                         use_cv=True,n_splits = data_training_args.disentanglement_eval_cv_splits,n_random_states = data_training_args.random_states,
                         n_jobs = data_training_args.disentanglement_num_workers)
@@ -350,9 +386,49 @@ def compute_disentanglement_metrics(data_training_args,config,checkpoint, latent
                 log_name += ' '+target3
             wandb.log({log_name: value})
 
+    if mu_indep is not None:
+        "Unseen set: D and C from trees fitted on it alone; informativeness and explicitness from the training"
+        "split's trees and regressions scored on it; the fit-free metrics (unsupervised, IRS, modularity) on it alone"
+        start_time_indep = time.time()
+        importances_indep = dci.compute_dci(mu_indep, y_indep, mu_indep, y_indep)
+        dci_indep = {**dci_scores, "informativeness_test": informativeness_indep,
+                     "disentanglement": importances_indep["disentanglement"], "completeness": importances_indep["completeness"]}
+        irs_indep = {"IRS": irs.compute_irs(mu_indep, y_indep, diff_quantile=0.99)["IRS"]}
+        unsupervised_indep = kl_distance_mi.unsupervised_metrics(mu_indep, total_corr=True, wass_corr = False, n_jobs = data_training_args.disentanglement_num_workers)
+        results_indep = {**dci_indep, **irs_indep}
+        if len(target) > 1:
+            mod_expl_indep = modularity_explicitness.compute_modularity_explicitness(mu_train, y_train, mu_indep, y_indep, use_cv=False,
+                        n_jobs = data_training_args.disentanglement_num_workers)
+            mutual_information_indep = discrete_mutual_info(histogram_discretize(mu_indep), y_indep, n_jobs=data_training_args.disentanglement_num_workers)
+            mod_expl_indep["modularity_score"] = modularity_explicitness.modularity(mutual_information_indep)
+            results_indep.update(mod_expl_indep)
+        results_indep.update(unsupervised_indep)
+        print(f"Total unseen-set metrics time: {time.time() - start_time_indep: .4f} seconds")
+
+        with open(output_path[:-len(".csv")] + "_indep.csv", 'w') as json_file:
+            json.dump(results_indep, json_file, indent=4)
+
+        if is_wandb_available() and data_training_args.with_wandb:
+            for key, value in results_indep.items():
+                log_name = key+' '+latent_type+ ' '+target1
+                if not 'None' in target2:
+                    log_name += ' '+target2
+                if not 'None' in target3:
+                    log_name += ' '+target3
+                wandb.log({log_name + ' indep': value})
+
     return results
 
-def _dump_eval_arrays(data_training_args, latent_type, target, mu_train, y_train, mu_test, y_test, speaker_vt=None):
+def joint_cell(ys):
+  "Joint class of discrete factors, (factors, points) -> (points,); the stratification label of sim_coupled"
+  ys = np.asarray(ys).astype(np.int64)
+  cell = np.zeros(ys.shape[1], dtype=np.int64)
+  for row in ys:
+    cell = cell * (int(row.max()) + 1) + row
+  return cell
+
+def _dump_eval_arrays(data_training_args, latent_type, target, mu_train, y_train, mu_test, y_test, speaker_vt=None,
+                      mu_indep=None, y_indep=None):
   """Save the arrays that would enter the disentanglement metrics, with a JSON sidecar.
 
   Args:
@@ -374,9 +450,13 @@ def _dump_eval_arrays(data_training_args, latent_type, target, mu_train, y_train
   tag = data_training_args.eval_dump_tag or "dump"
   fname = f"{tag}_{latent_type}_{'_'.join(target)}"
 
+  "The unseen set, when given, is saved alongside and never mixed into the train/test arrays"
+  indep_arrays = {}
+  if mu_indep is not None:
+    indep_arrays = {"mu_indep": np.asarray(mu_indep, dtype=np.float32), "y_indep": np.asarray(y_indep).astype(np.int64)}
   np.savez(os.path.join(dump_dir, fname + ".npz"),
            mu_train=np.asarray(mu_train, dtype=np.float32), mu_test=np.asarray(mu_test, dtype=np.float32),
-           y_train=y_train, y_test=y_test, n_train=mu_train.shape[1])
+           y_train=y_train, y_test=y_test, n_train=mu_train.shape[1], **indep_arrays)
 
   sidecar = {
     "tag": tag,
@@ -398,6 +478,8 @@ def _dump_eval_arrays(data_training_args, latent_type, target, mu_train, y_train
     "eval_shuffle": data_training_args.dataset_name in ["VOC_ALS", "iemocap"],
     "speaker_vt": speaker_vt,
   }
+  if mu_indep is not None:
+    sidecar["n_indep"] = int(np.asarray(mu_indep).shape[1])
   with open(os.path.join(dump_dir, fname + ".json"), "w") as f:
     json.dump(sidecar, f, indent=4)
   print(f"Saved eval dump {os.path.join(dump_dir, fname)}.npz")

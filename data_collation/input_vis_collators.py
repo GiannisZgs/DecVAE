@@ -126,10 +126,10 @@ class DataCollatorForInputVisualization:
             frame_len = batch["input_values"].shape[-1]
             if batch.get("input_seq_values") is not None:
                 frames = batch["input_seq_values"].shape[-1]/frame_len
-                new_input_seq_values = torch.zeros((batch_size,batch["input_values"].shape[1],int(frames),frame_len),device = batch["input_seq_values"].device)
+                new_input_seq_values = torch.zeros((batch_size,batch["input_seq_values"].shape[1],int(frames),frame_len),device = batch["input_seq_values"].device)
             
                 # Split sequence into frames 
-                for o in range(batch["input_values"].shape[1]):
+                for o in range(batch["input_seq_values"].shape[1]):
                     sequence = batch["input_seq_values"][:,o,:].clone()
                     for f in range(int(frames)):
                         framed_sequence = sequence[:,f*frame_len:(f+1)*frame_len]
@@ -142,7 +142,8 @@ class DataCollatorForInputVisualization:
                 assert self.data_training_args.mel_hops == 3
             for o in range(batch["input_values"].shape[1]):
                 batch["input_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
-                if batch.get("input_seq_values") is not None:
+            if batch.get("input_seq_values") is not None:
+                for o in range(batch["input_seq_values"].shape[1]):
                     batch["input_seq_values"][:,o,...], _ = extract_mel_spectrogram(batch["input_seq_values"][:,o,...],self.config.fs,n_mels=self.data_training_args.n_mels, n_fft=int(self.data_training_args.mel_hops*self.config.receptive_field*self.config.fs), hop_length=int(((self.config.receptive_field*self.config.fs) + 1)/self.data_training_args.mel_hops), normalize=self.data_training_args.mel_norm, feature_length=frame_len)
 
             if batch.get("input_seq_values") is not None:

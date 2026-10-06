@@ -76,7 +76,7 @@ JSON_FILE_NAME_MANUAL = "config_files/baselines/tfc/sim_vowels/latent_evaluation
 
 logger = get_logger(__name__)
 
-SUPPORTED_DATASETS = ["sim_vowels", "timit", "iemocap"]
+SUPPORTED_DATASETS = ["sim_vowels", "sim_coupled", "timit", "iemocap"]
 
 "Random initialization, evaluated alongside the checkpoints as the VAE script does"
 RANDOM_INIT = "epoch_-01"
@@ -383,6 +383,9 @@ def gather_split(dataloader, representation_function, data_training_args, compon
                     [ph for i, ph in enumerate(utt) if not overlap_mask_batch[j, i]]
                     for j, utt in enumerate(vowel_labels_batch)
                 ]
+            elif dataset_name == "sim_coupled":
+                lag_labels_batch = batch.pop("lag_labels")[~overlap_mask_batch]
+                gain_labels_batch = batch.pop("gain_labels")[~overlap_mask_batch]
             elif dataset_name == "timit":
                 phonemes39_batch = batch.pop("phonemes39", None)[~overlap_mask_batch]
                 phonemes48_batch = batch.pop("phonemes48", None)[~overlap_mask_batch]
@@ -415,6 +418,9 @@ def gather_split(dataloader, representation_function, data_training_args, compon
                 append("vowel", torch.cat([torch.tensor(v, device=vowel_device) for v in vowel_labels_batch]))
                 append("speaker_frame", _expand_to_frames(speaker_vt_factor_batch, overlap_mask_batch))
                 append("speaker_seq", speaker_vt_factor_batch.clone())
+            elif dataset_name == "sim_coupled":
+                append("lag", lag_labels_batch.clone())
+                append("gain", gain_labels_batch.clone())
             elif dataset_name == "timit":
                 append("phoneme39", phonemes39_batch.clone())
                 append("phoneme48", phonemes48_batch.clone())
@@ -543,6 +549,9 @@ def main():
         else:
             vectorized_datasets["validation"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["validation"]])
         vectorized_datasets["test"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["test"]])
+        if data_training_args.dataset_name == "sim_coupled":
+            "Independent-factors split - an unseen set, encoded and evaluated on its own"
+            vectorized_datasets["indep"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["indep"]])
 
         if min_length > 0.0:
             vectorized_datasets = vectorized_datasets.filter(
@@ -632,6 +641,14 @@ def main():
                 batch_size=data_training_args.per_device_eval_batch_size,
                 num_workers=num_workers,
             )
+            if data_training_args.dataset_name == "sim_coupled":
+                indep_dataloader = DataLoader(
+                    vectorized_datasets["indep"].with_format("numpy"),
+                    shuffle=False,
+                    collate_fn=data_collator,
+                    batch_size=data_training_args.per_device_eval_batch_size,
+                    num_workers=num_workers,
+                )
 
         "Prepare everything with HF accelerator"
         if data_training_args.dataset_name == "iemocap":
@@ -643,6 +660,8 @@ def main():
             representation_function, eval_dataloader, test_dataloader = accelerator.prepare(
                 representation_function, eval_dataloader, test_dataloader
             )
+            if data_training_args.dataset_name == "sim_coupled":
+                indep_dataloader = accelerator.prepare(indep_dataloader)
         representation_function = accelerator.unwrap_model(representation_function)
 
         "Measure total loading time"
@@ -655,6 +674,10 @@ def main():
         else:
             z_test, z_seq_test, labels_test = gather_split(test_dataloader, representation_function, data_training_args,
                                                            component, n_mels, pool_mel_bins, seq_pooling)
+        z_indep, labels_indep = None, {}
+        if data_training_args.dataset_name == "sim_coupled":
+            z_indep, _, labels_indep = gather_split(indep_dataloader, representation_function, data_training_args,
+                                                    component, n_mels, pool_mel_bins, seq_pooling)
         print(f"Total loading time: {time.time() - start_time: .4f} seconds")
 
         "Now use train/val representations to get the evaluation metrics"
@@ -665,6 +688,20 @@ def main():
             if data_training_args.dataset_name == "sim_vowels":
                 frame_targets = [("vowel", "vowel", "vowel"),
                                  ("speaker_frame", "speaker_frame", "speaker_frame")]
+            elif data_training_args.dataset_name == "sim_coupled":
+                "Evaluated here, with the unseen set"
+                frame_targets = []
+                for target, other in (("lag", "gain"), ("gain", "lag")):
+                    if target not in tasks and "all" not in tasks:
+                        continue
+                    "y carries (target, other factor) - stratified splits use their joint cell"
+                    prediction_eval(data_training_args, config,
+                        X=z, X_test=z_test,
+                        y=torch.stack((labels[target], labels[other]), dim=1),
+                        y_test=torch.stack((labels_test[target], labels_test[other]), dim=1),
+                        checkpoint=ckp, latent_type="z", target=target,
+                        X_indep=z_indep, y_indep=torch.stack((labels_indep[target], labels_indep[other]), dim=1)
+                    )
             elif data_training_args.dataset_name == "timit":
                 frame_targets = [("phoneme48", "phoneme48", "phoneme"),
                                  ("speaker_frame", "speaker_frame", "speaker_frame")]
@@ -693,8 +730,8 @@ def main():
                     checkpoint=ckp, latent_type="z", target=target
                 )
 
-            "Sequence-level targets, read off the pooled embeddings"
-            if z_seq is not None:
+            "Sequence-level targets, read off the pooled embeddings. sim_coupled has no sequence-level factor"
+            if z_seq is not None and data_training_args.dataset_name != "sim_coupled":
                 if data_training_args.dataset_name == "iemocap":
                     seq_targets = [("speaker_seq", "speaker_seq", "speaker_seq"),
                                    ("emotion_seq", ["cat_emotion_seq", "speaker_seq"], "emotion_seq")]
@@ -717,6 +754,9 @@ def main():
             if data_training_args.dataset_name == "sim_vowels":
                 columns = ["vowel", "speaker_frame"]
                 names = ["vowel", "speaker_frame"]
+            elif data_training_args.dataset_name == "sim_coupled":
+                columns = ["lag", "gain"]
+                names = ["lag", "gain"]
             elif data_training_args.dataset_name == "timit":
                 columns = ["phoneme", "speaker_frame"]
                 names = ["phoneme39", "speaker_frame"]
@@ -731,10 +771,17 @@ def main():
                 y_frame_test = pd.DataFrame(y_frame_test.cpu().numpy(), columns=columns)
             else:
                 y_frame_test = None
+            "The unseen set (sim_coupled) is scored separately, into an _indep result"
+            if z_indep is not None:
+                y_frame_indep = torch.cat([labels_indep[n].reshape(-1, 1) for n in names], dim=1)
+                y_frame_indep = pd.DataFrame(y_frame_indep.cpu().numpy(), columns=columns)
+            else:
+                y_frame_indep = None
 
             compute_disentanglement_metrics(data_training_args, config, checkpoint=ckp,
                 latent_type="z", mu_train=z, y_train=y_frame_train,
-                mu_test=z_test, y_test=y_frame_test, target=columns
+                mu_test=z_test, y_test=y_frame_test, target=columns,
+                mu_indep=z_indep, y_indep=y_frame_indep
             )
 
             "Sequence-level disentanglement on IEMOCAP, emotion against speaker, off the pooled embeddings"

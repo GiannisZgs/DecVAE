@@ -569,6 +569,13 @@ class ModelArgumentsPost:
         default="audio",
         metadata={"help": "The input type to the VAE."},
     )
+    vae_seq_pooling: str = field(
+        default=None,
+        metadata={"help": "How the frame embeddings of an utterance are pooled into one sequence-level embedding, "
+                          "for the '*_seq' classification and disentanglement targets. None skips them. 'mean' "
+                          "averages over every frame of the padded sequence, as DecVAE's SequenceAggregator and the "
+                          "frozen SSL and time-series baselines do."},
+    )
     n_mels_vae: int = field(
         default=80,
         metadata={"help": "The number of mel bands to use."},
