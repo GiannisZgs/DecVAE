@@ -54,6 +54,7 @@ def build_cache_file_names(data_training_args, input_type):
         "validation": getattr(data_training_args, "validation_cache_file_name", None),
         "test": getattr(data_training_args, "test_cache_file_name", None),
         "dev": getattr(data_training_args, "dev_cache_file_name", None),
+        "indep": getattr(data_training_args, "indep_cache_file_name", None),
     }
 
     if names["train"] is None and names["validation"] is None:
@@ -69,7 +70,7 @@ def build_cache_file_names(data_training_args, input_type):
     "A split whose path is not configured is left out entirely - the latent traversals for the"
     "simulated vowels, for instance, define a train file only"
     cache_file_names = {}
-    for split in ("train", "validation", "test", "dev"):
+    for split in ("train", "validation", "test", "dev", "indep"):
         if names[split] is not None:
             cache_file_names[split] = shards(names[split])
     return cache_file_names
@@ -94,6 +95,7 @@ def build_map_cache_file_names(data_training_args, input_type):
         ("validation", "validation_cache_file_name"),
         ("test", "test_cache_file_name"),
         ("dev", "dev_cache_file_name"),
+        ("indep", "indep_cache_file_name"),
     )
     names = {}
     for split, attr in splits:

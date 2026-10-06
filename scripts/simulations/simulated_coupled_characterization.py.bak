@@ -1,0 +1,188 @@
+#!/usr/bin/env python
+# coding=utf-8
+# Copyright 2025 Ioannis Ziogas <ziogioan@ieee.org>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Characterization of the SimCoupled dataset (Supplementary Information).
+Reads the files written by simulated_coupled.py and reports, per split (indep, test):
+1. decodability of each factor from single log-Mel frames (linear probe, chance-normalised balanced accuracy),
+2. effect profile of each factor over Mel bands,
+3. mean log-power spectrum per lag class (gain removed) and per gain class.
+Log-Mel features are computed with librosa directly (80 Mel bands, 25 ms window, 20 ms hop, n_fft 512,
+no centring, absolute dB), since feature_extraction.extract_mel_spectrogram fixes win_length = n_fft,
+centres frames and normalises per utterance.
+Frames that cross a segment boundary are dropped, as discard_label_overlaps does.
+"""
+
+import os
+import sys
+# Add project root to Python path for module resolution
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+import numpy as np
+import pandas as pd
+import librosa
+from scipy.signal import welch
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+from latent_analysis_utils.subspace_utils import cn_bacc
+from simulated_coupled import (
+    SAVE_DIR, F_S, SEGMENT_LEN, N_SEGMENTS, LAG_LEVELS, GAIN_LEVELS_DB, split_fname, load_split,
+)
+
+# Constants and Parameters
+OUT_DIR = os.path.join(SAVE_DIR, "characterization")
+SPLITS = ['indep', 'test']
+FACTORS = {'lag': LAG_LEVELS, 'gain': GAIN_LEVELS_DB}
+
+N_MELS = 80
+WIN_LEN = int(0.025 * F_S)
+HOP_LEN = int(0.02 * F_S)
+N_FFT = 512
+N_BAND_GROUPS = 4
+
+PROBE_TEST_SIZE = 0.25
+PROBE_MAX_ITER = 2000
+PROBE_SEED = 0
+
+PSD_NPERSEG = 512
+CLASS_COLORS = ['#86b6ef', '#5598e7', '#2a78d6', '#1c5cab', '#104281']  # ordinal blue, light -> dark
+
+
+def log_mel(audio):
+    "audio (n_seq, n_samples) -> absolute log-Mel energy in dB (n_seq, n_frames, N_MELS)"
+    S = librosa.feature.melspectrogram(
+        y=audio, sr=F_S, n_fft=N_FFT, hop_length=HOP_LEN, win_length=WIN_LEN,
+        window="hann", center=False, n_mels=N_MELS, power=2.0,
+    )
+    return np.transpose(10 * np.log10(S + 1e-10), (0, 2, 1))
+
+def frame_segments(n_frames):
+    "Segment index of each frame, -1 for frames that cross a segment boundary"
+    start = np.arange(n_frames) * HOP_LEN
+    seg_start, seg_end = start // SEGMENT_LEN, (start + WIN_LEN - 1) // SEGMENT_LEN
+    return np.where(seg_start == seg_end, seg_start, -1)
+
+def frame_dataset(split):
+    """Single-frame features with frame-level labels.
+
+    Returns:
+        X (n_frames_total, N_MELS), labels {factor: (n_frames_total,)}, groups (n_frames_total,) sequence index
+    """
+    feats = log_mel(split["audio"].astype(np.float32))
+    seg = frame_segments(feats.shape[1])
+    keep = seg >= 0
+    assert keep.sum() == 4 * N_SEGMENTS, f"{keep.sum()} frames kept per sequence, expected {4 * N_SEGMENTS}"
+    n_seq = feats.shape[0]
+    X = feats[:, keep].reshape(-1, N_MELS)
+    labels = {f: split[f][:, seg[keep]].ravel() for f in FACTORS}
+    groups = np.repeat(np.arange(n_seq), keep.sum())
+    return X, labels, groups
+
+def probe_score(X, y, groups, n_classes):
+    "StandardScaler + LogisticRegression on single frames, sequence-disjoint held-out part"
+    tr, te = next(GroupShuffleSplit(n_splits=1, test_size=PROBE_TEST_SIZE, random_state=PROBE_SEED).split(X, y, groups))
+    clf = make_pipeline(StandardScaler(), LogisticRegression(max_iter=PROBE_MAX_ITER))
+    clf.fit(X[tr], y[tr])
+    return float(cn_bacc(y[te], clf.predict(X[te]), n_classes))
+
+def effect_profile(X, y, n_classes):
+    "Per Mel band, variance across classes of the band's mean log-energy"
+    means = np.stack([X[y == c].mean(0) for c in range(n_classes)])
+    return means.var(0)
+
+def group_shares(profile):
+    groups = np.array_split(profile, N_BAND_GROUPS)
+    return np.array([g.sum() for g in groups]) / profile.sum()
+
+def class_spectra(split, factor, remove_gain):
+    "Mean log-power spectrum (dB) per class over 0.1 s segments. Returns freqs (n_freqs,), spectra (n_classes, n_freqs)"
+    segs = split["audio"].reshape(-1, SEGMENT_LEN)
+    if remove_gain:
+        segs = segs / 10 ** (split["gain_db"].reshape(-1, 1) / 20)
+    freqs, P = welch(segs, fs=F_S, window="hann", nperseg=PSD_NPERSEG, axis=-1)
+    logP = 10 * np.log10(P + 1e-20)
+    y = split[factor].ravel()
+    return freqs, np.stack([logP[y == c].mean(0) for c in range(len(FACTORS[factor]))])
+
+def plot_spectra(freqs, spectra, factor, unit, title_extra, fname):
+    fig, axes = plt.subplots(1, len(SPLITS), figsize=(5 * len(SPLITS), 3.6), sharey=True)
+    for ax, split_name in zip(np.atleast_1d(axes), SPLITS):
+        for c, level in enumerate(FACTORS[factor]):
+            ax.plot(freqs / 1000, spectra[split_name][c], color=CLASS_COLORS[c], linewidth=1.5,
+                    label=f"{level:+d} {unit}" if factor == 'gain' else f"{level} {unit}")
+        ax.set_title(split_name)
+        ax.set_xlabel("Frequency (kHz)")
+        ax.set_xlim(0, F_S / 2000)
+        ax.grid(alpha=0.25, linewidth=0.5)
+        for side in ("top", "right"):
+            ax.spines[side].set_visible(False)
+    np.atleast_1d(axes)[0].set_ylabel("Mean log-power (dB)" + title_extra)
+    np.atleast_1d(axes)[-1].legend(title=factor, frameon=False, fontsize=8)
+    fig.tight_layout()
+    for ext in ("pdf", "png"):
+        fig.savefig(os.path.join(OUT_DIR, fname + "." + ext), dpi=300)
+    plt.close(fig)
+
+
+def main():
+
+    os.makedirs(OUT_DIR, exist_ok=True)
+    mel_hz = librosa.mel_frequencies(n_mels=N_MELS + 2, fmin=0.0, fmax=F_S / 2)[1:-1]
+
+    summary_rows, profile_rows, psd_rows = [], [], []
+    spectra = {'lag': {}, 'gain': {}}
+    for split_name in SPLITS:
+        split = load_split(split_fname(split_name))
+        X, labels, groups = frame_dataset(split)
+        for factor, levels in FACTORS.items():
+            n_classes = len(levels)
+            score = probe_score(X, labels[factor], groups, n_classes)
+            profile = effect_profile(X, labels[factor], n_classes)
+            shares = group_shares(profile)
+            summary_rows.append({
+                "split": split_name, "factor": factor, "probe_cn_bacc": score,
+                **{f"effect_share_q{g + 1}": s for g, s in enumerate(shares)},
+            })
+            for b in range(N_MELS):
+                profile_rows.append({
+                    "split": split_name, "factor": factor, "mel_band": b, "mel_center_hz": mel_hz[b],
+                    "effect_var": profile[b], "effect_share": profile[b] / profile.sum(),
+                })
+            print(split_name, factor, "probe", round(score, 3), "shares", np.round(shares, 2))
+
+            freqs, spec = class_spectra(split, factor, remove_gain=(factor == 'lag'))
+            spectra[factor][split_name] = spec
+            for c, level in enumerate(levels):
+                for fi, fr in enumerate(freqs):
+                    psd_rows.append({"split": split_name, "class": c, factor: level, "freq_hz": fr, "log_power_db": spec[c, fi]})
+
+    pd.DataFrame(summary_rows).to_csv(os.path.join(OUT_DIR, "characterization.csv"), index=False)
+    pd.DataFrame(profile_rows).to_csv(os.path.join(OUT_DIR, "effect_profiles.csv"), index=False)
+    for factor in FACTORS:
+        rows = [r for r in psd_rows if factor in r]
+        pd.DataFrame(rows).to_csv(os.path.join(OUT_DIR, f"psd_by_{factor}.csv"), index=False)
+    plot_spectra(freqs, spectra['lag'], 'lag', "samples", ", gain removed", "psd_by_lag")
+    plot_spectra(freqs, spectra['gain'], 'gain', "dB", "", "psd_by_gain")
+
+if __name__ == "__main__":
+    main()

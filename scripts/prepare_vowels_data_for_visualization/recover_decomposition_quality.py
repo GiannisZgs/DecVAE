@@ -362,20 +362,20 @@ def main():
             batch["input_seq_values"] = batch["input_seq_values"][...,:seq_len]
         frames_seq = batch["input_seq_values"].shape[-1]//frame_len
         seq_len = frames_seq*frame_len
-        new_input_seq_values = torch.zeros((batch_size,batch["input_values"].shape[1],int(frames_seq),frame_len),device = batch["input_seq_values"].device)
-        for o in range(batch["input_values"].shape[1]):
+        new_input_seq_values = torch.zeros((batch_size,batch["input_seq_values"].shape[1],int(frames_seq),frame_len),device = batch["input_seq_values"].device)
+        for o in range(batch["input_seq_values"].shape[1]):
             sequence = batch["input_seq_values"][:,o,:].clone()
             for f in range(int(frames_seq)):
                 framed_sequence = sequence[:,f*frame_len:(f+1)*frame_len]
                 new_input_seq_values[:,o,f,:] = framed_sequence.clone()
         batch["input_seq_values"] = new_input_seq_values.clone()
         
-        mel_seq_features = torch.zeros((batch_size,config.NoC+1,seq_len))
+        mel_seq_features = torch.zeros((batch_size,config.NoC_seq+1,seq_len))
         seq_mel,spec_max_seq = extract_mel_spectrogram(batch["input_seq_values"][:,o,...],config.fs,n_mels=data_training_args.n_mels, n_fft=int(data_training_args.mel_hops*config.receptive_field*config.fs), hop_length=int(((config.receptive_field*config.fs) + 1)/data_training_args.mel_hops), normalize=data_training_args.mel_norm, feature_length=frame_len, ref = None)
 
         mel_seq_features[:,0,...] = seq_mel.reshape(batch["input_seq_values"].shape[0],-1)
 
-        for o in range(1,batch["input_values"].shape[1]):
+        for o in range(1,batch["input_seq_values"].shape[1]):
             seq_mel,_ = extract_mel_spectrogram(batch["input_seq_values"][:,o,...],config.fs,n_mels=data_training_args.n_mels, n_fft=int(data_training_args.mel_hops*config.receptive_field*config.fs), hop_length=int(((config.receptive_field*config.fs) + 1)/data_training_args.mel_hops), normalize=data_training_args.mel_norm, feature_length=frame_len, ref = spec_max_seq)
             mel_seq_features[:,o,...] = seq_mel.reshape(batch["input_seq_values"].shape[0],-1)
         

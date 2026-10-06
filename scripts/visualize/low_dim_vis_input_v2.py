@@ -528,8 +528,8 @@ def main():
                 batch["input_seq_values"] = batch["input_seq_values"][...,:seq_len]
             frames_seq = batch["input_seq_values"].shape[-1]//frame_len
             seq_len = frames_seq*frame_len
-            new_input_seq_values = torch.zeros((batch_size,batch["input_values"].shape[1],int(frames_seq),frame_len),device = batch["input_seq_values"].device)
-            for o in range(batch["input_values"].shape[1]):
+            new_input_seq_values = torch.zeros((batch_size,batch["input_seq_values"].shape[1],int(frames_seq),frame_len),device = batch["input_seq_values"].device)
+            for o in range(batch["input_seq_values"].shape[1]):
                 sequence = batch["input_seq_values"][:,o,:].clone()
                 for f in range(int(frames_seq)):
                     framed_sequence = sequence[:,f*frame_len:(f+1)*frame_len]
