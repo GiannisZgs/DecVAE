@@ -73,7 +73,7 @@ os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 os.environ["TORCH_USE_CUDA_DSA"] = "1"
 os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 
-JSON_FILE_NAME_MANUAL = "config_files/VAEs/sim_vowels/latent_evaluations/config_vae1d_latent_anal_sim_vowels.json" #for debugging purposes only
+JSON_FILE_NAME_MANUAL = "config_files/sensitivity/dumps/config_dump_beta_vae_sim_vowels.json" #for debugging purposes only
 #JSON_FILE_NAME_MANUAL = "config_files/VAEs/voc_als/latent_evaluations/config_vae1d_latent_anal_voc_als.json" #for debugging purposes only
 SAVE_DIR_PLOTS = '/home/giannis/Documents/DecSSL/R_vis/latent_quality/low_dim_vis_latents/' #'/home/giannis/Documents/DecSSL/R_vis/latent_quality/low_dim_vis_latents/'
 
