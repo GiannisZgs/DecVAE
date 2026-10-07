@@ -76,9 +76,9 @@ logger = get_logger(__name__)
 "Hardcoded intervention: keep only this fraction of every TIMIT split. Set to None for the full dataset"
 TIMIT_SUBSET_FRACTION = None
 "Hardcoded intervention: keep only this fraction of every VOC-ALS split. Set to None for the full dataset"
-VOC_ALS_SUBSET_FRACTION = 0.05
+VOC_ALS_SUBSET_FRACTION = None
 "Hardcoded intervention: keep only this fraction of every SimCoupled split (incl. indep). Set to None for the full dataset"
-SIM_COUPLED_SUBSET_FRACTION = 0.05
+SIM_COUPLED_SUBSET_FRACTION = None
 
 
 def redirect_subset_outputs(data_training_args, fraction):
