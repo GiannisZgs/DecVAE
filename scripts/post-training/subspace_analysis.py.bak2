@@ -20,7 +20,6 @@ For every model in the models file: prediction (P), ablation (A) and swap (T, O 
 matrices per subspace and factor, entropy selectivity against a random-partition null, per-dimension
 probe importances across folds, and for SimVowels the alignment of the OC rows with the generator.
 Across seeds of one config: mean and std of every quantity, pairwise matrix correlation and CKA.
-The figure data goes to figure_data_dir as tidy CSVs, drawn by the R scripts in visualize_R/SI_subspace/.
 
 python scripts/post-training/subspace_analysis.py --config_file config_files/subspace/config_subspace_analysis.json
 Config keys: see DEFAULT_ARGS. The models file is a list of {"name", "label", "dataset", "config",
@@ -75,8 +74,6 @@ DEFAULT_ARGS = {
     "n_jobs": 1,
     "self_test": False,
     "outputs_only": False,  # rebuild the tables and figures from per_model/ alone, without loading any dump
-    "figure_data_dir": "data/subspace",  # tidy CSVs drawn by visualize_R/SI_subspace/
-    "quick_look_plots": False,  # matplotlib quick-look figures in output_dir/quick_look, not the paper figures
     "datasets": {},
 }
 DATASET_KEYS = {"speaker_factor", "ground_truth", "vowel_classes", "n_sub", "swap_match", "extra_runs"}
@@ -620,96 +617,6 @@ def seed_tables(records, args, out_dir):
     return cka_mean
 
 
-def headline_config(records, args):
-    sim = [r for r in records if r["dataset"] == "sim_vowels"]
-    return args.headline_config or next((r["config"] for r in sim if r.get("headline")), None)
-
-
-def write_figure_data(records, args, out_dir):
-    "Tidy CSVs for the R figures, one row per plotted value"
-    fig_dir = args.figure_data_dir
-    os.makedirs(fig_dir, exist_ok=True)
-    headline = headline_config(records, args)
-    mat_rows, sel_rows, summ_rows = [], [], []
-    for order, ((ds, config), recs) in enumerate(config_groups(records).items()):
-        meta_cols = {"dataset": ds, "config": config, "order": order, "decomposition": recs[0].get("decomposition"),
-                     "beta": recs[0].get("beta"), "headline": config == headline}
-        for run, r0 in recs[0]["runs"].items():
-            n, over = (len(recs), "seeds") if len(recs) > 1 else (len(r0["folds"]), "folds")
-            for m in ("P", "A", "dT", "dO", "block_importance"):
-                M, S = seed_matrix(recs, m, run)
-                for g, b in enumerate(recs[0]["blocks"]):
-                    for j, fac in enumerate(r0["factors"]):
-                        mat_rows.append({**meta_cols, "run": run, "matrix": m, "subspace": b, "factor": fac,
-                                         "mean": M[g, j], "std": S[g, j], "n": n, "std_over": over})
-            for m in SEL:
-                null = []
-                for rec in recs:
-                    sel_rows.append({**meta_cols, "run": run, "matrix": m, "seed": rec["seed"], "partition": "own",
-                                     "fold": np.nan, "draw": np.nan,
-                                     "value": rec["runs"][run]["summary"]["selectivity"][m]["all"]["mean"]})
-                    for f in rec["runs"][run]["folds"]:
-                        if "null" in f:
-                            for d, v in enumerate(f["null"]["sel"][m]):
-                                sel_rows.append({**meta_cols, "run": run, "matrix": m, "seed": rec["seed"], "partition": "null",
-                                                 "fold": f["fold"], "draw": d, "value": v})
-                                null.append(v)
-                own = [rec["runs"][run]["summary"]["selectivity"][m]["all"] for rec in recs]
-                own_std = np.std([o["mean"] for o in own], ddof=1) if len(own) > 1 else own[0]["std"]
-                summ_rows.append({**meta_cols, "run": run, "quantity": "selectivity", "matrix": m, "partition": "own",
-                                  "mean": np.mean([o["mean"] for o in own]), "std": own_std, "n": n, "std_over": over})
-                if null:
-                    summ_rows.append({**meta_cols, "run": run, "quantity": "selectivity", "matrix": m, "partition": "null",
-                                      "mean": np.mean(null), "std": np.std(null, ddof=1) if len(null) > 1 else np.nan,
-                                      "n": len(null), "std_over": "null partitions"})
-                if "alignment" in r0["summary"]:
-                    mae = [rec["runs"][run]["summary"]["alignment"][m]["mae"] for rec in recs]
-                    mae_std = (np.std(mae, ddof=1) if len(mae) > 1 else
-                               np.nanstd([f["alignment"][m]["mae"] for f in r0["folds"]], ddof=1))
-                    summ_rows.append({**meta_cols, "run": run, "quantity": "alignment_mae", "matrix": m, "partition": "own",
-                                      "mean": np.mean(mae), "std": mae_std, "n": n, "std_over": over})
-    pd.DataFrame(mat_rows).to_csv(os.path.join(fig_dir, "subspace_matrices.csv"), index=False)
-    pd.DataFrame(sel_rows).to_csv(os.path.join(fig_dir, "selectivity_null.csv"), index=False)
-    pd.DataFrame(summ_rows).to_csv(os.path.join(fig_dir, "config_summary.csv"), index=False)
-
-    head = sorted([r for r in records if r["dataset"] == "sim_vowels" and r["config"] == headline], key=lambda r: r["seed"])
-    if head and "G" in head[0]["runs"]["main"]["summary"]:
-        if len(head) > 1:
-            G, S = mean_std([r["runs"]["main"]["summary"]["G"]["mean"] for r in head])
-        else:
-            G, S = (np.asarray(head[0]["runs"]["main"]["summary"]["G"][k], float) for k in ("mean", "std"))
-        n = len(head) if len(head) > 1 else len(head[0]["runs"]["main"]["folds"])
-        pd.DataFrame([{"config": headline, "formant": f"F{k + 1}", "factor": fac, "mean": G[k, c], "std": S[k, c], "n": n}
-                      for k in range(3) for c, fac in enumerate(("vowel", "speaker"))]).to_csv(
-            os.path.join(fig_dir, "generator_expectation.csv"), index=False)
-
-        rec = head[0]
-        imps = np.load(os.path.join(out_dir, "importances", f"{rec['name']}.npz"))["imps_main"]
-        imps = imps / imps.max(axis=2, keepdims=True)
-        width = rec["latent_dim"] // rec["n_blocks"]
-        factors = rec["runs"]["main"]["factors"]
-        pd.DataFrame([{"model": rec["name"], "config": rec["config"], "seed": rec["seed"], "factor": factors[f], "fold": k,
-                       "dim": d, "subspace": rec["blocks"][d // width], "importance": imps[k, f, d]}
-                      for k in range(imps.shape[0]) for f in range(imps.shape[1]) for d in range(imps.shape[2])]).to_csv(
-            os.path.join(fig_dir, "fold_importance.csv"), index=False)
-        stab = rec["runs"]["main"]["summary"]["fold_stability"]
-        if stab is not None:
-            pd.DataFrame([{"model": rec["name"], "config": rec["config"], "seed": rec["seed"], "factor": fac,
-                           "spearman": stab["spearman"][j], "topk_jaccard": stab["topk_jaccard"][j], "top_frac": args.top_frac,
-                           "assignment_consistency": stab["assignment_consistency"]} for j, fac in enumerate(factors)]).to_csv(
-                os.path.join(fig_dir, "fold_stability_headline.csv"), index=False)
-
-    cka_path = os.path.join(out_dir, "cka_long.csv")
-    if os.path.exists(cka_path) and os.path.getsize(cka_path) > 1:
-        cka = pd.read_csv(cka_path)
-        cka["comparison"] = np.where(cka["config_a"] == cka["config_b"], cka["config_a"],
-                                     cka["config_a"] + " vs " + cka["config_b"])
-        cka.groupby(["dataset", "comparison", "config_a", "config_b", "block_a", "block_b"], sort=False)["value"].agg(
-            mean="mean", std=lambda v: v.std(ddof=1) if len(v) > 1 else np.nan, n="size").reset_index().to_csv(
-            os.path.join(fig_dir, "cka.csv"), index=False)
-    logger.info(f"Saved the figure data in {fig_dir}")
-
-
 def style_axes(ax):
     ax.grid(color="0.9", linewidth=0.8)
     ax.set_axisbelow(True)
@@ -923,14 +830,10 @@ def main():
         raise FileNotFoundError(f"No per-model results in {os.path.join(out_dir, 'per_model')}")
     write_tables(records, out_dir)
     cka_mean = seed_tables(records, args, out_dir)
-    write_figure_data(records, args, out_dir)
-    if args.quick_look_plots:
-        quick_dir = os.path.join(out_dir, "quick_look")
-        os.makedirs(quick_dir, exist_ok=True)
-        plot_simvowels(records, cka_mean, args, os.path.join(quick_dir, "subspace_simvowels"))
-        plot_configs(records, os.path.join(quick_dir, "subspace_configs"))
-        plot_fold_stability(records, args, out_dir, os.path.join(quick_dir, "subspace_fold_stability"))
-        plot_real(records, os.path.join(quick_dir, "subspace_real"))
+    plot_simvowels(records, cka_mean, args, os.path.join(out_dir, "subspace_simvowels"))
+    plot_configs(records, os.path.join(out_dir, "subspace_configs"))
+    plot_fold_stability(records, args, out_dir, os.path.join(out_dir, "subspace_fold_stability"))
+    plot_real(records, os.path.join(out_dir, "subspace_real"))
     logger.info(f"Saved the outputs in {out_dir}")
 
 
