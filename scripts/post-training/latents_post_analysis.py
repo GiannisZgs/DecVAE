@@ -63,7 +63,8 @@ warnings.simplefilter("ignore")
 #os.environ["TORCH_USE_CUDA_DSA"] = "1"
 #os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 
-JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/sim_coupled/latent_evaluations/config_latent_anal_sim_coupled.json" #for debugging purposes only
+JSON_FILE_NAME_MANUAL = "config_files/sensitivity/dumps/config_dump_decvae_fd_b01_sim_vowels.json" #for debugging purposes only
+#JSON_FILE_NAME_MANUAL = "config_files/DecVAEs/sim_vowels/latent_evaluations/config_latent_anal_sim_vowels.json" #for debugging purposes only
 
 logger = get_logger(__name__)
 
