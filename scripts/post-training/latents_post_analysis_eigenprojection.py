@@ -71,7 +71,7 @@ from datasets import DatasetDict, concatenate_datasets, Dataset
 from torch.utils.data.dataloader import DataLoader
 import time
 
-JSON_FILE_NAME_MANUAL = "config_files/baselines/pca/sim_vowels/latent_evaluations/config_pca_latent_anal_sim_vowels.json"
+JSON_FILE_NAME_MANUAL = "config_files/baselines/sfa/sim_coupled/latent_evaluations/config_sfa_latent_anal_sim_coupled.json"
 
 logger = get_logger(__name__)
 
@@ -1094,14 +1094,18 @@ def main():
 
     "Every components setting reads the same frames, so only the projection is refitted"
     for n_components in component_settings:
-        try:
+        "try:"
+        if eigenprojection_args.projection_method == "sfa":
             ckp = ckp_base + "_c" + str(n_components)
             projection_path = os.path.join(data_training_args.parent_dir, "eigenprojections", ckp + "_model.joblib")
-            assert os.path.exists(projection_path)
-        except AssertionError:
+            os.makedirs(os.path.dirname(projection_path), exist_ok=True)
+            "assert os.path.exists(projection_path)"
+            "except AssertionError:"
+        else:
             ckp = ckp_base
             projection_path = os.path.join(data_training_args.parent_dir, ckp + "_model.joblib")
-            assert os.path.exists(projection_path)
+            os.makedirs(os.path.dirname(projection_path), exist_ok=True)
+            "assert os.path.exists(projection_path)"
         print(f"\n=== {eigenprojection_args.projection_method} onto {n_components} components ({ckp}) ===")
 
         projection = fit_projection(z_fit, seq_lengths_fit, eigenprojection_args, n_components,
