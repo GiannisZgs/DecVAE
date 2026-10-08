@@ -221,10 +221,9 @@ def null_partition(Z, Y, tr, te, part, n_classes, full_probes, full_scores, opts
     return {m: subspace_selectivity(M[m]) for m in SEL}, len(log) - sum(log), len(log)
 
 
-def analyse_fold(Z, Y, tr, te, groups, n_classes, args, fold, match=None, null_parts=None, sim=None, gap=None):
+def analyse_fold(Z, Y, tr, te, groups, n_classes, args, fold, match=None, null_parts=None, sim=None):
     """P, A and swap matrices, selectivity and importances of one fold.
 
-    gap: optional (i, j) factor rows; the |Y[i] - Y[j]| distribution of each factor's swap pairs is kept.
     Returns:
         Fold results dict, and (F, D) per-dimension importances.
     """
@@ -242,12 +241,6 @@ def analyse_fold(Z, Y, tr, te, groups, n_classes, args, fold, match=None, null_p
     res = {"fold": fold, "n_train": len(tr), "n_test": len(te), "full_scores": full_scores}
     res.update(block_matrices(Z, Y, tr, te, groups, n_classes, full_probes, full_scores, opts, match,
                               np.random.default_rng([args.fold_seed, fold, 1]), log))
-    pairs = res.pop("pairs")
-    if gap is not None:
-        n_gap = max(n_classes[gap[0]], n_classes[gap[1]])
-        res["pair_gap"] = [{f"{stage}_{side}": np.bincount(np.abs(Y[gap[0], idx] - Y[gap[1], idx]), minlength=n_gap)
-                            for stage in ("formed", "kept") for side, idx in zip("ab", pairs[f][stage])}
-                           for f in range(F)]
     res["block_importance"] = block_importance(imp, groups)
     res["selectivity"] = {m: {"all": subspace_selectivity(res[m]), "OCs": subspace_selectivity(res[m], rows=range(1, G))}
                           for m in SEL}
@@ -305,7 +298,6 @@ def summarise_folds(folds, imps, args):
 
 def run_analysis(Z, Y, split_label, factors, n_classes, groups, run, args, match, null_parts, sim, test_idx=None):
     "test_idx: frames that replace every fold's test part (the indep split), the folds still pick the training part"
-    gap = (factors.index("lag"), factors.index("gain")) if {"lag", "gain"} <= set(factors) else None
     folds = make_folds(split_label, run["split"], args.n_folds, args.fold_seed)
     if test_idx is not None:
         folds = [(tr, test_idx) for tr, _ in folds]
@@ -313,7 +305,7 @@ def run_analysis(Z, Y, split_label, factors, n_classes, groups, run, args, match
     for k, (tr, te) in enumerate(folds):
         t0 = time.time()
         res, imp = analyse_fold(Z, Y, tr, te, groups, n_classes, args, k, match,
-                                null_parts if k in args.null_folds else None, sim, gap)
+                                null_parts if k in args.null_folds else None, sim)
         fold_res.append(res)
         imps.append(imp)
         logger.info(f"  fold {k}: full {np.round(res['full_scores'], 3).tolist()}, "
@@ -340,7 +332,7 @@ def process_model(model, args, refs, out_dir):
     json_path = os.path.join(out_dir, "per_model", f"{model['name']}.json")
     settings = model_settings(model, ds_cfg, n_sub, args)
 
-    mus, Y_raw, n_train, sidecar = load_dump(model["dump"])
+    mus, Y_raw, _, sidecar = load_dump(model["dump"])
     Z = mus.T
     factors = list(sidecar["targets"])
     if sidecar["dataset_name"] != model["dataset"]:
@@ -380,12 +372,6 @@ def process_model(model, args, refs, out_dir):
     frames_crc = zlib.crc32(sub.tobytes() + np.ascontiguousarray(Y_raw[:, sub]).tobytes())
     if Y_indep_raw is not None:
         frames_crc = zlib.crc32(np.ascontiguousarray(Y_indep_raw).tobytes(), frames_crc)
-    ref = refs[model["dataset"]]
-    ref.setdefault("identity", []).append({
-        "dataset": model["dataset"], "model": model["name"], "reference_model": ref["name"],
-        "n_frames": int(Y_raw.shape[1]), "n_train": int(n_train), "n_indep": 0 if Y_indep_raw is None else int(Y_indep_raw.shape[1]),
-        "labels_identical": True, "indep_labels_identical": True if Y_indep_raw is not None else None,
-        "label_rows": ",".join(factors), "frames_crc": frames_crc})  # a mismatch raises above
 
     if os.path.exists(json_path):
         with open(json_path) as f:
@@ -514,7 +500,6 @@ def meta(rec, run):
 
 def write_tables(records, out_dir):
     mat_rows, sel_rows, null_rows, stab_rows, align_rows, score_rows = [], [], [], [], [], []
-    pair_rows, gap_rows = [], []
     for rec in records:
         for run, r in rec["runs"].items():
             base = meta(rec, run)
@@ -535,16 +520,6 @@ def write_tables(records, out_dir):
                         for j, fac in enumerate(factors):
                             mat_rows.append({**base, "fold": fold, "matrix": m, "subspace": b, "factor": fac, "value": M[g, j]})
             for f in r["folds"]:
-                if "n_formed" in f:
-                    for j, fac in enumerate(factors):
-                        pair_rows.append({**base, "fold": f["fold"], "factor": fac, "n_formed": f["n_formed"][j],
-                                          "n_with_control": f["n_with_control"][j], "n_kept": f["n_pairs"][j]})
-                for j, hists in enumerate(f.get("pair_gap", [])):
-                    for key, counts in hists.items():
-                        stage, side = key.split("_")
-                        for gap, count in enumerate(counts):
-                            gap_rows.append({**base, "fold": f["fold"], "factor": factors[j], "stage": stage,
-                                             "frame": side, "abs_lag_minus_gain": gap, "count": count})
                 for m in SEL:
                     for measure in ("all", "OCs"):
                         sel_rows.append({**base, "fold": f["fold"], "matrix": m, "measure": f"sel_{measure}", "factor": "",
@@ -576,8 +551,7 @@ def write_tables(records, out_dir):
                                       "assignment_consistency": s["fold_stability"]["assignment_consistency"],
                                       "nonconverged_frac": s["nonconverged_frac"]})
     for name, rows in (("matrices_long", mat_rows), ("selectivity", sel_rows), ("null_summary", null_rows),
-                       ("fold_stability", stab_rows), ("alignment", align_rows), ("full_scores", score_rows),
-                       ("swap_pairs", pair_rows), ("swap_pair_gaps", gap_rows)):
+                       ("fold_stability", stab_rows), ("alignment", align_rows), ("full_scores", score_rows)):
         pd.DataFrame(rows).to_csv(os.path.join(out_dir, f"{name}.csv"), index=False)
 
 
@@ -656,18 +630,16 @@ def seed_tables(records, args, out_dir):
             continue
         base = {"dataset": ds, "config": config, "n_seeds": len(recs)}
         for m in SEL:
-            for rows_label, rows in (("", slice(None)), ("_OCs", slice(1, None))):  # all subspaces, OC rows only
-                rs = []
-                for a, b in combinations(recs, 2):
-                    va = np.asarray(a["runs"]["main"]["summary"][m]["mean"], float)[rows].ravel()
-                    vb = np.asarray(b["runs"]["main"]["summary"][m]["mean"], float)[rows].ravel()
-                    ok = np.isfinite(va) & np.isfinite(vb)
-                    rs.append(np.corrcoef(va[ok], vb[ok])[0, 1])
-                    pair_rows.append({"dataset": ds, "comparison": config, "config_a": config, "config_b": config,
-                                      "seed_a": a["seed"], "seed_b": b["seed"], "quantity": f"pearson{rows_label}:{m}",
-                                      "value": float(rs[-1])})
-                cons_rows += [{**base, "quantity": f"pearson{rows_label}_mean:{m}", "value": float(np.mean(rs))},
-                              {**base, "quantity": f"pearson{rows_label}_min:{m}", "value": float(np.min(rs))}]
+            rs = []
+            for a, b in combinations(recs, 2):
+                va = np.asarray(a["runs"]["main"]["summary"][m]["mean"], float).ravel()
+                vb = np.asarray(b["runs"]["main"]["summary"][m]["mean"], float).ravel()
+                ok = np.isfinite(va) & np.isfinite(vb)
+                rs.append(np.corrcoef(va[ok], vb[ok])[0, 1])
+                pair_rows.append({"dataset": ds, "comparison": config, "config_a": config, "config_b": config,
+                                  "seed_a": a["seed"], "seed_b": b["seed"], "quantity": f"pearson:{m}", "value": float(rs[-1])})
+            cons_rows += [{**base, "quantity": f"pearson_mean:{m}", "value": float(np.mean(rs))},
+                          {**base, "quantity": f"pearson_min:{m}", "value": float(np.min(rs))}]
         mats = []
         for a, b in combinations(recs, 2):
             C = cka_matrix(a, b, out_dir)
@@ -754,46 +726,6 @@ def write_figure_data(records, args, out_dir):
                     summ_rows.append({**meta_cols, "run": run, "quantity": "alignment_mae", "matrix": m, "partition": "own",
                                       "mean": np.mean(mae), "std": mae_std, "n": n, "std_over": over})
     pd.DataFrame(mat_rows).to_csv(os.path.join(fig_dir, "subspace_matrices.csv"), index=False)
-
-    "Full-latent scores: numeric folds only, and the summary per config apart, so no mean/std row is averaged in"
-    score_rows, score_summary, diff_rows, diff_summary = [], [], [], []
-    for ds_config, recs in config_groups(records).items():
-        for run, r0 in recs[0]["runs"].items():
-            n, over = (len(recs), "seeds") if len(recs) > 1 else (len(r0["folds"]), "folds")
-            for j, fac in enumerate(r0["factors"]):
-                for rec in recs:
-                    for f in rec["runs"][run]["folds"]:
-                        score_rows.append({**meta(rec, run), "fold": f["fold"], "factor": fac, "value": f["full_scores"][j]})
-                per_seed = [rec["runs"][run]["summary"]["full_scores"]["mean"][j] for rec in recs]
-                std = np.std(per_seed, ddof=1) if len(recs) > 1 else r0["summary"]["full_scores"]["std"][j]
-                score_summary.append({"dataset": ds_config[0], "config": ds_config[1], "run": run, "factor": fac,
-                                      "mean": np.mean(per_seed), "std": std, "n": n, "std_over": over})
-
-        "Main (correlated pool) minus each indep_test run, per cell"
-        indep_runs = [run for run, r in recs[0]["runs"].items() if r["split"] == "indep_test"]
-        for run in indep_runs:
-            r0 = recs[0]["runs"][run]
-            for m in MATRICES:
-                diffs = []
-                for rec in recs:
-                    main = np.asarray(rec["runs"]["main"]["summary"][m]["mean"], float)
-                    ind = np.asarray(rec["runs"][run]["summary"][m]["mean"], float)
-                    diffs.append(main - ind)
-                    for g, b in enumerate(rec["blocks"]):
-                        for j, fac in enumerate(r0["factors"]):
-                            diff_rows.append({**meta(rec, run), "matrix": m, "subspace": b, "factor": fac,
-                                              "main": main[g, j], "indep": ind[g, j], "main_minus_indep": main[g, j] - ind[g, j]})
-                mean, std = mean_std(diffs)
-                for g, b in enumerate(recs[0]["blocks"]):
-                    for j, fac in enumerate(r0["factors"]):
-                        diff_summary.append({"dataset": ds_config[0], "config": ds_config[1], "run": run, "matrix": m,
-                                             "subspace": b, "factor": fac, "mean": mean[g, j], "std": std[g, j],
-                                             "n": len(recs), "std_over": "seeds"})
-    pd.DataFrame(score_rows).to_csv(os.path.join(fig_dir, "full_scores.csv"), index=False)
-    pd.DataFrame(score_summary).to_csv(os.path.join(fig_dir, "full_scores_summary.csv"), index=False)
-    for d in (fig_dir, out_dir):
-        pd.DataFrame(diff_rows).to_csv(os.path.join(d, "main_minus_indep.csv"), index=False)
-        pd.DataFrame(diff_summary).to_csv(os.path.join(d, "main_minus_indep_summary.csv"), index=False)
     pd.DataFrame(sel_rows).to_csv(os.path.join(fig_dir, "selectivity_null.csv"), index=False)
     pd.DataFrame(summ_rows).to_csv(os.path.join(fig_dir, "config_summary.csv"), index=False)
 
@@ -1046,8 +978,6 @@ def main():
         refs = {}
         for model in models:
             process_model(model, args, refs, out_dir)
-        pd.DataFrame([row for ref in refs.values() for row in ref.get("identity", [])]).to_csv(
-            os.path.join(out_dir, "frame_identity.csv"), index=False)
 
     records = load_records(models, out_dir)
     if not records:

@@ -1360,10 +1360,8 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
         elif config.only_s_branch:
             model_type = "single_s"
             base_fname = f'{config.decomp_to_perform}_NoC{config.NoC}_SNR{data_training_args.sim_snr_db}_bs{config.beta_kl_prior_s}_{model_type}_{latent_type}_{target}_z{config.z_latent_dim}_h{config.proj_codevector_dim_z}'
-        wandb_label = f"{target}_{latent_type}"
         if data_training_args.dataset_name == "iemocap" and 'emotion' in target and cv_scheme == "session":
             base_fname = f'{base_fname}_session_cv'
-            wandb_label = f'{wandb_label}_session_cv'
 
         # Save detailed results by fold
         results_df.to_csv(os.path.join(current_result_dir, f'{base_fname}_cv_details_supervised.csv'), index=False)
@@ -1449,25 +1447,25 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
             best_wa_ci = best_result['Test_Accuracy_CI']
             
             wandb.log({
-                f"supervised_cv_{wandb_label}_best_classifier": best_classifier,
-                f"supervised_cv_{wandb_label}_best_accuracy": best_accuracy,
-                f"supervised_cv_{wandb_label}_best_accuracy_ci": best_wa_ci,
-                f"supervised_cv_{wandb_label}_best_f1": best_f1,
-                f"supervised_cv_{wandb_label}_best_f1_ci": best_f1_ci,
-                f"supervised_cv_{wandb_label}_best_f1_macro": best_f1_macro,
-                f"supervised_cv_{wandb_label}_best_f1_macro_ci": best_f1_macro_ci
+                f"supervised_cv_{target}_{latent_type}_best_classifier": best_classifier,
+                f"supervised_cv_{target}_{latent_type}_best_accuracy": best_accuracy,
+                f"supervised_cv_{target}_{latent_type}_best_accuracy_ci": best_wa_ci,
+                f"supervised_cv_{target}_{latent_type}_best_f1": best_f1,
+                f"supervised_cv_{target}_{latent_type}_best_f1_ci": best_f1_ci,
+                f"supervised_cv_{target}_{latent_type}_best_f1_macro": best_f1_macro,
+                f"supervised_cv_{target}_{latent_type}_best_f1_macro_ci": best_f1_macro_ci
             })
             if X_indep is not None and 'emotion' not in target:
                 wandb.log({
-                    f"supervised_cv_{wandb_label}_best_indep_accuracy": best_result['Indep_Accuracy_mean'],
-                    f"supervised_cv_{wandb_label}_best_indep_accuracy_ci": best_result['Indep_Accuracy_CI'],
-                    f"supervised_cv_{wandb_label}_best_indep_f1_macro": best_result['Indep_F1_Macro_mean'],
-                    f"supervised_cv_{wandb_label}_best_indep_f1_macro_ci": best_result['Indep_F1_Macro_CI']
+                    f"supervised_cv_{target}_{latent_type}_best_indep_accuracy": best_result['Indep_Accuracy_mean'],
+                    f"supervised_cv_{target}_{latent_type}_best_indep_accuracy_ci": best_result['Indep_Accuracy_CI'],
+                    f"supervised_cv_{target}_{latent_type}_best_indep_f1_macro": best_result['Indep_F1_Macro_mean'],
+                    f"supervised_cv_{target}_{latent_type}_best_indep_f1_macro_ci": best_result['Indep_F1_Macro_CI']
                 })
             if 'emotion' in target:
                 wandb.log({
-                    f"supervised_cv_{wandb_label}_best_unweighted_accuracy": best_unweighted_accuracy,
-                    f"supervised_cv_{wandb_label}_best_unweighted_accuracy_ci": best_ua_ci
+                    f"supervised_cv_{target}_{latent_type}_best_unweighted_accuracy": best_unweighted_accuracy,
+                    f"supervised_cv_{target}_{latent_type}_best_unweighted_accuracy_ci": best_ua_ci
                 })
 
     return
