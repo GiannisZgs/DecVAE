@@ -174,26 +174,18 @@ def swap_matrices(Z, Y, te, groups, full_probes, rng, max_pairs=5000, match=None
         O  = fraction where any other factor's prediction changes        (control: Oc)
     Report T - Tc as the on-target effect and O - Oc as the off-target effect (ideally 0).
     match: optional {f: [factors the pair must agree on]}, for confounded factors (VOC-ALS stage).
-    Also returns, per factor, the pairs formed (n_formed), those with a control frame (n_with_control),
-    and the formed and kept pair indices (pairs).
     """
     F, G = Y.shape[0], len(groups)
     T, O, Tc, Oc = (np.full((G, F), np.nan) for _ in range(4))
-    n_pairs, n_formed, n_with_control = (np.zeros(F, dtype=int) for _ in range(3))
-    pairs = [{"formed": (np.array([], int), np.array([], int)), "kept": (np.array([], int), np.array([], int))}
-             for _ in range(F)]
+    n_pairs = np.zeros(F, dtype=int)
     for f in range(F):
         a, b = matched_pairs(Y, te, f, rng, max_pairs, None if match is None else match.get(f))
-        n_formed[f] = len(a)
-        pairs[f]["formed"] = (a, b)
         if len(a) == 0:
             continue
         c = same_label_partner(Y, te, a, rng)
-        n_with_control[f] = int(np.sum(c >= 0))
         ok = (c >= 0) & np.all([full_probes[k].predict(Z[a]) == Y[k, a] for k in range(F)], axis=0)
         a, b, c = a[ok], b[ok], c[ok]
         n_pairs[f] = len(a)
-        pairs[f]["kept"] = (a, b)
         if len(a) == 0:
             continue
         others = [k for k in range(F) if k != f and (match is None or f not in match or k in match[f])]
@@ -204,8 +196,7 @@ def swap_matrices(Z, Y, te, groups, full_probes, rng, max_pairs=5000, match=None
                 Tm[g, f] = np.mean(full_probes[f].predict(Zs) == Y[f, b])
                 if others:
                     Om[g, f] = np.mean(np.any([full_probes[k].predict(Zs) != Y[k, a] for k in others], axis=0))
-    return {"T": T, "O": O, "T_ctrl": Tc, "O_ctrl": Oc, "n_pairs": n_pairs, "n_formed": n_formed,
-            "n_with_control": n_with_control, "pairs": pairs}
+    return {"T": T, "O": O, "T_ctrl": Tc, "O_ctrl": Oc, "n_pairs": n_pairs}
 
 
 def _entropy_norm(p, axis, base):

@@ -127,7 +127,7 @@ Parameters for data loading, preprocessing, caching, and training configuration.
 - **`disentanglement_eval_cv_splits`**: CV splits for disentanglement metrics
 - **`disentanglement_num_workers`**: Workers for the disentanglement metrics - DCI and modularity-explicitness cross-validation cells run at once, and threads for the unsupervised mutual information matrix
 - **`classif_eval_cv_splits`**: CV splits for supervised classification evaluation
-- **`iemocap_cv_scheme`**: Outer CV for IEMOCAP emotion classification - `["speaker"]` (leave-one-speaker-out, default), `["session"]` (leave-one-session-out), or `["speaker", "session"]` to run both in one go
+- **`iemocap_cv_scheme`**: Outer CV for IEMOCAP emotion classification - `"speaker"` (leave-one-speaker-out, default) or `"session"` (leave-one-session-out)
 - **`discard_label_overlaps`**: Remove frames with multiple simultaneous labels
 - **`classif_num_workers`**: Number of CPU workers for sklearn processes
 

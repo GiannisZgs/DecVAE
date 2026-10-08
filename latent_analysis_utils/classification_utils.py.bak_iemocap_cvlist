@@ -25,7 +25,6 @@ from tqdm.auto import tqdm
 import time
 from transformers import is_wandb_available
 import json
-import copy
 from scipy import stats
 
 import gc
@@ -147,22 +146,7 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
     (Indep_* columns), and k-means clusters it on its own (_indep files).
     """
 
-    "IEMOCAP outer CV scheme(s); several schemes rerun the supervised evaluation once per scheme"
-    cv_schemes = getattr(data_training_args, "iemocap_cv_scheme", "speaker")
-    cv_schemes = [cv_schemes] if isinstance(cv_schemes, str) else list(cv_schemes)
-    assert len(cv_schemes) > 0 and all(s in ["speaker", "session"] for s in cv_schemes), "iemocap_cv_scheme must hold 'speaker' and/or 'session'"
-    target_main = target[0] if isinstance(target, (list, tuple)) else target
-    if len(cv_schemes) > 1 and data_training_args.dataset_name == "iemocap" and 'emotion' in target_main:
-        for k, scheme in enumerate(cv_schemes):
-            print(f"\n##### IEMOCAP outer CV scheme: {scheme} #####")
-            args_scheme = copy.copy(data_training_args)
-            args_scheme.iemocap_cv_scheme = scheme
-            if k > 0:
-                "Clustering does not depend on the CV scheme"
-                args_scheme.unsup_eval = False
-            prediction_eval(args_scheme, config, X, X_test, y, y_test, checkpoint, latent_type, target=target, X_indep=X_indep, y_indep=y_indep)
-        return
-    cv_scheme = cv_schemes[0]
+
 
     def log_memory_usage(label):
         """Log memory usage at specific points in execution"""
@@ -935,8 +919,8 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                     speaker_ids = y_support[target_support].values
                     print(f"Using speaker information from '{target_support}' column for LOSO CV")
 
-                    assert cv_scheme in ["speaker", "session"], "iemocap_cv_scheme must be 'speaker' or 'session'"
-                    if cv_scheme == "session":
+                    assert data_training_args.iemocap_cv_scheme in ["speaker", "session"], "iemocap_cv_scheme must be 'speaker' or 'session'"
+                    if data_training_args.iemocap_cv_scheme == "session":
                         "Session index from the speaker name, e.g. Ses03M -> 3"
                         with open(data_training_args.path_to_iemocap_speaker_dict_file, 'r') as json_file:
                             id_to_speaker_cv = {v: k for k, v in json.load(json_file).items()}
@@ -948,7 +932,7 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                     logo = LeaveOneGroupOut()
                     # Convert the iterator to a list of indices we can reuse
                     skf_list = list(logo.split(X_merged, y_merged[target], groups=cv_groups))
-                    print(f"Created {len(skf_list)} LOSO folds based on {cv_scheme} groups")
+                    print(f"Created {len(skf_list)} LOSO folds based on {data_training_args.iemocap_cv_scheme} groups")
                 else:
                     print("Warning: No speaker information provided. Using standard stratification.")
                     skf = StratifiedKFold(n_splits=data_training_args.classif_eval_cv_splits, shuffle=True, random_state=rs)
@@ -1360,10 +1344,8 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
         elif config.only_s_branch:
             model_type = "single_s"
             base_fname = f'{config.decomp_to_perform}_NoC{config.NoC}_SNR{data_training_args.sim_snr_db}_bs{config.beta_kl_prior_s}_{model_type}_{latent_type}_{target}_z{config.z_latent_dim}_h{config.proj_codevector_dim_z}'
-        wandb_label = f"{target}_{latent_type}"
-        if data_training_args.dataset_name == "iemocap" and 'emotion' in target and cv_scheme == "session":
+        if data_training_args.dataset_name == "iemocap" and 'emotion' in target and data_training_args.iemocap_cv_scheme == "session":
             base_fname = f'{base_fname}_session_cv'
-            wandb_label = f'{wandb_label}_session_cv'
 
         # Save detailed results by fold
         results_df.to_csv(os.path.join(current_result_dir, f'{base_fname}_cv_details_supervised.csv'), index=False)
@@ -1449,25 +1431,25 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
             best_wa_ci = best_result['Test_Accuracy_CI']
             
             wandb.log({
-                f"supervised_cv_{wandb_label}_best_classifier": best_classifier,
-                f"supervised_cv_{wandb_label}_best_accuracy": best_accuracy,
-                f"supervised_cv_{wandb_label}_best_accuracy_ci": best_wa_ci,
-                f"supervised_cv_{wandb_label}_best_f1": best_f1,
-                f"supervised_cv_{wandb_label}_best_f1_ci": best_f1_ci,
-                f"supervised_cv_{wandb_label}_best_f1_macro": best_f1_macro,
-                f"supervised_cv_{wandb_label}_best_f1_macro_ci": best_f1_macro_ci
+                f"supervised_cv_{target}_{latent_type}_best_classifier": best_classifier,
+                f"supervised_cv_{target}_{latent_type}_best_accuracy": best_accuracy,
+                f"supervised_cv_{target}_{latent_type}_best_accuracy_ci": best_wa_ci,
+                f"supervised_cv_{target}_{latent_type}_best_f1": best_f1,
+                f"supervised_cv_{target}_{latent_type}_best_f1_ci": best_f1_ci,
+                f"supervised_cv_{target}_{latent_type}_best_f1_macro": best_f1_macro,
+                f"supervised_cv_{target}_{latent_type}_best_f1_macro_ci": best_f1_macro_ci
             })
             if X_indep is not None and 'emotion' not in target:
                 wandb.log({
-                    f"supervised_cv_{wandb_label}_best_indep_accuracy": best_result['Indep_Accuracy_mean'],
-                    f"supervised_cv_{wandb_label}_best_indep_accuracy_ci": best_result['Indep_Accuracy_CI'],
-                    f"supervised_cv_{wandb_label}_best_indep_f1_macro": best_result['Indep_F1_Macro_mean'],
-                    f"supervised_cv_{wandb_label}_best_indep_f1_macro_ci": best_result['Indep_F1_Macro_CI']
+                    f"supervised_cv_{target}_{latent_type}_best_indep_accuracy": best_result['Indep_Accuracy_mean'],
+                    f"supervised_cv_{target}_{latent_type}_best_indep_accuracy_ci": best_result['Indep_Accuracy_CI'],
+                    f"supervised_cv_{target}_{latent_type}_best_indep_f1_macro": best_result['Indep_F1_Macro_mean'],
+                    f"supervised_cv_{target}_{latent_type}_best_indep_f1_macro_ci": best_result['Indep_F1_Macro_CI']
                 })
             if 'emotion' in target:
                 wandb.log({
-                    f"supervised_cv_{wandb_label}_best_unweighted_accuracy": best_unweighted_accuracy,
-                    f"supervised_cv_{wandb_label}_best_unweighted_accuracy_ci": best_ua_ci
+                    f"supervised_cv_{target}_{latent_type}_best_unweighted_accuracy": best_unweighted_accuracy,
+                    f"supervised_cv_{target}_{latent_type}_best_unweighted_accuracy_ci": best_ua_ci
                 })
 
     return
