@@ -412,10 +412,6 @@ class DataTrainingArgumentsPost:
         default=5,
         metadata={"help": "The number of cross-validation splits to use for supervised classification evaluation."},
     )
-    iemocap_cv_scheme: str = field(
-        default="speaker",
-        metadata={"help": "Outer cross-validation scheme for IEMOCAP emotion classification: 'speaker' (leave-one-speaker-out, 10 folds) or 'session' (leave-one-session-out, 5 folds)."},
-    )
     sim_snr_db: float = field(
         default=None,
         metadata={"help": "The SNR for the simulated datasets."},

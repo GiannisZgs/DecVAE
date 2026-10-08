@@ -12,13 +12,12 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import f1_score, accuracy_score, confusion_matrix
+from sklearn.metrics import f1_score, accuracy_score
 from sklearn.model_selection import StratifiedKFold, GridSearchCV, StratifiedShuffleSplit, LeaveOneGroupOut, GroupShuffleSplit
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.decomposition import PCA
 from sklearn.dummy import DummyClassifier
 from sklearn.cluster import KMeans
-import matplotlib.pyplot as plt
 from disentanglement_utils.disentanglement_eval import joint_cell
 
 from tqdm.auto import tqdm
@@ -904,35 +903,21 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
         if "timit" in data_training_args.dataset_name and 'phoneme48' in target:
             y_39_merged = pd.concat([y_39, y_39_test], axis=0).reset_index(drop=True)
 
-        if 'emotion' in target:
-            "Confusion matrices summed over the outer folds, so each covers the whole dataset once per random state"
-            cm_labels = np.sort(y_merged[target].unique())
-            cm_totals = {}
-
         for rs in range(data_training_args.random_states):
             print(f"\n=== Running CV with random state {rs} ===")
             
             if data_training_args.dataset_name == "iemocap" and 'emotion' in target:
                 "Setup LOGO here"
                 if target_support is not None:
-                    # Extract speaker IDs from target_support
+                    # Extract speaker IDs from target_support 
                     speaker_ids = y_support[target_support].values
                     print(f"Using speaker information from '{target_support}' column for LOSO CV")
-
-                    assert data_training_args.iemocap_cv_scheme in ["speaker", "session"], "iemocap_cv_scheme must be 'speaker' or 'session'"
-                    if data_training_args.iemocap_cv_scheme == "session":
-                        "Session index from the speaker name, e.g. Ses03M -> 3"
-                        with open(data_training_args.path_to_iemocap_speaker_dict_file, 'r') as json_file:
-                            id_to_speaker_cv = {v: k for k, v in json.load(json_file).items()}
-                        cv_groups = np.array([int(id_to_speaker_cv[s][3:5]) for s in speaker_ids])
-                    else:
-                        cv_groups = speaker_ids
-
+                                        
                     # Use LeaveOneGroupOut for speaker-independent evaluation
                     logo = LeaveOneGroupOut()
                     # Convert the iterator to a list of indices we can reuse
-                    skf_list = list(logo.split(X_merged, y_merged[target], groups=cv_groups))
-                    print(f"Created {len(skf_list)} LOSO folds based on {data_training_args.iemocap_cv_scheme} groups")
+                    skf_list = list(logo.split(X_merged, y_merged[target], groups=speaker_ids))
+                    print(f"Created {len(skf_list)} LOSO folds based on speaker groups")
                 else:
                     print("Warning: No speaker information provided. Using standard stratification.")
                     skf = StratifiedKFold(n_splits=data_training_args.classif_eval_cv_splits, shuffle=True, random_state=rs)
@@ -1115,10 +1100,8 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                         test_f1_macro = f1_score(y_test_subset, eval_predictions, average='macro')
                         if 'emotion' in target:
                             unweighted_test_accuracy = calculate_unweighted_accuracy(y_test_subset, eval_predictions)
-                            cm_key = (rs, f'DummyClassifier_{strategy}', 'None')
-                            cm_totals[cm_key] = cm_totals.get(cm_key, 0) + confusion_matrix(y_test_subset[target], eval_predictions, labels=cm_labels)
 
-
+                    
                     fold_results.append({
                         'Random_State': rs,
                         'Fold': fold_idx,
@@ -1233,8 +1216,6 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                                 test_f1_macro = f1_score(y_test_subset[target_col], test_predictions, average='macro')
                                 if 'emotion' in target:
                                     unweighted_test_accuracy = calculate_unweighted_accuracy(y_test_subset[target_col], test_predictions)
-                                    cm_key = (rs, cls_name, feat_name)
-                                    cm_totals[cm_key] = cm_totals.get(cm_key, 0) + confusion_matrix(y_test_subset[target_col], test_predictions, labels=cm_labels)
 
                             end_time = time.time()
                             
@@ -1344,72 +1325,13 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
         elif config.only_s_branch:
             model_type = "single_s"
             base_fname = f'{config.decomp_to_perform}_NoC{config.NoC}_SNR{data_training_args.sim_snr_db}_bs{config.beta_kl_prior_s}_{model_type}_{latent_type}_{target}_z{config.z_latent_dim}_h{config.proj_codevector_dim_z}'
-        if data_training_args.dataset_name == "iemocap" and 'emotion' in target and data_training_args.iemocap_cv_scheme == "session":
-            base_fname = f'{base_fname}_session_cv'
-
+        
         # Save detailed results by fold
         results_df.to_csv(os.path.join(current_result_dir, f'{base_fname}_cv_details_supervised.csv'), index=False)
-
+        
         # Save summary results
         summary_df.to_csv(os.path.join(current_result_dir, f'{base_fname}_cv_summary_supervised.csv'), index=False)
-
-        if 'emotion' in target and cm_totals:
-            "Per random state, and summed over random states (Random_State = 'all')"
-            label_names = [id_to_emotion.get(int(l), str(l)) for l in cm_labels]
-            cm_sum_rs = {}
-            for (rs_k, cls_k, feat_k), cm in cm_totals.items():
-                cm_sum_rs[(cls_k, feat_k)] = cm_sum_rs.get((cls_k, feat_k), 0) + cm
-            cm_rows, count_rows, metric_rows = [], [], []
-            for (rs_k, cls_k, feat_k), cm in list(cm_totals.items()) + [(('all',) + k, v) for k, v in cm_sum_rs.items()]:
-                tp = np.diag(cm)
-                fp = cm.sum(axis=0) - tp
-                fn = cm.sum(axis=1) - tp
-                tn = cm.sum() - tp - fp - fn
-                "Zero when undefined (no predictions or no samples of the class), as sklearn's zero_division default"
-                precision = np.divide(tp, tp + fp, out=np.zeros(len(tp)), where=(tp + fp) > 0)
-                recall = np.divide(tp, tp + fn, out=np.zeros(len(tp)), where=(tp + fn) > 0)
-                "Per-class accuracy as in UA: correct / samples of the class, so it equals recall"
-                accuracy = recall.copy()
-                for i, name in enumerate(label_names):
-                    cm_rows.append({'Random_State': rs_k, 'Classifier': cls_k, 'Feature_Method': feat_k, 'True_Label': name,
-                                    **{f'Pred_{p}': cm[i, j] for j, p in enumerate(label_names)}})
-                    count_rows.append({'Random_State': rs_k, 'Classifier': cls_k, 'Feature_Method': feat_k, 'Class': name,
-                                       'TP': tp[i], 'FP': fp[i], 'FN': fn[i], 'TN': tn[i], 'Support': tp[i] + fn[i]})
-                    metric_rows.append({'Random_State': rs_k, 'Classifier': cls_k, 'Feature_Method': feat_k, 'Class': name,
-                                        'Accuracy': accuracy[i], 'Precision': precision[i], 'Recall': recall[i], 'Support': tp[i] + fn[i]})
-            pd.DataFrame(cm_rows).to_csv(os.path.join(current_result_dir, f'{base_fname}_confusion_matrix_supervised.csv'), index=False)
-            pd.DataFrame(count_rows).to_csv(os.path.join(current_result_dir, f'{base_fname}_confusion_counts_supervised.csv'), index=False)
-            pd.DataFrame(metric_rows).to_csv(os.path.join(current_result_dir, f'{base_fname}_per_class_metrics_supervised.csv'), index=False)
-
-            "One plot per classifier, from the matrix summed over folds and random states"
-            "Styled as the subspace_analysis heatmaps: Blues, row-normalised values with counts, no frame"
-            emotion_names = {'ang': 'Angry', 'hap': 'Happy', 'neu': 'Neutral', 'sad': 'Sad'}
-            cls_names = {'LogisticRegression': 'Logistic regression', 'RandomForest': 'Random forest',
-                         'DummyClassifier_uniform': 'Chance (uniform)', 'DummyClassifier_most_frequent': 'Chance (most frequent)'}
-            tick_names = [emotion_names.get(n, n) for n in label_names]
-            for (cls_k, feat_k), cm in cm_sum_rs.items():
-                cm_norm = cm / np.maximum(cm.sum(axis=1, keepdims=True), 1)
-                fig, ax = plt.subplots(figsize=(3.4, 3.2))
-                ax.imshow(cm_norm, cmap='Blues', vmin=0, vmax=1, aspect='equal')
-                for i in range(cm.shape[0]):
-                    for j in range(cm.shape[1]):
-                        ax.text(j, i, f'{cm_norm[i, j]:.2f}\n({cm[i, j]})', ha='center', va='center',
-                                fontsize=8, color='white' if cm_norm[i, j] > 0.6 else '0.1')
-                ax.set_xticks(range(len(tick_names)), tick_names, fontsize=8)
-                ax.set_yticks(range(len(tick_names)), tick_names, fontsize=8)
-                ax.set_xlabel('Predicted emotion', fontsize=9)
-                ax.set_ylabel('True emotion', fontsize=9)
-                ax.tick_params(length=0)
-                ax.set_title(cls_names.get(cls_k, cls_k), fontsize=10)
-                for side in ax.spines.values():
-                    side.set_visible(False)
-                fig.tight_layout()
-                feat_tag = '' if feat_k == 'None' else f'_{feat_k}'
-                fig_path = os.path.join(current_result_dir, f'{base_fname}_confusion_matrix_{cls_k}{feat_tag}')
-                fig.savefig(fig_path + '.png', dpi=200)
-                fig.savefig(fig_path + '.pdf')
-                plt.close(fig)
-
+        
         # Log to wandb if available
         if is_wandb_available() and data_training_args.with_wandb:
             best_result = summary_df.loc[summary_df['Test_Accuracy_mean'].idxmax()]
