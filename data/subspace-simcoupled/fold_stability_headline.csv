@@ -1,0 +1,3 @@
+model,config,seed,factor,spearman,topk_jaccard,top_frac,assignment_consistency
+ewt_b01_s0,ewt_b01,0,vowel,0.983500393348344,0.9209523809523809,0.1,0.9166666666666666
+ewt_b01_s0,ewt_b01,0,speaker_frame,0.9888682418685406,0.9209523809523811,0.1,0.9166666666666666
