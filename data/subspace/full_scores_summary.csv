@@ -1,0 +1,9 @@
+dataset,config,run,factor,mean,std,n,std_over
+sim_coupled,coupled_fd_b01,main,lag,0.8462741604128179,0.007724629597502549,3,seeds
+sim_coupled,coupled_fd_b01,main,gain,0.6843362671931658,0.0018430619468697159,3,seeds
+sim_coupled,coupled_fd_b01,indep,lag,0.5214389300972684,0.015390221979106127,3,seeds
+sim_coupled,coupled_fd_b01,indep,gain,0.43968096289401287,0.06164594605835202,3,seeds
+sim_coupled,coupled_ewt_b01,main,lag,0.8802515205018177,0.0025331260518267665,5,folds
+sim_coupled,coupled_ewt_b01,main,gain,0.7162831481940614,0.0065868441499620355,5,folds
+sim_coupled,coupled_ewt_b01,indep,lag,0.6292492026405412,0.003314735697931881,5,folds
+sim_coupled,coupled_ewt_b01,indep,gain,0.48535416988268676,0.0018574302711279573,5,folds
