@@ -457,18 +457,11 @@ def meta(rec, run):
 
 
 def write_tables(records, out_dir):
-    mat_rows, sel_rows, null_rows, stab_rows, align_rows, score_rows = [], [], [], [], [], []
+    mat_rows, sel_rows, null_rows, stab_rows, align_rows = [], [], [], [], []
     for rec in records:
         for run, r in rec["runs"].items():
             base = meta(rec, run)
             factors, blocks, s = r["factors"], rec["blocks"], r["summary"]
-            for j, fac in enumerate(factors):
-                for f in r["folds"]:
-                    score_rows.append({**base, "fold": f["fold"], "factor": fac, "n_classes": r["n_classes"][j],
-                                       "n_train": f["n_train"], "n_test": f["n_test"], "value": f["full_scores"][j]})
-                for k in ("mean", "std"):
-                    score_rows.append({**base, "fold": k, "factor": fac, "n_classes": r["n_classes"][j],
-                                       "n_train": np.nan, "n_test": np.nan, "value": s["full_scores"][k][j]})
             entries = [(f["fold"], f) for f in r["folds"]] + [("mean", {m: s[m]["mean"] for m in MATRICES}),
                                                                 ("std", {m: s[m]["std"] for m in MATRICES})]
             for fold, f in entries:
@@ -509,7 +502,7 @@ def write_tables(records, out_dir):
                                       "assignment_consistency": s["fold_stability"]["assignment_consistency"],
                                       "nonconverged_frac": s["nonconverged_frac"]})
     for name, rows in (("matrices_long", mat_rows), ("selectivity", sel_rows), ("null_summary", null_rows),
-                       ("fold_stability", stab_rows), ("alignment", align_rows), ("full_scores", score_rows)):
+                       ("fold_stability", stab_rows), ("alignment", align_rows)):
         pd.DataFrame(rows).to_csv(os.path.join(out_dir, f"{name}.csv"), index=False)
 
 
@@ -570,12 +563,12 @@ def cka_rows(C, blocks):
 
 
 def seed_tables(records, args, out_dir):
-    """seed_summary.csv, seed_consistency.csv, seed_pairs.csv (every seed pair) and cka_long.csv.
+    """seed_summary.csv, seed_consistency.csv and cka_long.csv.
 
     Returns:
         Mean CKA matrix over seed pairs, per (dataset, config) with more than one seed.
     """
-    summary_rows, cons_rows, pair_rows, cka_long, cka_mean = [], [], [], [], {}
+    summary_rows, cons_rows, cka_long, cka_mean = [], [], [], {}
     groups = config_groups(records)
     for (ds, config), recs in groups.items():
         values = pd.DataFrame([scalars(r) for r in recs])
@@ -594,16 +587,12 @@ def seed_tables(records, args, out_dir):
                 vb = np.asarray(b["runs"]["main"]["summary"][m]["mean"], float).ravel()
                 ok = np.isfinite(va) & np.isfinite(vb)
                 rs.append(np.corrcoef(va[ok], vb[ok])[0, 1])
-                pair_rows.append({"dataset": ds, "comparison": config, "config_a": config, "config_b": config,
-                                  "seed_a": a["seed"], "seed_b": b["seed"], "quantity": f"pearson:{m}", "value": float(rs[-1])})
             cons_rows += [{**base, "quantity": f"pearson_mean:{m}", "value": float(np.mean(rs))},
                           {**base, "quantity": f"pearson_min:{m}", "value": float(np.min(rs))}]
         mats = []
         for a, b in combinations(recs, 2):
             C = cka_matrix(a, b, out_dir)
             mats.append(C)
-            pair_rows += [{"dataset": ds, "comparison": config, "config_a": config, "config_b": config, "seed_a": a["seed"],
-                           "seed_b": b["seed"], "quantity": q, "value": v} for q, v in cka_rows(C, a["blocks"]).items()]
             for i, ba in enumerate(a["blocks"]):
                 for j, bb in enumerate(b["blocks"]):
                     cka_long.append({"dataset": ds, "config_a": config, "config_b": config, "seed_a": a["seed"],
@@ -624,13 +613,9 @@ def seed_tables(records, args, out_dir):
                                  "seed_b": b["seed"], "block_a": ba, "block_b": bb, "value": C[i, j]})
         cons_rows += [{"dataset": a["dataset"], "config": f"{config_a} vs {config_b}", "n_seeds": 1, "quantity": q, "value": v}
                       for q, v in cka_rows(C, a["blocks"]).items()]
-        pair_rows += [{"dataset": a["dataset"], "comparison": f"{config_a} vs {config_b}", "config_a": config_a,
-                       "config_b": config_b, "seed_a": a["seed"], "seed_b": b["seed"], "quantity": q, "value": v}
-                      for q, v in cka_rows(C, a["blocks"]).items()]
 
     pd.DataFrame(summary_rows).to_csv(os.path.join(out_dir, "seed_summary.csv"), index=False)
     pd.DataFrame(cons_rows).to_csv(os.path.join(out_dir, "seed_consistency.csv"), index=False)
-    pd.DataFrame(pair_rows).to_csv(os.path.join(out_dir, "seed_pairs.csv"), index=False)
     pd.DataFrame(cka_long).to_csv(os.path.join(out_dir, "cka_long.csv"), index=False)
     return cka_mean
 
@@ -722,10 +707,6 @@ def write_figure_data(records, args, out_dir):
         cka.groupby(["dataset", "comparison", "config_a", "config_b", "block_a", "block_b"], sort=False)["value"].agg(
             mean="mean", std=lambda v: v.std(ddof=1) if len(v) > 1 else np.nan, n="size").reset_index().to_csv(
             os.path.join(fig_dir, "cka.csv"), index=False)
-        cka.to_csv(os.path.join(fig_dir, "cka_pairs.csv"), index=False)
-    pairs_path = os.path.join(out_dir, "seed_pairs.csv")
-    if os.path.exists(pairs_path) and os.path.getsize(pairs_path) > 1:
-        pd.read_csv(pairs_path).to_csv(os.path.join(fig_dir, "seed_pairs.csv"), index=False)
     logger.info(f"Saved the figure data in {fig_dir}")
 
 

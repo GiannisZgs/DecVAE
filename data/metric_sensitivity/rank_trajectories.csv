@@ -1,0 +1,281 @@
+aggregation,aggregation_order,condition,condition_order,model,position
+Flat,0,ref_full,0,CoST,4.0
+Flat,0,ref_full,0,DecVAE + EWT,3.0
+Flat,0,ref_full,0,DecVAE + FD,6.0
+Flat,0,ref_full,0,FHVAE seg,2.0
+Flat,0,ref_full,0,PCA,7.0
+Flat,0,ref_full,0,SFA,1.0
+Flat,0,ref_full,0,beta-VAE,4.0
+Flat,0,ref_sub,1,CoST,3.0
+Flat,0,ref_sub,1,DecVAE + EWT,6.0
+Flat,0,ref_sub,1,DecVAE + FD,5.0
+Flat,0,ref_sub,1,FHVAE seg,1.0
+Flat,0,ref_sub,1,PCA,7.0
+Flat,0,ref_sub,1,SFA,1.0
+Flat,0,ref_sub,1,beta-VAE,4.0
+Flat,0,imbalance Zipf a = 1,2,CoST,3.0
+Flat,0,imbalance Zipf a = 1,2,DecVAE + EWT,6.0
+Flat,0,imbalance Zipf a = 1,2,DecVAE + FD,5.0
+Flat,0,imbalance Zipf a = 1,2,FHVAE seg,1.0
+Flat,0,imbalance Zipf a = 1,2,PCA,7.0
+Flat,0,imbalance Zipf a = 1,2,SFA,2.0
+Flat,0,imbalance Zipf a = 1,2,beta-VAE,3.0
+Flat,0,imbalance Zipf a = 2,3,CoST,3.0
+Flat,0,imbalance Zipf a = 2,3,DecVAE + EWT,6.0
+Flat,0,imbalance Zipf a = 2,3,DecVAE + FD,7.0
+Flat,0,imbalance Zipf a = 2,3,FHVAE seg,1.0
+Flat,0,imbalance Zipf a = 2,3,PCA,5.0
+Flat,0,imbalance Zipf a = 2,3,SFA,1.0
+Flat,0,imbalance Zipf a = 2,3,beta-VAE,4.0
+Flat,0,correlated V = 0.3,4,CoST,3.0
+Flat,0,correlated V = 0.3,4,DecVAE + EWT,6.0
+Flat,0,correlated V = 0.3,4,DecVAE + FD,5.0
+Flat,0,correlated V = 0.3,4,FHVAE seg,1.0
+Flat,0,correlated V = 0.3,4,PCA,7.0
+Flat,0,correlated V = 0.3,4,SFA,2.0
+Flat,0,correlated V = 0.3,4,beta-VAE,3.0
+Flat,0,correlated V = 0.6,5,CoST,3.0
+Flat,0,correlated V = 0.6,5,DecVAE + EWT,7.0
+Flat,0,correlated V = 0.6,5,DecVAE + FD,5.0
+Flat,0,correlated V = 0.6,5,FHVAE seg,1.0
+Flat,0,correlated V = 0.6,5,PCA,6.0
+Flat,0,correlated V = 0.6,5,SFA,1.0
+Flat,0,correlated V = 0.6,5,beta-VAE,3.0
+Flat,0,label_noise 10%,6,CoST,2.0
+Flat,0,label_noise 10%,6,DecVAE + EWT,5.0
+Flat,0,label_noise 10%,6,DecVAE + FD,7.0
+Flat,0,label_noise 10%,6,FHVAE seg,1.0
+Flat,0,label_noise 10%,6,PCA,6.0
+Flat,0,label_noise 10%,6,SFA,2.0
+Flat,0,label_noise 10%,6,beta-VAE,4.0
+Flat,0,label_noise 30%,7,CoST,4.0
+Flat,0,label_noise 30%,7,DecVAE + EWT,5.0
+Flat,0,label_noise 30%,7,DecVAE + FD,6.0
+Flat,0,label_noise 30%,7,FHVAE seg,2.0
+Flat,0,label_noise 30%,7,PCA,7.0
+Flat,0,label_noise 30%,7,SFA,1.0
+Flat,0,label_noise 30%,7,beta-VAE,3.0
+Flat,0,partial 5 speaker groups,8,CoST,3.0
+Flat,0,partial 5 speaker groups,8,DecVAE + EWT,5.0
+Flat,0,partial 5 speaker groups,8,DecVAE + FD,5.0
+Flat,0,partial 5 speaker groups,8,FHVAE seg,1.0
+Flat,0,partial 5 speaker groups,8,PCA,7.0
+Flat,0,partial 5 speaker groups,8,SFA,1.0
+Flat,0,partial 5 speaker groups,8,beta-VAE,3.0
+Flat,0,dimensionality +d noise dims,9,CoST,3.0
+Flat,0,dimensionality +d noise dims,9,DecVAE + EWT,5.0
+Flat,0,dimensionality +d noise dims,9,DecVAE + FD,6.0
+Flat,0,dimensionality +d noise dims,9,FHVAE seg,1.0
+Flat,0,dimensionality +d noise dims,9,PCA,7.0
+Flat,0,dimensionality +d noise dims,9,SFA,2.0
+Flat,0,dimensionality +d noise dims,9,beta-VAE,4.0
+"Flat (no MI, GCN)",1,ref_full,0,CoST,2.0
+"Flat (no MI, GCN)",1,ref_full,0,DecVAE + EWT,4.0
+"Flat (no MI, GCN)",1,ref_full,0,DecVAE + FD,5.0
+"Flat (no MI, GCN)",1,ref_full,0,FHVAE seg,3.0
+"Flat (no MI, GCN)",1,ref_full,0,PCA,7.0
+"Flat (no MI, GCN)",1,ref_full,0,SFA,1.0
+"Flat (no MI, GCN)",1,ref_full,0,beta-VAE,6.0
+"Flat (no MI, GCN)",1,ref_sub,1,CoST,1.0
+"Flat (no MI, GCN)",1,ref_sub,1,DecVAE + EWT,5.0
+"Flat (no MI, GCN)",1,ref_sub,1,DecVAE + FD,4.0
+"Flat (no MI, GCN)",1,ref_sub,1,FHVAE seg,3.0
+"Flat (no MI, GCN)",1,ref_sub,1,PCA,7.0
+"Flat (no MI, GCN)",1,ref_sub,1,SFA,2.0
+"Flat (no MI, GCN)",1,ref_sub,1,beta-VAE,6.0
+"Flat (no MI, GCN)",1,imbalance Zipf a = 1,2,CoST,1.0
+"Flat (no MI, GCN)",1,imbalance Zipf a = 1,2,DecVAE + EWT,5.0
+"Flat (no MI, GCN)",1,imbalance Zipf a = 1,2,DecVAE + FD,4.0
+"Flat (no MI, GCN)",1,imbalance Zipf a = 1,2,FHVAE seg,1.0
+"Flat (no MI, GCN)",1,imbalance Zipf a = 1,2,PCA,6.0
+"Flat (no MI, GCN)",1,imbalance Zipf a = 1,2,SFA,3.0
+"Flat (no MI, GCN)",1,imbalance Zipf a = 1,2,beta-VAE,6.0
+"Flat (no MI, GCN)",1,imbalance Zipf a = 2,3,CoST,2.0
+"Flat (no MI, GCN)",1,imbalance Zipf a = 2,3,DecVAE + EWT,5.0
+"Flat (no MI, GCN)",1,imbalance Zipf a = 2,3,DecVAE + FD,7.0
+"Flat (no MI, GCN)",1,imbalance Zipf a = 2,3,FHVAE seg,3.0
+"Flat (no MI, GCN)",1,imbalance Zipf a = 2,3,PCA,4.0
+"Flat (no MI, GCN)",1,imbalance Zipf a = 2,3,SFA,1.0
+"Flat (no MI, GCN)",1,imbalance Zipf a = 2,3,beta-VAE,6.0
+"Flat (no MI, GCN)",1,correlated V = 0.3,4,CoST,1.0
+"Flat (no MI, GCN)",1,correlated V = 0.3,4,DecVAE + EWT,6.0
+"Flat (no MI, GCN)",1,correlated V = 0.3,4,DecVAE + FD,4.0
+"Flat (no MI, GCN)",1,correlated V = 0.3,4,FHVAE seg,3.0
+"Flat (no MI, GCN)",1,correlated V = 0.3,4,PCA,7.0
+"Flat (no MI, GCN)",1,correlated V = 0.3,4,SFA,2.0
+"Flat (no MI, GCN)",1,correlated V = 0.3,4,beta-VAE,5.0
+"Flat (no MI, GCN)",1,correlated V = 0.6,5,CoST,2.0
+"Flat (no MI, GCN)",1,correlated V = 0.6,5,DecVAE + EWT,7.0
+"Flat (no MI, GCN)",1,correlated V = 0.6,5,DecVAE + FD,4.0
+"Flat (no MI, GCN)",1,correlated V = 0.6,5,FHVAE seg,2.0
+"Flat (no MI, GCN)",1,correlated V = 0.6,5,PCA,5.0
+"Flat (no MI, GCN)",1,correlated V = 0.6,5,SFA,1.0
+"Flat (no MI, GCN)",1,correlated V = 0.6,5,beta-VAE,5.0
+"Flat (no MI, GCN)",1,label_noise 10%,6,CoST,1.0
+"Flat (no MI, GCN)",1,label_noise 10%,6,DecVAE + EWT,4.0
+"Flat (no MI, GCN)",1,label_noise 10%,6,DecVAE + FD,5.0
+"Flat (no MI, GCN)",1,label_noise 10%,6,FHVAE seg,2.0
+"Flat (no MI, GCN)",1,label_noise 10%,6,PCA,7.0
+"Flat (no MI, GCN)",1,label_noise 10%,6,SFA,3.0
+"Flat (no MI, GCN)",1,label_noise 10%,6,beta-VAE,5.0
+"Flat (no MI, GCN)",1,label_noise 30%,7,CoST,2.0
+"Flat (no MI, GCN)",1,label_noise 30%,7,DecVAE + EWT,5.0
+"Flat (no MI, GCN)",1,label_noise 30%,7,DecVAE + FD,4.0
+"Flat (no MI, GCN)",1,label_noise 30%,7,FHVAE seg,2.0
+"Flat (no MI, GCN)",1,label_noise 30%,7,PCA,7.0
+"Flat (no MI, GCN)",1,label_noise 30%,7,SFA,1.0
+"Flat (no MI, GCN)",1,label_noise 30%,7,beta-VAE,5.0
+"Flat (no MI, GCN)",1,partial 5 speaker groups,8,CoST,1.0
+"Flat (no MI, GCN)",1,partial 5 speaker groups,8,DecVAE + EWT,5.0
+"Flat (no MI, GCN)",1,partial 5 speaker groups,8,DecVAE + FD,4.0
+"Flat (no MI, GCN)",1,partial 5 speaker groups,8,FHVAE seg,3.0
+"Flat (no MI, GCN)",1,partial 5 speaker groups,8,PCA,6.0
+"Flat (no MI, GCN)",1,partial 5 speaker groups,8,SFA,1.0
+"Flat (no MI, GCN)",1,partial 5 speaker groups,8,beta-VAE,6.0
+"Flat (no MI, GCN)",1,dimensionality +d noise dims,9,CoST,1.0
+"Flat (no MI, GCN)",1,dimensionality +d noise dims,9,DecVAE + EWT,5.0
+"Flat (no MI, GCN)",1,dimensionality +d noise dims,9,DecVAE + FD,4.0
+"Flat (no MI, GCN)",1,dimensionality +d noise dims,9,FHVAE seg,3.0
+"Flat (no MI, GCN)",1,dimensionality +d noise dims,9,PCA,6.0
+"Flat (no MI, GCN)",1,dimensionality +d noise dims,9,SFA,2.0
+"Flat (no MI, GCN)",1,dimensionality +d noise dims,9,beta-VAE,7.0
+4-family,2,ref_full,0,CoST,6.0
+4-family,2,ref_full,0,DecVAE + EWT,2.0
+4-family,2,ref_full,0,DecVAE + FD,4.0
+4-family,2,ref_full,0,FHVAE seg,5.0
+4-family,2,ref_full,0,PCA,7.0
+4-family,2,ref_full,0,SFA,1.0
+4-family,2,ref_full,0,beta-VAE,2.0
+4-family,2,ref_sub,1,CoST,5.0
+4-family,2,ref_sub,1,DecVAE + EWT,6.0
+4-family,2,ref_sub,1,DecVAE + FD,2.0
+4-family,2,ref_sub,1,FHVAE seg,4.0
+4-family,2,ref_sub,1,PCA,7.0
+4-family,2,ref_sub,1,SFA,3.0
+4-family,2,ref_sub,1,beta-VAE,1.0
+4-family,2,imbalance Zipf a = 1,2,CoST,7.0
+4-family,2,imbalance Zipf a = 1,2,DecVAE + EWT,5.0
+4-family,2,imbalance Zipf a = 1,2,DecVAE + FD,4.0
+4-family,2,imbalance Zipf a = 1,2,FHVAE seg,3.0
+4-family,2,imbalance Zipf a = 1,2,PCA,6.0
+4-family,2,imbalance Zipf a = 1,2,SFA,2.0
+4-family,2,imbalance Zipf a = 1,2,beta-VAE,1.0
+4-family,2,imbalance Zipf a = 2,3,CoST,6.0
+4-family,2,imbalance Zipf a = 2,3,DecVAE + EWT,4.0
+4-family,2,imbalance Zipf a = 2,3,DecVAE + FD,7.0
+4-family,2,imbalance Zipf a = 2,3,FHVAE seg,2.0
+4-family,2,imbalance Zipf a = 2,3,PCA,5.0
+4-family,2,imbalance Zipf a = 2,3,SFA,1.0
+4-family,2,imbalance Zipf a = 2,3,beta-VAE,3.0
+4-family,2,correlated V = 0.3,4,CoST,5.0
+4-family,2,correlated V = 0.3,4,DecVAE + EWT,6.0
+4-family,2,correlated V = 0.3,4,DecVAE + FD,2.0
+4-family,2,correlated V = 0.3,4,FHVAE seg,3.0
+4-family,2,correlated V = 0.3,4,PCA,7.0
+4-family,2,correlated V = 0.3,4,SFA,3.0
+4-family,2,correlated V = 0.3,4,beta-VAE,1.0
+4-family,2,correlated V = 0.6,5,CoST,6.0
+4-family,2,correlated V = 0.6,5,DecVAE + EWT,7.0
+4-family,2,correlated V = 0.6,5,DecVAE + FD,4.0
+4-family,2,correlated V = 0.6,5,FHVAE seg,3.0
+4-family,2,correlated V = 0.6,5,PCA,5.0
+4-family,2,correlated V = 0.6,5,SFA,1.0
+4-family,2,correlated V = 0.6,5,beta-VAE,1.0
+4-family,2,label_noise 10%,6,CoST,4.0
+4-family,2,label_noise 10%,6,DecVAE + EWT,3.0
+4-family,2,label_noise 10%,6,DecVAE + FD,6.0
+4-family,2,label_noise 10%,6,FHVAE seg,2.0
+4-family,2,label_noise 10%,6,PCA,6.0
+4-family,2,label_noise 10%,6,SFA,5.0
+4-family,2,label_noise 10%,6,beta-VAE,1.0
+4-family,2,label_noise 30%,7,CoST,7.0
+4-family,2,label_noise 30%,7,DecVAE + EWT,4.0
+4-family,2,label_noise 30%,7,DecVAE + FD,5.0
+4-family,2,label_noise 30%,7,FHVAE seg,3.0
+4-family,2,label_noise 30%,7,PCA,6.0
+4-family,2,label_noise 30%,7,SFA,1.0
+4-family,2,label_noise 30%,7,beta-VAE,2.0
+4-family,2,partial 5 speaker groups,8,CoST,7.0
+4-family,2,partial 5 speaker groups,8,DecVAE + EWT,5.0
+4-family,2,partial 5 speaker groups,8,DecVAE + FD,3.0
+4-family,2,partial 5 speaker groups,8,FHVAE seg,2.0
+4-family,2,partial 5 speaker groups,8,PCA,6.0
+4-family,2,partial 5 speaker groups,8,SFA,4.0
+4-family,2,partial 5 speaker groups,8,beta-VAE,1.0
+4-family,2,dimensionality +d noise dims,9,CoST,6.0
+4-family,2,dimensionality +d noise dims,9,DecVAE + EWT,5.0
+4-family,2,dimensionality +d noise dims,9,DecVAE + FD,4.0
+4-family,2,dimensionality +d noise dims,9,FHVAE seg,1.0
+4-family,2,dimensionality +d noise dims,9,PCA,7.0
+4-family,2,dimensionality +d noise dims,9,SFA,1.0
+4-family,2,dimensionality +d noise dims,9,beta-VAE,3.0
+3-family,3,ref_full,0,CoST,4.0
+3-family,3,ref_full,0,DecVAE + EWT,3.0
+3-family,3,ref_full,0,DecVAE + FD,2.0
+3-family,3,ref_full,0,FHVAE seg,5.0
+3-family,3,ref_full,0,PCA,7.0
+3-family,3,ref_full,0,SFA,1.0
+3-family,3,ref_full,0,beta-VAE,6.0
+3-family,3,ref_sub,1,CoST,2.0
+3-family,3,ref_sub,1,DecVAE + EWT,6.0
+3-family,3,ref_sub,1,DecVAE + FD,1.0
+3-family,3,ref_sub,1,FHVAE seg,4.0
+3-family,3,ref_sub,1,PCA,7.0
+3-family,3,ref_sub,1,SFA,3.0
+3-family,3,ref_sub,1,beta-VAE,4.0
+3-family,3,imbalance Zipf a = 1,2,CoST,4.0
+3-family,3,imbalance Zipf a = 1,2,DecVAE + EWT,6.0
+3-family,3,imbalance Zipf a = 1,2,DecVAE + FD,1.0
+3-family,3,imbalance Zipf a = 1,2,FHVAE seg,3.0
+3-family,3,imbalance Zipf a = 1,2,PCA,7.0
+3-family,3,imbalance Zipf a = 1,2,SFA,2.0
+3-family,3,imbalance Zipf a = 1,2,beta-VAE,5.0
+3-family,3,imbalance Zipf a = 2,3,CoST,2.0
+3-family,3,imbalance Zipf a = 2,3,DecVAE + EWT,4.0
+3-family,3,imbalance Zipf a = 2,3,DecVAE + FD,5.0
+3-family,3,imbalance Zipf a = 2,3,FHVAE seg,3.0
+3-family,3,imbalance Zipf a = 2,3,PCA,5.0
+3-family,3,imbalance Zipf a = 2,3,SFA,1.0
+3-family,3,imbalance Zipf a = 2,3,beta-VAE,7.0
+3-family,3,correlated V = 0.3,4,CoST,2.0
+3-family,3,correlated V = 0.3,4,DecVAE + EWT,6.0
+3-family,3,correlated V = 0.3,4,DecVAE + FD,1.0
+3-family,3,correlated V = 0.3,4,FHVAE seg,5.0
+3-family,3,correlated V = 0.3,4,PCA,7.0
+3-family,3,correlated V = 0.3,4,SFA,3.0
+3-family,3,correlated V = 0.3,4,beta-VAE,4.0
+3-family,3,correlated V = 0.6,5,CoST,3.0
+3-family,3,correlated V = 0.6,5,DecVAE + EWT,7.0
+3-family,3,correlated V = 0.6,5,DecVAE + FD,2.0
+3-family,3,correlated V = 0.6,5,FHVAE seg,4.0
+3-family,3,correlated V = 0.6,5,PCA,6.0
+3-family,3,correlated V = 0.6,5,SFA,1.0
+3-family,3,correlated V = 0.6,5,beta-VAE,5.0
+3-family,3,label_noise 10%,6,CoST,1.0
+3-family,3,label_noise 10%,6,DecVAE + EWT,4.0
+3-family,3,label_noise 10%,6,DecVAE + FD,6.0
+3-family,3,label_noise 10%,6,FHVAE seg,2.0
+3-family,3,label_noise 10%,6,PCA,7.0
+3-family,3,label_noise 10%,6,SFA,5.0
+3-family,3,label_noise 10%,6,beta-VAE,2.0
+3-family,3,label_noise 30%,7,CoST,6.0
+3-family,3,label_noise 30%,7,DecVAE + EWT,2.0
+3-family,3,label_noise 30%,7,DecVAE + FD,5.0
+3-family,3,label_noise 30%,7,FHVAE seg,4.0
+3-family,3,label_noise 30%,7,PCA,7.0
+3-family,3,label_noise 30%,7,SFA,1.0
+3-family,3,label_noise 30%,7,beta-VAE,3.0
+3-family,3,partial 5 speaker groups,8,CoST,3.0
+3-family,3,partial 5 speaker groups,8,DecVAE + EWT,5.0
+3-family,3,partial 5 speaker groups,8,DecVAE + FD,1.0
+3-family,3,partial 5 speaker groups,8,FHVAE seg,4.0
+3-family,3,partial 5 speaker groups,8,PCA,7.0
+3-family,3,partial 5 speaker groups,8,SFA,2.0
+3-family,3,partial 5 speaker groups,8,beta-VAE,5.0
+3-family,3,dimensionality +d noise dims,9,CoST,2.0
+3-family,3,dimensionality +d noise dims,9,DecVAE + EWT,4.0
+3-family,3,dimensionality +d noise dims,9,DecVAE + FD,1.0
+3-family,3,dimensionality +d noise dims,9,FHVAE seg,4.0
+3-family,3,dimensionality +d noise dims,9,PCA,6.0
+3-family,3,dimensionality +d noise dims,9,SFA,3.0
+3-family,3,dimensionality +d noise dims,9,beta-VAE,7.0

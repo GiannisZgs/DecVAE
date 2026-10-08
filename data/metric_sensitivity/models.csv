@@ -1,0 +1,10 @@
+model,label,order,in_ranking
+DecVAE + EWT,β-DecVAE + EWT,0,True
+DecVAE + FD,β-DecVAE + FD,1,True
+beta-VAE,β-VAE,2,True
+FHVAE seg,FHVAE,3,True
+CoST,CoST,4,True
+SFA,SFA,5,True
+PCA,PCA,6,True
+wav2vec2,wav2vec2,7,False
+wav2vec2 + PCA,wav2vec2 + PCA,8,False

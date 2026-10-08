@@ -26,7 +26,6 @@ Config keys: see DEFAULT_ARGS. The models file is a list of {"name", "dump", "in
 "conditions" is optional, defaults to STANDARD_CONDITIONS, and "dim_subset" runs only when listed.
 "label" is optional: the name shown in the figures, while "name" keys the results.
 "color" and "marker" are optional: a model's style in the figures, otherwise set by its position in the file.
-The figure data goes to figure_data_dir as tidy CSVs, drawn by the R scripts in visualize_R/SI_metric_sensitivity/.
 """
 
 import json
@@ -67,8 +66,6 @@ DEFAULT_ARGS = {
     "chance_include_model_dims": True,  # also score the chance level at every model's own d
     "chance_reference_model": None,  # model whose ref_sub frames and labels the chance runs use, None is the first
     "outputs_only": False,  # rebuild the tables and figures from real_results.csv alone, without loading any dump
-    "figure_data_dir": "data/metric_sensitivity",  # tidy CSVs drawn by visualize_R/SI_metric_sensitivity/
-    "quick_look_plots": False,  # matplotlib quick-look figures in the output folder, not the paper figures
 }
 
 SUPERVISED = ["DCI-D", "DCI-C", "DCI-I", "Modularity", "Explicitness", "IRS"]
@@ -530,46 +527,6 @@ def plot_trajectories(positions, path, display=None, styles=None):
     plt.close(fig)
 
 
-def write_figure_data(results, models, positions, args):
-    "Tidy CSVs for the R figures: the dimensionality curves and the rank trajectories, as plot_dimensionality and plot_trajectories draw them"
-    fig_dir = args.figure_data_dir
-    os.makedirs(fig_dir, exist_ok=True)
-    pd.DataFrame([{"model": m["name"], "label": m.get("label", m["name"]), "order": i, "in_ranking": m.get("in_ranking", True)}
-                  for i, m in enumerate(models)]).to_csv(os.path.join(fig_dir, "models.csv"), index=False)
-
-    rows = []
-    chance = results[results["condition"] == "chance"].groupby("latent_dim")[UNSUPERVISED + SUPERVISED]
-    chance_mean, chance_sd = chance.mean(), chance.std(ddof=1)
-    for m in UNSUPERVISED + SUPERVISED:
-        source = args.gcn_key if m == "GCN" else RAW_KEYS[m]
-        for d in chance_mean.index:
-            rows.append({"model": CHANCE_MODEL, "kind": "chance", "curve": True, "metric": m, "metric_source": source,
-                         "latent_dim": int(d), "mean": chance_mean.loc[d, m], "std": chance_sd.loc[d, m],
-                         "n": int(chance.size().loc[d])})
-        for model in models:
-            g = results[results["model"] == model["name"]]
-            ref = g[g["condition"] == "ref_sub"]
-            sub = g[g["condition"] == "dim_subset"].groupby("latent_dim")[m]
-            curve = bool(len(g[g["condition"] == "dim_subset"]))
-            if curve:
-                for d, mean, sd, n in zip(sub.mean().index, sub.mean(), sub.std(ddof=1), sub.size()):
-                    rows.append({"model": model["name"], "kind": "dim_subset", "curve": True, "metric": m, "metric_source": source,
-                                 "latent_dim": int(d), "mean": mean, "std": sd, "n": int(n)})
-            for d, v in zip(ref["latent_dim"], ref[m]):
-                rows.append({"model": model["name"], "kind": "ref_sub", "curve": curve, "metric": m, "metric_source": source,
-                             "latent_dim": int(d), "mean": v, "std": np.nan, "n": 1})
-    pd.DataFrame(rows).to_csv(os.path.join(fig_dir, "dimensionality_curves.csv"), index=False)
-
-    rows = []
-    for a_order, (aggregation, pos) in enumerate(positions.items()):
-        for c_order, condition in enumerate(pos.columns):
-            for model, position in pos[condition].items():
-                rows.append({"aggregation": aggregation, "aggregation_order": a_order, "condition": condition,
-                             "condition_order": c_order, "model": model, "position": position})
-    pd.DataFrame(rows).to_csv(os.path.join(fig_dir, "rank_trajectories.csv"), index=False)
-    logger.info(f"Saved the figure data in {fig_dir}")
-
-
 def main():
     "Parse the arguments"
     if debugger_is_active():
@@ -626,12 +583,10 @@ def main():
     null_summary(results).to_csv(os.path.join(out_dir, "null_summary.csv"), index=False)
     metric_deltas(results).to_csv(os.path.join(out_dir, "metric_deltas.csv"), index=False)
     chance_excess(results).to_csv(os.path.join(out_dir, "chance_excess.csv"), index=False)
+    plot_dimensionality(results, [m["name"] for m in models], os.path.join(out_dir, "dimensionality_curves.png"), display, styles)
     ranked_models = [m["name"] for m in models if m.get("in_ranking", True)]
     positions, taus = rankings(results, ranked_models, os.path.join(out_dir, "rankings_by_condition.xlsx"))
-    write_figure_data(results, models, positions, args)
-    if args.quick_look_plots:
-        plot_dimensionality(results, [m["name"] for m in models], os.path.join(out_dir, "dimensionality_curves.png"), display, styles)
-        plot_trajectories(positions, os.path.join(out_dir, "rank_trajectories.png"), display, styles)
+    plot_trajectories(positions, os.path.join(out_dir, "rank_trajectories.png"), display, styles)
     logger.info(f"Kendall's tau against ref_sub:\n{taus}")
     logger.info(f"Saved the outputs in {out_dir}")
 
