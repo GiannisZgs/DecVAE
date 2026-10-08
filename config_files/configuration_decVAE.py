@@ -69,6 +69,8 @@ class DecVAEConfig(PretrainedConfig):
             Global threshold to consider a spectral peak as valid when detecting observed components.
         power_law (`float`, *optional*, defaults to 1.7):
             Power law exponent to apply to the spectrum when detecting observed components.
+        detection_boundaries (`List[float]`, *optional*, defaults to None):
+            Explicit peak-search boundaries in Hz (increasing). If set, they replace the power-law intervals.
         nfft (`int`, *optional*, defaults to 512):
             Number of FFT points to consider in spectral operations inside the DecompositionModule.
         min_distance (`int`, *optional*, defaults to 300):
@@ -381,6 +383,7 @@ class DecVAEConfig(PretrainedConfig):
         spec_amp_tolerance_seq = 1e-6,
         global_thres = 0.01,
         power_law = 1.7,
+        detection_boundaries = None,
         nfft = 512,
         min_distance = 300,
         peak_bandwidth = 500,
@@ -488,6 +491,7 @@ class DecVAEConfig(PretrainedConfig):
         self.spec_amp_tolerance = spec_amp_tolerance
         self.spec_amp_tolerance_seq = spec_amp_tolerance_seq
         self.power_law = power_law
+        self.detection_boundaries = detection_boundaries
         self.nfft = nfft
         self.min_distance = min_distance
         self.peak_bandwidth = peak_bandwidth

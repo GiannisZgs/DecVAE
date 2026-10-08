@@ -417,6 +417,17 @@ class DataTrainingArgumentsPost:
         metadata={"help": "Outer cross-validation scheme(s) for IEMOCAP emotion classification: 'speaker' (leave-one-speaker-out, 10 folds) and/or 'session' (leave-one-session-out, 5 folds). "
                   "A list runs each scheme in turn in the same run, e.g. ['speaker', 'session']; a single string is also accepted."},
     )
+    iemocap_frames_per_utterance: Optional[int] = field(
+        default=100,
+        metadata={"help": "IEMOCAP only: keep at most this many frames per utterance, evenly spaced, after the latents are "
+                  "collected; classification, disentanglement and clustering then run on this reduced set. None or 0 keeps "
+                  "every frame (previous behaviour). Utterance-level (seq) latents are not affected."},
+    )
+    iemocap_session_emotion_only: bool = field(
+        default=True,
+        metadata={"help": "IEMOCAP only: when iemocap_cv_scheme is 'session' alone, classify emotion only (emotion_frame, "
+                  "emotion_seq) and skip disentanglement and clustering, which do not depend on the CV scheme."},
+    )
     sim_snr_db: float = field(
         default=None,
         metadata={"help": "The SNR for the simulated datasets."},

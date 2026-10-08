@@ -107,6 +107,10 @@ class DecompositionArguments:
         default=1.7,
         metadata={"help": "The power law to apply to split the spectrum into non-uniform intervals."},
     )
+    detection_boundaries: Optional[List[float]] = list_field(
+        default=None,
+        metadata={"help": "Explicit peak-search boundaries in Hz, increasing, N+1 values for N intervals. If set, they replace the power-law intervals of detection_intervals and power_law."},
+    )
     nfft: int = field(
         default=512,
         metadata={"help": "The number of points to use for the FFT."},

@@ -46,7 +46,7 @@ from args_configs import (
 )
 from utils import parse_args, debugger_is_active
 from utils.cache_utils import build_cache_file_names, cache_feature_type
-from latent_analysis_utils import prediction_eval
+from latent_analysis_utils import prediction_eval, frames_per_utterance_index
 from disentanglement_utils import compute_disentanglement_metrics
 from sklearn.decomposition import PCA, FastICA, KernelPCA
 from sksfa import SFA
@@ -821,6 +821,16 @@ def main():
     delattr(decomp_args, "comment_decomp_args")
     delattr(eigenprojection_args, "comment_eigenprojection_args")
 
+    if data_training_args.dataset_name == "iemocap" and data_training_args.iemocap_session_emotion_only:
+        schemes = data_training_args.iemocap_cv_scheme
+        schemes = [schemes] if isinstance(schemes, str) else list(schemes)
+        if schemes == ["session"]:
+            "Session CV only: emotion is the only target it applies to; disentanglement and clustering do not depend on it"
+            data_training_args.classification_tasks = [t for t in data_training_args.classification_tasks if "emotion" in t] or ["emotion_frame", "emotion_seq"]
+            data_training_args.measure_disentanglement = False
+            data_training_args.unsup_eval = False
+            print(f"IEMOCAP session CV: emotion only, tasks {data_training_args.classification_tasks}")
+
     if data_training_args.dataset_name not in SUPPORTED_DATASETS:
         raise ValueError(
             f"The eigenprojection baselines are set up for {SUPPORTED_DATASETS}, got "
@@ -1033,6 +1043,15 @@ def main():
           + (f", {tuple(z_test.shape)} test ({tensor_mb(z_test):.1f} MB)" if z_test is not None else "")
           + (f", {tuple(z_tiled.shape)} tiled ({tensor_mb(z_tiled):.1f} MB)" if z_tiled is not None else ""))
 
+    "IEMOCAP frame subsampling: the projection is still fitted on every frame, only the evaluations see the kept ones"
+    keep = None
+    if on_iemocap and data_training_args.iemocap_frames_per_utterance:
+        keep = frames_per_utterance_index(seq_lengths, data_training_args.iemocap_frames_per_utterance)
+        n_before = z.shape[0]
+        assert sum(seq_lengths) == n_before == len(labels["phoneme"]) == len(labels["speaker_frame"]) == len(labels["emotion_frame"]), "frame counts and labels disagree"
+        labels = {**labels, **{n: labels[n][keep] for n in ("phoneme", "speaker_frame", "emotion_frame")}}
+        print(f"IEMOCAP: kept {len(keep)} of {n_before} frames (at most {data_training_args.iemocap_frames_per_utterance} per utterance)")
+
     if on_iemocap:
         "Every split is already in the single evaluation set - fit on it"
         z_fit, seq_lengths_fit = z, seq_lengths
@@ -1119,6 +1138,8 @@ def main():
         seq_pooling = eigenprojection_args.projection_seq_pooling
         z_seq = pool_segments(z_proj, seq_lengths, seq_pooling)
         z_seq_test = pool_segments(z_proj_test, seq_lengths_test, seq_pooling)
+        if keep is not None:
+            z_proj = z_proj[keep]
 
         evaluate_projection(data_training_args, config, eigenprojection_args, ckp,
                             z_proj, z_proj_test, labels, labels_test, z_seq, z_seq_test,

@@ -10,14 +10,26 @@ param_name = sys.argv[2]
 value = sys.argv[3]
 
 # Convert string values to appropriate types
-if value.lower() == 'true':
+lower_value = value.lower()
+if lower_value == 'true':
     value = True
-elif value.lower() == 'false':
+elif lower_value == 'false':
     value = False
-elif value.isdigit():
-    value = int(value)
-elif value.replace('.', '', 1).isdigit():
-    value = float(value)
+elif lower_value in ('none', 'null'):
+    value = None
+else:
+    # Try JSON parsing first (handles lists, dicts, etc.)
+    try:
+        value = json.loads(value)
+    except (json.JSONDecodeError, ValueError):
+        # If not valid JSON, try numeric conversion (ints, floats, scientific notation)
+        try:
+            float_val = float(value)
+            # Convert to int if it's a whole number
+            value = int(float_val) if float_val.is_integer() else float_val
+        except (ValueError, TypeError):
+            # Keep as string if conversion fails
+            pass
 
 with open(config_file, 'r') as f:
     config = json.load(f)

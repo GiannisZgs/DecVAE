@@ -35,7 +35,7 @@ from config_files import DecVAEConfig
 from args_configs import ModelArgumentsPost, DataTrainingArgumentsPost, DecompositionArguments, TrainingObjectiveArguments
 from utils import parse_args, debugger_is_active, extract_epoch
 from utils.cache_utils import build_cache_file_names
-from latent_analysis_utils import prediction_eval, visualize
+from latent_analysis_utils import prediction_eval, visualize, frames_per_utterance_index
 from disentanglement_utils import compute_disentanglement_metrics
 
 import transformers
@@ -123,6 +123,16 @@ def main():
     delattr(model_args,"comment_model_args")
     delattr(training_obj_args,"comment_tr_obj_args")
     delattr(decomp_args,"comment_decomp_args")
+
+    if data_training_args.dataset_name == "iemocap" and data_training_args.iemocap_session_emotion_only:
+        schemes = data_training_args.iemocap_cv_scheme
+        schemes = [schemes] if isinstance(schemes, str) else list(schemes)
+        if schemes == ["session"]:
+            "Session CV only: emotion is the only target it applies to; disentanglement and clustering do not depend on it"
+            data_training_args.classification_tasks = [t for t in data_training_args.classification_tasks if "emotion" in t] or ["emotion_frame", "emotion_seq"]
+            data_training_args.measure_disentanglement = False
+            data_training_args.unsup_eval = False
+            print(f"IEMOCAP session CV: emotion only, tasks {data_training_args.classification_tasks}")
 
     "Initialize the accelerator. Accelerator handles device placement for us"
     kwargs = DDPK(find_unused_parameters=True)
@@ -351,6 +361,7 @@ def main():
         "Measure total loading time"
         start_time = time.time()
         "Get the representations"
+        utt_frame_counts = []
         with torch.no_grad():
             "Eval set for loop"
             for step, batch in enumerate(eval_dataloader):
@@ -447,7 +458,8 @@ def main():
                         else:
                             phonemes = torch.cat((phonemes,phonemes_batch))
                             emotion_frame = torch.cat((emotion_frame,torch.cat([torch.tensor([factor for j in range(sum(~overlap_mask_batch[i]))]) for i,factor in enumerate(emotion_batch)])),dim = 0)
-                            emotion_seq = torch.cat((emotion_seq,torch.stack(emotion_batch)),dim = 0) 
+                            emotion_seq = torch.cat((emotion_seq,torch.stack(emotion_batch)),dim = 0)
+                        utt_frame_counts.extend([int(sum(~overlap_mask_batch[i])) for i in range(len(emotion_batch))])
                     if step == 0:
                         speaker_id_frame = torch.cat([torch.tensor([factor for j in range(sum(~overlap_mask_batch[i]))]) for i,factor in enumerate(speaker_id_batch)]) 
                         speaker_id_seq = torch.stack(speaker_id_batch) 
@@ -665,6 +677,21 @@ def main():
         end_time = time.time()
         elapsed_time = end_time - start_time
         print(f"Total loading time: {elapsed_time: .4f} seconds")
+
+        if data_training_args.dataset_name == "iemocap" and data_training_args.iemocap_frames_per_utterance:
+            keep = frames_per_utterance_index(utt_frame_counts, data_training_args.iemocap_frames_per_utterance)
+            n_before = len(emotion_frame)
+            assert sum(utt_frame_counts) == n_before, "frame counts and labels disagree"
+            if config.dual_branched_latent or config.only_z_branch:
+                assert mu_originals_z.shape[0] == n_before, "frame counts and latents disagree"
+                mu_components_z = mu_components_z[:, keep]
+                mu_originals_z = mu_originals_z[keep]
+                if config.project_OCs and 'mu_projections_z' in locals():
+                    mu_projections_z = mu_projections_z[keep]
+            phonemes = phonemes[keep]
+            emotion_frame = emotion_frame[keep]
+            speaker_id_frame = speaker_id_frame[keep]
+            print(f"IEMOCAP: kept {len(keep)} of {n_before} frames (at most {data_training_args.iemocap_frames_per_utterance} per utterance)")
 
         "Z and S latents"
         "Here we create different aggregation strategies to aggregate subspaces into a single latent space"

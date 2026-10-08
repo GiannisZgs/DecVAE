@@ -283,6 +283,8 @@ class DecompositionModule(nn.Module):
         self.conv_stride = config.conv_stride
         self.power_law = config.power_law
         self.N = config.detection_intervals
+        "Explicit peak-search boundaries; None (and configs saved before this option) keep the power-law intervals"
+        self.detection_boundaries = getattr(config, "detection_boundaries", None)
         self.spec_amp_tolerance = config.spec_amp_tolerance
         self.spec_amp_tolerance_seq = config.spec_amp_tolerance_seq
         self.global_thres = config.global_thres
@@ -333,6 +335,12 @@ class DecompositionModule(nn.Module):
         return x_filt
 
     def get_peak_detection_intervals(self):
+        if self.detection_boundaries is not None:
+            "Explicit boundaries, e.g. random search intervals in the decomposition sensitivity sweep"
+            b = np.asarray(self.detection_boundaries, dtype=float)
+            assert b.ndim == 1 and len(b) >= 2 and np.all(np.diff(b) > 0), "detection_boundaries must be increasing"
+            assert b[-1] < self.fs/2
+            return [[b[i],b[i+1]] for i in range(len(b)-1)]
         #Construct power-law intervals for peak detection
         v = np.linspace(1,self.N+1,self.N+1)
         y = v**self.power_law

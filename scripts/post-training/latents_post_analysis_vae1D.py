@@ -39,7 +39,7 @@ from data_preprocessing import prepare_extract_features_vae_pretraining_dataset
 from utils import parse_args, debugger_is_active, extract_epoch
 from utils.cache_utils import build_cache_file_names, build_map_cache_file_names
 from functools import partial
-from latent_analysis_utils import prediction_eval
+from latent_analysis_utils import prediction_eval, frames_per_utterance_index
 from disentanglement_utils import compute_disentanglement_metrics
 from feature_extraction import extract_mel_spectrogram
 
@@ -92,6 +92,16 @@ def main():
     delattr(data_training_args,"comment_data_args")
     delattr(training_obj_args,"comment_tr_obj_args")
     delattr(decomp_args,"comment_decomp_args")
+
+    if data_training_args.dataset_name == "iemocap" and data_training_args.iemocap_session_emotion_only:
+        schemes = data_training_args.iemocap_cv_scheme
+        schemes = [schemes] if isinstance(schemes, str) else list(schemes)
+        if schemes == ["session"]:
+            "Session CV only: emotion is the only target it applies to; disentanglement and clustering do not depend on it"
+            data_training_args.classification_tasks = [t for t in data_training_args.classification_tasks if "emotion" in t] or ["emotion_frame", "emotion_seq"]
+            data_training_args.measure_disentanglement = False
+            data_training_args.unsup_eval = False
+            print(f"IEMOCAP session CV: emotion only, tasks {data_training_args.classification_tasks}")
 
     if model_args.vae_seq_pooling not in (None, "mean"):
         raise ValueError(f"vae_seq_pooling must be None or 'mean', got '{model_args.vae_seq_pooling}'.")
@@ -597,6 +607,7 @@ def main():
                 eigenprojection_function = joblib.load(os.path.join(projection_dir, model_args.eigenprojection + "_" + model_args.vae_input_type + '_model.joblib'))     
 
             "Get the data for VOC_ALS or iemocap"
+            utt_frame_counts = []
             with torch.no_grad():
                 start_time = time.time()
                 for step, batch in enumerate(eval_dataloader):
@@ -721,7 +732,8 @@ def main():
                         else:
                             phonemes = torch.cat((phonemes,phonemes_batch))
                             emotion_frame = torch.cat((emotion_frame,torch.cat([torch.tensor([factor for j in range(sum(~overlap_mask_batch[i]))]) for i,factor in enumerate(emotion_batch)])),dim = 0)
-                            emotion_seq = torch.cat((emotion_seq,torch.stack(emotion_batch)),dim = 0) 
+                            emotion_seq = torch.cat((emotion_seq,torch.stack(emotion_batch)),dim = 0)
+                        utt_frame_counts.extend([int(sum(~overlap_mask_batch[i])) for i in range(len(emotion_batch))])
 
                         if step == 0:
                             speaker_id_frame = torch.cat([torch.tensor([factor for j in range(sum(~overlap_mask_batch[i]))]) for i,factor in enumerate(speaker_id_batch)]) 
@@ -1121,6 +1133,16 @@ def main():
         end_time = time.time()
         elapsed_time = end_time - start_time
         print(f"Total loading time: {elapsed_time: .4f} seconds")
+
+        if data_training_args.dataset_name == "iemocap" and data_training_args.iemocap_frames_per_utterance:
+            keep = frames_per_utterance_index(utt_frame_counts, data_training_args.iemocap_frames_per_utterance)
+            n_before = len(emotion_frame)
+            assert sum(utt_frame_counts) == n_before == z_mean.shape[0], "frame counts and latents disagree"
+            z_mean = z_mean[keep]
+            phonemes = phonemes[keep]
+            emotion_frame = emotion_frame[keep]
+            speaker_id_frame = speaker_id_frame[keep]
+            print(f"IEMOCAP: kept {len(keep)} of {n_before} frames (at most {data_training_args.iemocap_frames_per_utterance} per utterance)")
 
         "Now use train/val representations to get the evaluation metrics"
         "1. Projection evaluation"

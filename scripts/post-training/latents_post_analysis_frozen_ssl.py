@@ -45,7 +45,7 @@ from args_configs import (
 )
 from utils import parse_args, debugger_is_active
 from utils.cache_utils import build_cache_file_names
-from latent_analysis_utils import prediction_eval
+from latent_analysis_utils import prediction_eval, frames_per_utterance_index
 from disentanglement_utils import compute_disentanglement_metrics
 from sklearn.decomposition import PCA
 import joblib
@@ -230,6 +230,8 @@ def gather_split(dataloader, representation_function, data_training_args, frozen
                 append("emotion_frame", _expand_to_frames(emotion_batch, overlap_mask_batch))
                 append("speaker_seq", torch.stack(speaker_id_batch))
                 append("emotion_seq", torch.stack(emotion_batch))
+                "Frames each utterance kept, for the IEMOCAP frame subsampling"
+                append("frames_per_utterance", (~overlap_mask_batch).sum(dim=-1).cpu())
 
             "Gather latents for evaluations - the encoder emits every frame, including the padded ones"
             z_batch = torch.masked_select(
@@ -260,6 +262,16 @@ def main():
     delattr(training_obj_args, "comment_tr_obj_args")
     delattr(decomp_args, "comment_decomp_args")
     delattr(frozen_ssl_args, "comment_frozen_ssl_args")
+
+    if data_training_args.dataset_name == "iemocap" and data_training_args.iemocap_session_emotion_only:
+        schemes = data_training_args.iemocap_cv_scheme
+        schemes = [schemes] if isinstance(schemes, str) else list(schemes)
+        if schemes == ["session"]:
+            "Session CV only: emotion is the only target it applies to; disentanglement and clustering do not depend on it"
+            data_training_args.classification_tasks = [t for t in data_training_args.classification_tasks if "emotion" in t] or ["emotion_frame", "emotion_seq"]
+            data_training_args.measure_disentanglement = False
+            data_training_args.unsup_eval = False
+            print(f"IEMOCAP session CV: emotion only, tasks {data_training_args.classification_tasks}")
 
     if data_training_args.dataset_name not in SUPPORTED_DATASETS:
         raise ValueError(
@@ -453,6 +465,17 @@ def main():
             z_seq = torch.tensor(pca.transform(z_seq), dtype=torch.float32)
         if z_seq_test is not None:
             z_seq_test = torch.tensor(pca.transform(z_seq_test), dtype=torch.float32)
+
+    "IEMOCAP frame subsampling, after the PCA fit so the projection still sees every frame"
+    if data_training_args.dataset_name == "iemocap":
+        seq_lengths = labels.pop("frames_per_utterance").tolist()
+        if data_training_args.iemocap_frames_per_utterance:
+            keep = frames_per_utterance_index(seq_lengths, data_training_args.iemocap_frames_per_utterance)
+            n_before = z.shape[0]
+            assert sum(seq_lengths) == n_before == len(labels["phoneme"]) == len(labels["speaker_frame"]) == len(labels["emotion_frame"]), "frame counts and labels disagree"
+            z = z[keep]
+            labels = {**labels, **{n: labels[n][keep] for n in ("phoneme", "speaker_frame", "emotion_frame")}}
+            print(f"IEMOCAP: kept {len(keep)} of {n_before} frames (at most {data_training_args.iemocap_frames_per_utterance} per utterance)")
 
     "Now use train/val representations to get the evaluation metrics"
     "Linear/non-linear classification"
