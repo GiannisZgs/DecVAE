@@ -20,6 +20,7 @@ For every model in the models file: prediction (P), ablation (A) and swap (T, O 
 matrices per subspace and factor, entropy selectivity against a random-partition null, per-dimension
 probe importances across folds, and for SimVowels the alignment of the OC rows with the generator.
 Across seeds of one config: mean and std of every quantity, pairwise matrix correlation and CKA.
+The figure data goes to figure_data_dir as tidy CSVs, drawn by the R scripts in visualize_R/SI_subspace/.
 
 python scripts/post-training/subspace_analysis.py --config_file config_files/subspace/config_subspace_analysis.json
 Config keys: see DEFAULT_ARGS. The models file is a list of {"name", "label", "dataset", "config",
@@ -74,9 +75,11 @@ DEFAULT_ARGS = {
     "n_jobs": 1,
     "self_test": False,
     "outputs_only": False,  # rebuild the tables and figures from per_model/ alone, without loading any dump
+    "figure_data_dir": "data/subspace",  # tidy CSVs drawn by visualize_R/SI_subspace/
+    "quick_look_plots": False,  # matplotlib quick-look figures in output_dir/quick_look, not the paper figures
     "datasets": {},
 }
-DATASET_KEYS = {"speaker_factor", "ground_truth", "vowel_classes", "n_sub", "swap_match", "extra_runs"}
+DATASET_KEYS = {"speaker_factor", "stratify", "ground_truth", "vowel_classes", "n_sub", "swap_match", "extra_runs"}
 COMPUTE_KEYS = ["n_folds", "fold_seed", "subsample_seed", "n_null", "null_folds", "null_seed", "max_pairs",
                 "min_pairs", "probe_C", "probe_max_iter", "importance", "top_frac"]
 
@@ -176,12 +179,21 @@ def encode(Y):
     return enc, n_classes
 
 
-def make_folds(speaker, split, n_folds, fold_seed):
-    X = np.zeros((len(speaker), 1))
-    if split == "stratified_speaker":
-        return list(StratifiedKFold(n_folds, shuffle=True, random_state=fold_seed).split(X, speaker))
+def joint_cell(Y):
+    "Joint class of the factors, (F, N) -> (N,)"
+    cell = np.zeros(Y.shape[1], dtype=np.int64)
+    for row in np.asarray(Y, dtype=np.int64):
+        cell = cell * (int(row.max()) + 1) + row
+    return cell
+
+
+def make_folds(label, split, n_folds, fold_seed):
+    "label: speaker for the speaker splits, joint factor cell for stratified_joint; indep_test stratifies like the main split"
+    X = np.zeros((len(label), 1))
+    if split in ("stratified_speaker", "stratified_joint", "indep_test"):
+        return list(StratifiedKFold(n_folds, shuffle=True, random_state=fold_seed).split(X, label))
     if split == "group_speaker":
-        return list(GroupKFold(n_folds).split(X, groups=speaker))
+        return list(GroupKFold(n_folds).split(X, groups=label))
     raise ValueError(f"Unknown split {split}")
 
 
@@ -284,8 +296,11 @@ def summarise_folds(folds, imps, args):
     return s
 
 
-def run_analysis(Z, Y, speaker, factors, n_classes, groups, run, args, match, null_parts, sim):
-    folds = make_folds(speaker, run["split"], args.n_folds, args.fold_seed)
+def run_analysis(Z, Y, split_label, factors, n_classes, groups, run, args, match, null_parts, sim, test_idx=None):
+    "test_idx: frames that replace every fold's test part (the indep split), the folds still pick the training part"
+    folds = make_folds(split_label, run["split"], args.n_folds, args.fold_seed)
+    if test_idx is not None:
+        folds = [(tr, test_idx) for tr, _ in folds]
     fold_res, imps = [], []
     for k, (tr, te) in enumerate(folds):
         t0 = time.time()
@@ -326,20 +341,37 @@ def process_model(model, args, refs, out_dir):
         raise ValueError(f"{model['name']}: dump latent_type is {sidecar.get('latent_type')}, expected 'all'")
     D, n_blocks = Z.shape[1], model["n_blocks"]
     groups = block_indices(D, n_blocks)
-    speaker_factor = ds_cfg["speaker_factor"]
-    if speaker_factor not in factors:
+    speaker_factor = ds_cfg.get("speaker_factor")
+    if speaker_factor is not None and speaker_factor not in factors:
         raise ValueError(f"{model['name']}: speaker factor {speaker_factor} not in the dump targets {factors}")
+    stratify = ds_cfg.get("stratify", "speaker")
+    if stratify not in ("speaker", "joint") or (stratify == "speaker" and speaker_factor is None):
+        raise ValueError(f"{model['dataset']}: set a speaker_factor, or stratify to 'joint'")
+    strat_raw = Y_raw[factors.index(speaker_factor)] if stratify == "speaker" else joint_cell(Y_raw)
+
+    "The unseen indep split (SimCoupled), saved apart from the train/test pool by the dump"
+    Z_indep = Y_indep_raw = None
+    if any(r.get("split") == "indep_test" for r in ds_cfg.get("extra_runs", [])):
+        d = np.load(model["dump"][:-4] + ".npz" if model["dump"].endswith(".npz") else model["dump"] + ".npz")
+        if "mu_indep" not in d.files:
+            raise ValueError(f"{model['name']}: an indep_test run is configured but the dump has no indep split")
+        Z_indep, Y_indep_raw = np.ascontiguousarray(d["mu_indep"].T), d["y_indep"]
 
     ref = refs.get(model["dataset"])
     if ref is None:
-        sub = stratified_subsample(Y_raw[factors.index(speaker_factor)], n_sub, np.random.default_rng(args.subsample_seed))
-        refs[model["dataset"]] = {"Y": Y_raw, "sub": sub, "name": model["name"]}
+        sub = stratified_subsample(strat_raw, n_sub, np.random.default_rng(args.subsample_seed))
+        refs[model["dataset"]] = {"Y": Y_raw, "Y_indep": Y_indep_raw, "sub": sub, "name": model["name"]}
     else:
         if Y_raw.shape != ref["Y"].shape or not np.array_equal(Y_raw, ref["Y"]):
             raise ValueError(f"{model['name']}: frames or labels differ from {ref['name']}'s; all models of "
                              f"{model['dataset']} must share the same frames")
+        if (Y_indep_raw is None) != (ref["Y_indep"] is None) or (
+                Y_indep_raw is not None and not np.array_equal(Y_indep_raw, ref["Y_indep"])):
+            raise ValueError(f"{model['name']}: indep frames or labels differ from {ref['name']}'s")
         sub = ref["sub"]
     frames_crc = zlib.crc32(sub.tobytes() + np.ascontiguousarray(Y_raw[:, sub]).tobytes())
+    if Y_indep_raw is not None:
+        frames_crc = zlib.crc32(np.ascontiguousarray(Y_indep_raw).tobytes(), frames_crc)
 
     if os.path.exists(json_path):
         with open(json_path) as f:
@@ -352,11 +384,12 @@ def process_model(model, args, refs, out_dir):
     logger.info(f"{model['name']}: {len(sub)} of {Z.shape[0]} frames, D = {D}, {n_blocks} blocks, factors {factors}")
     Zs, Ys_raw = np.ascontiguousarray(Z[sub]), Y_raw[:, sub]
     Ys, n_classes = encode(Ys_raw)
-    speaker = Ys[factors.index(speaker_factor)]
+    speaker = Ys[factors.index(speaker_factor)] if speaker_factor is not None else None
+    strat = speaker if stratify == "speaker" else joint_cell(Ys)
     "Create random partitions of the subspaces - Random subspaces"
     parts = null_partitions(D, n_blocks, args)
 
-    runs = [("main", {"split": "stratified_speaker", "factors": factors})]
+    runs = [("main", {"split": "stratified_speaker" if stratify == "speaker" else "stratified_joint", "factors": factors})]
     runs += [(r["tag"], r) for r in ds_cfg.get("extra_runs", [])]
     out_runs, npz = {}, {}
     for tag, run in runs:
@@ -367,7 +400,8 @@ def process_model(model, args, refs, out_dir):
             match = {run_factors.index(f): [run_factors.index(x) for x in keep if x in run_factors]
                      for f, keep in ds_cfg["swap_match"].items() if f in run_factors}
         sim = None
-        if ds_cfg.get("ground_truth") == "simvowels_formants" and "vowel" in run_factors and speaker_factor in run_factors:
+        if ds_cfg.get("ground_truth") == "simvowels_formants" and "vowel" in run_factors and speaker_factor in run_factors \
+                and run["split"] != "indep_test":
             vowel_classes = np.array(ds_cfg["vowel_classes"])
             sim = {"vowel_names": vowel_classes[Ys_raw[factors.index("vowel")]],
                    "speaker_vt": np.array([sidecar["speaker_vt"][str(int(s))] for s in Ys_raw[factors.index(speaker_factor)]]),
@@ -377,8 +411,19 @@ def process_model(model, args, refs, out_dir):
                 logger.warning(f"{model['name']}: {n_blocks - 1} OCs, the generator alignment needs 3, skipped")
                 sim = None
         logger.info(f"{model['name']} | {tag}: split {run['split']}, factors {run_factors}, match {match}")
-        out_runs[tag], npz[f"imps_{tag}"] = run_analysis(Zs, Ys[idx], speaker, run_factors, [n_classes[i] for i in idx],
-                                                         groups, run, args, match, parts, sim)
+        if run["split"] == "indep_test":
+            "Train on each fold's training part of the pool, test on every indep frame; labels encoded jointly"
+            Y_run, n_classes_run = encode(np.concatenate((Ys_raw[idx], Y_indep_raw[idx]), axis=1))
+            out_runs[tag], npz[f"imps_{tag}"] = run_analysis(
+                np.concatenate((Zs, Z_indep)), Y_run, strat, run_factors, n_classes_run, groups, run, args, match, parts,
+                sim, test_idx=np.arange(len(sub), len(sub) + len(Z_indep)))
+            out_runs[tag]["n_indep"] = int(len(Z_indep))
+        else:
+            split_label = speaker if run["split"] == "group_speaker" else strat
+            if split_label is None:
+                raise ValueError(f"{model['dataset']}: the {run['split']} split needs a speaker_factor")
+            out_runs[tag], npz[f"imps_{tag}"] = run_analysis(Zs, Ys[idx], split_label, run_factors, [n_classes[i] for i in idx],
+                                                             groups, run, args, match, parts, sim)
 
     npz["cka_Z"] = Zs
     npz["cka_frames"] = sub
@@ -454,11 +499,18 @@ def meta(rec, run):
 
 
 def write_tables(records, out_dir):
-    mat_rows, sel_rows, null_rows, stab_rows, align_rows = [], [], [], [], []
+    mat_rows, sel_rows, null_rows, stab_rows, align_rows, score_rows = [], [], [], [], [], []
     for rec in records:
         for run, r in rec["runs"].items():
             base = meta(rec, run)
             factors, blocks, s = r["factors"], rec["blocks"], r["summary"]
+            for j, fac in enumerate(factors):
+                for f in r["folds"]:
+                    score_rows.append({**base, "fold": f["fold"], "factor": fac, "n_classes": r["n_classes"][j],
+                                       "n_train": f["n_train"], "n_test": f["n_test"], "value": f["full_scores"][j]})
+                for k in ("mean", "std"):
+                    score_rows.append({**base, "fold": k, "factor": fac, "n_classes": r["n_classes"][j],
+                                       "n_train": np.nan, "n_test": np.nan, "value": s["full_scores"][k][j]})
             entries = [(f["fold"], f) for f in r["folds"]] + [("mean", {m: s[m]["mean"] for m in MATRICES}),
                                                                 ("std", {m: s[m]["std"] for m in MATRICES})]
             for fold, f in entries:
@@ -499,7 +551,7 @@ def write_tables(records, out_dir):
                                       "assignment_consistency": s["fold_stability"]["assignment_consistency"],
                                       "nonconverged_frac": s["nonconverged_frac"]})
     for name, rows in (("matrices_long", mat_rows), ("selectivity", sel_rows), ("null_summary", null_rows),
-                       ("fold_stability", stab_rows), ("alignment", align_rows)):
+                       ("fold_stability", stab_rows), ("alignment", align_rows), ("full_scores", score_rows)):
         pd.DataFrame(rows).to_csv(os.path.join(out_dir, f"{name}.csv"), index=False)
 
 
@@ -560,12 +612,12 @@ def cka_rows(C, blocks):
 
 
 def seed_tables(records, args, out_dir):
-    """seed_summary.csv, seed_consistency.csv and cka_long.csv.
+    """seed_summary.csv, seed_consistency.csv, seed_pairs.csv (every seed pair) and cka_long.csv.
 
     Returns:
         Mean CKA matrix over seed pairs, per (dataset, config) with more than one seed.
     """
-    summary_rows, cons_rows, cka_long, cka_mean = [], [], [], {}
+    summary_rows, cons_rows, pair_rows, cka_long, cka_mean = [], [], [], [], {}
     groups = config_groups(records)
     for (ds, config), recs in groups.items():
         values = pd.DataFrame([scalars(r) for r in recs])
@@ -584,12 +636,16 @@ def seed_tables(records, args, out_dir):
                 vb = np.asarray(b["runs"]["main"]["summary"][m]["mean"], float).ravel()
                 ok = np.isfinite(va) & np.isfinite(vb)
                 rs.append(np.corrcoef(va[ok], vb[ok])[0, 1])
+                pair_rows.append({"dataset": ds, "comparison": config, "config_a": config, "config_b": config,
+                                  "seed_a": a["seed"], "seed_b": b["seed"], "quantity": f"pearson:{m}", "value": float(rs[-1])})
             cons_rows += [{**base, "quantity": f"pearson_mean:{m}", "value": float(np.mean(rs))},
                           {**base, "quantity": f"pearson_min:{m}", "value": float(np.min(rs))}]
         mats = []
         for a, b in combinations(recs, 2):
             C = cka_matrix(a, b, out_dir)
             mats.append(C)
+            pair_rows += [{"dataset": ds, "comparison": config, "config_a": config, "config_b": config, "seed_a": a["seed"],
+                           "seed_b": b["seed"], "quantity": q, "value": v} for q, v in cka_rows(C, a["blocks"]).items()]
             for i, ba in enumerate(a["blocks"]):
                 for j, bb in enumerate(b["blocks"]):
                     cka_long.append({"dataset": ds, "config_a": config, "config_b": config, "seed_a": a["seed"],
@@ -610,11 +666,109 @@ def seed_tables(records, args, out_dir):
                                  "seed_b": b["seed"], "block_a": ba, "block_b": bb, "value": C[i, j]})
         cons_rows += [{"dataset": a["dataset"], "config": f"{config_a} vs {config_b}", "n_seeds": 1, "quantity": q, "value": v}
                       for q, v in cka_rows(C, a["blocks"]).items()]
+        pair_rows += [{"dataset": a["dataset"], "comparison": f"{config_a} vs {config_b}", "config_a": config_a,
+                       "config_b": config_b, "seed_a": a["seed"], "seed_b": b["seed"], "quantity": q, "value": v}
+                      for q, v in cka_rows(C, a["blocks"]).items()]
 
     pd.DataFrame(summary_rows).to_csv(os.path.join(out_dir, "seed_summary.csv"), index=False)
     pd.DataFrame(cons_rows).to_csv(os.path.join(out_dir, "seed_consistency.csv"), index=False)
+    pd.DataFrame(pair_rows).to_csv(os.path.join(out_dir, "seed_pairs.csv"), index=False)
     pd.DataFrame(cka_long).to_csv(os.path.join(out_dir, "cka_long.csv"), index=False)
     return cka_mean
+
+
+def headline_config(records, args):
+    sim = [r for r in records if r["dataset"] == "sim_vowels"]
+    return args.headline_config or next((r["config"] for r in sim if r.get("headline")), None)
+
+
+def write_figure_data(records, args, out_dir):
+    "Tidy CSVs for the R figures, one row per plotted value"
+    fig_dir = args.figure_data_dir
+    os.makedirs(fig_dir, exist_ok=True)
+    headline = headline_config(records, args)
+    mat_rows, sel_rows, summ_rows = [], [], []
+    for order, ((ds, config), recs) in enumerate(config_groups(records).items()):
+        meta_cols = {"dataset": ds, "config": config, "order": order, "decomposition": recs[0].get("decomposition"),
+                     "beta": recs[0].get("beta"), "headline": config == headline}
+        for run, r0 in recs[0]["runs"].items():
+            n, over = (len(recs), "seeds") if len(recs) > 1 else (len(r0["folds"]), "folds")
+            for m in ("P", "A", "dT", "dO", "block_importance"):
+                M, S = seed_matrix(recs, m, run)
+                for g, b in enumerate(recs[0]["blocks"]):
+                    for j, fac in enumerate(r0["factors"]):
+                        mat_rows.append({**meta_cols, "run": run, "matrix": m, "subspace": b, "factor": fac,
+                                         "mean": M[g, j], "std": S[g, j], "n": n, "std_over": over})
+            for m in SEL:
+                null = []
+                for rec in recs:
+                    sel_rows.append({**meta_cols, "run": run, "matrix": m, "seed": rec["seed"], "partition": "own",
+                                     "fold": np.nan, "draw": np.nan,
+                                     "value": rec["runs"][run]["summary"]["selectivity"][m]["all"]["mean"]})
+                    for f in rec["runs"][run]["folds"]:
+                        if "null" in f:
+                            for d, v in enumerate(f["null"]["sel"][m]):
+                                sel_rows.append({**meta_cols, "run": run, "matrix": m, "seed": rec["seed"], "partition": "null",
+                                                 "fold": f["fold"], "draw": d, "value": v})
+                                null.append(v)
+                own = [rec["runs"][run]["summary"]["selectivity"][m]["all"] for rec in recs]
+                own_std = np.std([o["mean"] for o in own], ddof=1) if len(own) > 1 else own[0]["std"]
+                summ_rows.append({**meta_cols, "run": run, "quantity": "selectivity", "matrix": m, "partition": "own",
+                                  "mean": np.mean([o["mean"] for o in own]), "std": own_std, "n": n, "std_over": over})
+                if null:
+                    summ_rows.append({**meta_cols, "run": run, "quantity": "selectivity", "matrix": m, "partition": "null",
+                                      "mean": np.mean(null), "std": np.std(null, ddof=1) if len(null) > 1 else np.nan,
+                                      "n": len(null), "std_over": "null partitions"})
+                if "alignment" in r0["summary"]:
+                    mae = [rec["runs"][run]["summary"]["alignment"][m]["mae"] for rec in recs]
+                    mae_std = (np.std(mae, ddof=1) if len(mae) > 1 else
+                               np.nanstd([f["alignment"][m]["mae"] for f in r0["folds"]], ddof=1))
+                    summ_rows.append({**meta_cols, "run": run, "quantity": "alignment_mae", "matrix": m, "partition": "own",
+                                      "mean": np.mean(mae), "std": mae_std, "n": n, "std_over": over})
+    pd.DataFrame(mat_rows).to_csv(os.path.join(fig_dir, "subspace_matrices.csv"), index=False)
+    pd.DataFrame(sel_rows).to_csv(os.path.join(fig_dir, "selectivity_null.csv"), index=False)
+    pd.DataFrame(summ_rows).to_csv(os.path.join(fig_dir, "config_summary.csv"), index=False)
+
+    head = sorted([r for r in records if r["dataset"] == "sim_vowels" and r["config"] == headline], key=lambda r: r["seed"])
+    if head and "G" in head[0]["runs"]["main"]["summary"]:
+        if len(head) > 1:
+            G, S = mean_std([r["runs"]["main"]["summary"]["G"]["mean"] for r in head])
+        else:
+            G, S = (np.asarray(head[0]["runs"]["main"]["summary"]["G"][k], float) for k in ("mean", "std"))
+        n = len(head) if len(head) > 1 else len(head[0]["runs"]["main"]["folds"])
+        pd.DataFrame([{"config": headline, "formant": f"F{k + 1}", "factor": fac, "mean": G[k, c], "std": S[k, c], "n": n}
+                      for k in range(3) for c, fac in enumerate(("vowel", "speaker"))]).to_csv(
+            os.path.join(fig_dir, "generator_expectation.csv"), index=False)
+
+        rec = head[0]
+        imps = np.load(os.path.join(out_dir, "importances", f"{rec['name']}.npz"))["imps_main"]
+        imps = imps / imps.max(axis=2, keepdims=True)
+        width = rec["latent_dim"] // rec["n_blocks"]
+        factors = rec["runs"]["main"]["factors"]
+        pd.DataFrame([{"model": rec["name"], "config": rec["config"], "seed": rec["seed"], "factor": factors[f], "fold": k,
+                       "dim": d, "subspace": rec["blocks"][d // width], "importance": imps[k, f, d]}
+                      for k in range(imps.shape[0]) for f in range(imps.shape[1]) for d in range(imps.shape[2])]).to_csv(
+            os.path.join(fig_dir, "fold_importance.csv"), index=False)
+        stab = rec["runs"]["main"]["summary"]["fold_stability"]
+        if stab is not None:
+            pd.DataFrame([{"model": rec["name"], "config": rec["config"], "seed": rec["seed"], "factor": fac,
+                           "spearman": stab["spearman"][j], "topk_jaccard": stab["topk_jaccard"][j], "top_frac": args.top_frac,
+                           "assignment_consistency": stab["assignment_consistency"]} for j, fac in enumerate(factors)]).to_csv(
+                os.path.join(fig_dir, "fold_stability_headline.csv"), index=False)
+
+    cka_path = os.path.join(out_dir, "cka_long.csv")
+    if os.path.exists(cka_path) and os.path.getsize(cka_path) > 1:
+        cka = pd.read_csv(cka_path)
+        cka["comparison"] = np.where(cka["config_a"] == cka["config_b"], cka["config_a"],
+                                     cka["config_a"] + " vs " + cka["config_b"])
+        cka.groupby(["dataset", "comparison", "config_a", "config_b", "block_a", "block_b"], sort=False)["value"].agg(
+            mean="mean", std=lambda v: v.std(ddof=1) if len(v) > 1 else np.nan, n="size").reset_index().to_csv(
+            os.path.join(fig_dir, "cka.csv"), index=False)
+        cka.to_csv(os.path.join(fig_dir, "cka_pairs.csv"), index=False)
+    pairs_path = os.path.join(out_dir, "seed_pairs.csv")
+    if os.path.exists(pairs_path) and os.path.getsize(pairs_path) > 1:
+        pd.read_csv(pairs_path).to_csv(os.path.join(fig_dir, "seed_pairs.csv"), index=False)
+    logger.info(f"Saved the figure data in {fig_dir}")
 
 
 def style_axes(ax):
@@ -830,10 +984,14 @@ def main():
         raise FileNotFoundError(f"No per-model results in {os.path.join(out_dir, 'per_model')}")
     write_tables(records, out_dir)
     cka_mean = seed_tables(records, args, out_dir)
-    plot_simvowels(records, cka_mean, args, os.path.join(out_dir, "subspace_simvowels"))
-    plot_configs(records, os.path.join(out_dir, "subspace_configs"))
-    plot_fold_stability(records, args, out_dir, os.path.join(out_dir, "subspace_fold_stability"))
-    plot_real(records, os.path.join(out_dir, "subspace_real"))
+    write_figure_data(records, args, out_dir)
+    if args.quick_look_plots:
+        quick_dir = os.path.join(out_dir, "quick_look")
+        os.makedirs(quick_dir, exist_ok=True)
+        plot_simvowels(records, cka_mean, args, os.path.join(quick_dir, "subspace_simvowels"))
+        plot_configs(records, os.path.join(quick_dir, "subspace_configs"))
+        plot_fold_stability(records, args, out_dir, os.path.join(quick_dir, "subspace_fold_stability"))
+        plot_real(records, os.path.join(quick_dir, "subspace_real"))
     logger.info(f"Saved the outputs in {out_dir}")
 
 

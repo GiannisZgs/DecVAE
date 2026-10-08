@@ -1,0 +1,153 @@
+model,kind,curve,metric,metric_source,latent_dim,mean,std,n
+Gaussian noise,chance,True,MI,mutual_info_score,20,6.239558155391507e-05,4.57506771979032e-05,3
+Gaussian noise,chance,True,MI,mutual_info_score,48,-1.2899784899520116e-05,2.2864563714601677e-05,3
+Gaussian noise,chance,True,MI,mutual_info_score,96,-1.0053333333333333e-05,7.53130356135864e-06,3
+Gaussian noise,chance,True,MI,mutual_info_score,192,-2.5866666666666667e-06,1.7582472332790212e-06,3
+Gaussian noise,chance,True,MI,mutual_info_score,320,-1.1893576605420964e-06,3.4107586282246097e-06,3
+Gaussian noise,chance,True,MI,mutual_info_score,768,5.467471280895587e-07,9.515385673076906e-07,3
+DecVAE + EWT,ref_sub,False,MI,mutual_info_score,192,0.0300152167721184,,1
+DecVAE + FD,ref_sub,False,MI,mutual_info_score,192,0.0409873917888019,,1
+beta-VAE,ref_sub,False,MI,mutual_info_score,48,0.0078955059117991,,1
+FHVAE seg,ref_sub,False,MI,mutual_info_score,48,0.0044270399731871,,1
+CoST,ref_sub,False,MI,mutual_info_score,96,0.0161347771792173,,1
+SFA,ref_sub,False,MI,mutual_info_score,48,0.005225676378223,,1
+PCA,ref_sub,False,MI,mutual_info_score,20,0.0103279098571878,,1
+wav2vec2,dim_subset,True,MI,mutual_info_score,48,0.02838886612984352,0.001641514016180435,5
+wav2vec2,dim_subset,True,MI,mutual_info_score,96,0.03020905370496208,0.00203226022914582,5
+wav2vec2,dim_subset,True,MI,mutual_info_score,192,0.027949673287186637,0.0011170418839735144,5
+wav2vec2,dim_subset,True,MI,mutual_info_score,320,0.02923356305817204,0.0004984488082478165,5
+wav2vec2,ref_sub,True,MI,mutual_info_score,768,0.0289702939610533,,1
+wav2vec2 + PCA,ref_sub,False,MI,mutual_info_score,192,0.0020833571232261,,1
+Gaussian noise,chance,True,GCN,gaussian_total_correlation_norm,20,0.3765259009283854,0.28246528079711725,3
+Gaussian noise,chance,True,GCN,gaussian_total_correlation_norm,48,5.508943048724368,6.498146300435279,3
+Gaussian noise,chance,True,GCN,gaussian_total_correlation_norm,96,3.154528213659971,3.075788802728401,3
+Gaussian noise,chance,True,GCN,gaussian_total_correlation_norm,192,33.0975525483523,37.339031472898114,3
+Gaussian noise,chance,True,GCN,gaussian_total_correlation_norm,320,35.75755888935915,13.013044836200752,3
+Gaussian noise,chance,True,GCN,gaussian_total_correlation_norm,768,101.14370992139304,131.50144009867032,3
+DecVAE + EWT,ref_sub,False,GCN,gaussian_total_correlation_norm,192,0.136280403360661,,1
+DecVAE + FD,ref_sub,False,GCN,gaussian_total_correlation_norm,192,0.157216815182555,,1
+beta-VAE,ref_sub,False,GCN,gaussian_total_correlation_norm,48,0.0615973852996706,,1
+FHVAE seg,ref_sub,False,GCN,gaussian_total_correlation_norm,48,0.511591590221495,,1
+CoST,ref_sub,False,GCN,gaussian_total_correlation_norm,96,186.146759635518,,1
+SFA,ref_sub,False,GCN,gaussian_total_correlation_norm,48,1.10893518461982,,1
+PCA,ref_sub,False,GCN,gaussian_total_correlation_norm,20,0.254377206333759,,1
+wav2vec2,dim_subset,True,GCN,gaussian_total_correlation_norm,48,0.14685943805456614,0.011908778824100321,5
+wav2vec2,dim_subset,True,GCN,gaussian_total_correlation_norm,96,0.22985601015253243,0.04145162885142082,5
+wav2vec2,dim_subset,True,GCN,gaussian_total_correlation_norm,192,0.29474793895551027,0.012540450878381295,5
+wav2vec2,dim_subset,True,GCN,gaussian_total_correlation_norm,320,0.40622084604258524,0.018452531919607995,5
+wav2vec2,ref_sub,True,GCN,gaussian_total_correlation_norm,768,0.5583896652540206,,1
+wav2vec2 + PCA,ref_sub,False,GCN,gaussian_total_correlation_norm,192,0.0386933420653948,,1
+Gaussian noise,chance,True,DCI-D,disentanglement,20,0.0040984388711493335,0.0007108599825287649,3
+Gaussian noise,chance,True,DCI-D,disentanglement,48,0.011318801885722133,0.002159314140325203,3
+Gaussian noise,chance,True,DCI-D,disentanglement,96,0.02173969753545063,0.00235474656846041,3
+Gaussian noise,chance,True,DCI-D,disentanglement,192,0.04472897218275914,0.005383148267350752,3
+Gaussian noise,chance,True,DCI-D,disentanglement,320,0.07221631630158444,0.011039642191376249,3
+Gaussian noise,chance,True,DCI-D,disentanglement,768,0.1564913586438455,0.010054478445910313,3
+DecVAE + EWT,ref_sub,False,DCI-D,disentanglement,192,0.433499182721692,,1
+DecVAE + FD,ref_sub,False,DCI-D,disentanglement,192,0.445651374373603,,1
+beta-VAE,ref_sub,False,DCI-D,disentanglement,48,0.0789358867188023,,1
+FHVAE seg,ref_sub,False,DCI-D,disentanglement,48,0.35310808418582,,1
+CoST,ref_sub,False,DCI-D,disentanglement,96,0.688723087591402,,1
+SFA,ref_sub,False,DCI-D,disentanglement,48,0.427750658229142,,1
+PCA,ref_sub,False,DCI-D,disentanglement,20,0.222167802927853,,1
+wav2vec2,dim_subset,True,DCI-D,disentanglement,48,0.3720978760474273,0.059742278528791444,5
+wav2vec2,dim_subset,True,DCI-D,disentanglement,96,0.539781979398532,0.047529956259137356,5
+wav2vec2,dim_subset,True,DCI-D,disentanglement,192,0.6342882332457516,0.018541382148822446,5
+wav2vec2,dim_subset,True,DCI-D,disentanglement,320,0.7359278980128272,0.015249078894876053,5
+wav2vec2,ref_sub,True,DCI-D,disentanglement,768,0.8404593666398814,,1
+wav2vec2 + PCA,ref_sub,False,DCI-D,disentanglement,192,0.38715293154496,,1
+Gaussian noise,chance,True,DCI-C,completeness,20,0.0020248856311996,0.0006644341988338066,3
+Gaussian noise,chance,True,DCI-C,completeness,48,0.0037393108995849335,0.0005578402742381229,3
+Gaussian noise,chance,True,DCI-C,completeness,96,0.006728082317834501,0.0005574699361020151,3
+Gaussian noise,chance,True,DCI-C,completeness,192,0.011372135217428999,0.0010885534641488078,3
+Gaussian noise,chance,True,DCI-C,completeness,320,0.016921978610999033,0.0017084531946356387,3
+Gaussian noise,chance,True,DCI-C,completeness,768,0.032730961641431834,0.0006770439410230933,3
+DecVAE + EWT,ref_sub,False,DCI-C,completeness,192,0.141587056590444,,1
+DecVAE + FD,ref_sub,False,DCI-C,completeness,192,0.147183598202523,,1
+beta-VAE,ref_sub,False,DCI-C,completeness,48,0.527656552595719,,1
+FHVAE seg,ref_sub,False,DCI-C,completeness,48,0.239329869295739,,1
+CoST,ref_sub,False,DCI-C,completeness,96,0.244646245954035,,1
+SFA,ref_sub,False,DCI-C,completeness,48,0.426298089167279,,1
+PCA,ref_sub,False,DCI-C,completeness,20,0.175394800590786,,1
+wav2vec2,dim_subset,True,DCI-C,completeness,48,0.14538471611543474,0.01140015475622575,5
+wav2vec2,dim_subset,True,DCI-C,completeness,96,0.20447569661784887,0.01901765056894173,5
+wav2vec2,dim_subset,True,DCI-C,completeness,192,0.2246794198830885,0.007676720883923933,5
+wav2vec2,dim_subset,True,DCI-C,completeness,320,0.2870554470661168,0.009557474164756313,5
+wav2vec2,ref_sub,True,DCI-C,completeness,768,0.3258555819757078,,1
+wav2vec2 + PCA,ref_sub,False,DCI-C,completeness,192,0.439341709295035,,1
+Gaussian noise,chance,True,DCI-I,informativeness_test,20,0.1620833333333333,0.0059389252675322475,3
+Gaussian noise,chance,True,DCI-I,informativeness_test,48,0.15541666666666662,0.010666341140866082,3
+Gaussian noise,chance,True,DCI-I,informativeness_test,96,0.15941666666666662,0.009166287870961291,3
+Gaussian noise,chance,True,DCI-I,informativeness_test,192,0.15866666666666665,0.0019094065395649253,3
+Gaussian noise,chance,True,DCI-I,informativeness_test,320,0.16074999999999998,0.003699662146737116,3
+Gaussian noise,chance,True,DCI-I,informativeness_test,768,0.1565,0.0007500000000000007,3
+DecVAE + EWT,ref_sub,False,DCI-I,informativeness_test,192,0.69275,,1
+DecVAE + FD,ref_sub,False,DCI-I,informativeness_test,192,0.73775,,1
+beta-VAE,ref_sub,False,DCI-I,informativeness_test,48,0.77175,,1
+FHVAE seg,ref_sub,False,DCI-I,informativeness_test,48,0.85425,,1
+CoST,ref_sub,False,DCI-I,informativeness_test,96,0.7395,,1
+SFA,ref_sub,False,DCI-I,informativeness_test,48,0.92275,,1
+PCA,ref_sub,False,DCI-I,informativeness_test,20,0.77975,,1
+wav2vec2,dim_subset,True,DCI-I,informativeness_test,48,0.8454499999999999,0.006826877031263965,5
+wav2vec2,dim_subset,True,DCI-I,informativeness_test,96,0.86195,0.004381780460041309,5
+wav2vec2,dim_subset,True,DCI-I,informativeness_test,192,0.88095,0.0062108775547421455,5
+wav2vec2,dim_subset,True,DCI-I,informativeness_test,320,0.891,0.00398042083202263,5
+wav2vec2,ref_sub,True,DCI-I,informativeness_test,768,0.90375,,1
+wav2vec2 + PCA,ref_sub,False,DCI-I,informativeness_test,192,0.855,,1
+Gaussian noise,chance,True,Modularity,modularity_score,20,0.7469832452443924,0.08805519408320865,3
+Gaussian noise,chance,True,Modularity,modularity_score,48,0.7778977374871161,0.054184593412961383,3
+Gaussian noise,chance,True,Modularity,modularity_score,96,0.7435859031587896,0.027285297751007187,3
+Gaussian noise,chance,True,Modularity,modularity_score,192,0.7151812833770607,0.042763711257277195,3
+Gaussian noise,chance,True,Modularity,modularity_score,320,0.7329485212848406,0.017566180325153235,3
+Gaussian noise,chance,True,Modularity,modularity_score,768,0.733138033749052,0.004595132835765231,3
+DecVAE + EWT,ref_sub,False,Modularity,modularity_score,192,0.905839790655658,,1
+DecVAE + FD,ref_sub,False,Modularity,modularity_score,192,0.808693800352557,,1
+beta-VAE,ref_sub,False,Modularity,modularity_score,48,0.552043446659163,,1
+FHVAE seg,ref_sub,False,Modularity,modularity_score,48,0.874566060250744,,1
+CoST,ref_sub,False,Modularity,modularity_score,96,0.9493780869479,,1
+SFA,ref_sub,False,Modularity,modularity_score,48,0.737411079182535,,1
+PCA,ref_sub,False,Modularity,modularity_score,20,0.731403764630414,,1
+wav2vec2,dim_subset,True,Modularity,modularity_score,48,0.6528248468426664,0.031536027779198623,5
+wav2vec2,dim_subset,True,Modularity,modularity_score,96,0.6615334061556609,0.019754128317608314,5
+wav2vec2,dim_subset,True,Modularity,modularity_score,192,0.6479204288291023,0.02796266915950245,5
+wav2vec2,dim_subset,True,Modularity,modularity_score,320,0.6490354135244258,0.010460257602931528,5
+wav2vec2,ref_sub,True,Modularity,modularity_score,768,0.6490948886765987,,1
+wav2vec2 + PCA,ref_sub,False,Modularity,modularity_score,192,0.633149971725341,,1
+Gaussian noise,chance,True,Explicitness,explicitness_score_test,20,0.0037645090649284,0.006827775871708299,3
+Gaussian noise,chance,True,Explicitness,explicitness_score_test,48,-0.00502800863727,0.015316949724124142,3
+Gaussian noise,chance,True,Explicitness,explicitness_score_test,96,-0.009185961333333333,0.002232295048245266,3
+Gaussian noise,chance,True,Explicitness,explicitness_score_test,192,-0.0034721415274566337,0.0056611043308828725,3
+Gaussian noise,chance,True,Explicitness,explicitness_score_test,320,-0.0007022058044963333,0.006685194997767176,3
+Gaussian noise,chance,True,Explicitness,explicitness_score_test,768,-0.006749671299033834,0.006139535202600123,3
+DecVAE + EWT,ref_sub,False,Explicitness,explicitness_score_test,192,0.882366599241311,,1
+DecVAE + FD,ref_sub,False,Explicitness,explicitness_score_test,192,0.890355039594491,,1
+beta-VAE,ref_sub,False,Explicitness,explicitness_score_test,48,0.742120650164552,,1
+FHVAE seg,ref_sub,False,Explicitness,explicitness_score_test,48,0.990487938966174,,1
+CoST,ref_sub,False,Explicitness,explicitness_score_test,96,0.950023152978381,,1
+SFA,ref_sub,False,Explicitness,explicitness_score_test,48,0.969699456465223,,1
+PCA,ref_sub,False,Explicitness,explicitness_score_test,20,0.879421283045134,,1
+wav2vec2,dim_subset,True,Explicitness,explicitness_score_test,48,0.9762932446882824,0.0033934610928496494,5
+wav2vec2,dim_subset,True,Explicitness,explicitness_score_test,96,0.990016877406339,0.0010588405445342039,5
+wav2vec2,dim_subset,True,Explicitness,explicitness_score_test,192,0.9965592639503947,0.00043114821028629067,5
+wav2vec2,dim_subset,True,Explicitness,explicitness_score_test,320,0.9982580810755026,9.003473473141304e-05,5
+wav2vec2,ref_sub,True,Explicitness,explicitness_score_test,768,0.9989279955224176,,1
+wav2vec2 + PCA,ref_sub,False,Explicitness,explicitness_score_test,192,0.997057660907242,,1
+Gaussian noise,chance,True,IRS,IRS,20,0.3651771735617751,0.013629290805558044,3
+Gaussian noise,chance,True,IRS,IRS,48,0.36284148431467217,0.002651924971361564,3
+Gaussian noise,chance,True,IRS,IRS,96,0.37067823413141365,0.005606436271101999,3
+Gaussian noise,chance,True,IRS,IRS,192,0.3649468607137758,0.005512961028903419,3
+Gaussian noise,chance,True,IRS,IRS,320,0.36513381464299743,0.002059641915991021,3
+Gaussian noise,chance,True,IRS,IRS,768,0.36382690891987385,0.0025171612097561256,3
+DecVAE + EWT,ref_sub,False,IRS,IRS,192,0.488697668932804,,1
+DecVAE + FD,ref_sub,False,IRS,IRS,192,0.496910038400203,,1
+beta-VAE,ref_sub,False,IRS,IRS,48,0.49108476091386,,1
+FHVAE seg,ref_sub,False,IRS,IRS,48,0.41533378024655,,1
+CoST,ref_sub,False,IRS,IRS,96,0.430052428717538,,1
+SFA,ref_sub,False,IRS,IRS,48,0.415777625710806,,1
+PCA,ref_sub,False,IRS,IRS,20,0.443855809680599,,1
+wav2vec2,dim_subset,True,IRS,IRS,48,0.42196926556166126,0.014777824326665984,5
+wav2vec2,dim_subset,True,IRS,IRS,96,0.4418679498340019,0.009016403426557632,5
+wav2vec2,dim_subset,True,IRS,IRS,192,0.42609529917439415,0.0032311145284796014,5
+wav2vec2,dim_subset,True,IRS,IRS,320,0.4331725241849133,0.006536925043082928,5
+wav2vec2,ref_sub,True,IRS,IRS,768,0.428952677644937,,1
+wav2vec2 + PCA,ref_sub,False,IRS,IRS,192,0.419671831345234,,1

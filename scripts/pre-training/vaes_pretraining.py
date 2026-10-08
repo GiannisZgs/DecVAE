@@ -67,7 +67,7 @@ import json
 #os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 #os.environ["TORCH_USE_CUDA_DSA"] = "1"
 
-JSON_FILE_NAME_MANUAL = "config_files/VAEs/sim_vowels/pre-training/config_pretraining_vae1d_vowels.json" #for debugging purposes only
+JSON_FILE_NAME_MANUAL = "config_files/VAEs/sim_coupled/pre-training/config_pretraining_vae1d_sim_coupled.json" #for debugging purposes only
 #JSON_FILE_NAME_MANUAL = "config_files/VAEs/sim_coupled/pre-training/config_pretraining_vae1d_sim_coupled.json" #for debugging purposes only
 
 logger = get_logger(__name__)
@@ -401,7 +401,11 @@ def main():
             shutil.copy(JSON_FILE_NAME_MANUAL, destination_config)
     else:
         destination_config = os.path.join(data_training_args.output_dir,args.config_file) 
-        shutil.copy(args.config_file,destination_config)
+        try:
+            shutil.copy(args.config_file,destination_config)
+        except FileNotFoundError:
+            destination_config = os.path.join(data_training_args.output_dir, os.path.basename(args.config_file))
+            shutil.copy(args.config_file, destination_config)
 
     for epoch in range(starting_epoch, data_training_args.num_train_epochs):
         model.train()
