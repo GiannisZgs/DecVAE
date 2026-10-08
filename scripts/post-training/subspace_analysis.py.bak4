@@ -79,7 +79,7 @@ DEFAULT_ARGS = {
     "quick_look_plots": False,  # matplotlib quick-look figures in output_dir/quick_look, not the paper figures
     "datasets": {},
 }
-DATASET_KEYS = {"speaker_factor", "stratify", "ground_truth", "vowel_classes", "n_sub", "swap_match", "extra_runs"}
+DATASET_KEYS = {"speaker_factor", "ground_truth", "vowel_classes", "n_sub", "swap_match", "extra_runs"}
 COMPUTE_KEYS = ["n_folds", "fold_seed", "subsample_seed", "n_null", "null_folds", "null_seed", "max_pairs",
                 "min_pairs", "probe_C", "probe_max_iter", "importance", "top_frac"]
 
@@ -179,21 +179,12 @@ def encode(Y):
     return enc, n_classes
 
 
-def joint_cell(Y):
-    "Joint class of the factors, (F, N) -> (N,)"
-    cell = np.zeros(Y.shape[1], dtype=np.int64)
-    for row in np.asarray(Y, dtype=np.int64):
-        cell = cell * (int(row.max()) + 1) + row
-    return cell
-
-
-def make_folds(label, split, n_folds, fold_seed):
-    "label: speaker for the speaker splits, joint factor cell for stratified_joint; indep_test stratifies like the main split"
-    X = np.zeros((len(label), 1))
-    if split in ("stratified_speaker", "stratified_joint", "indep_test"):
-        return list(StratifiedKFold(n_folds, shuffle=True, random_state=fold_seed).split(X, label))
+def make_folds(speaker, split, n_folds, fold_seed):
+    X = np.zeros((len(speaker), 1))
+    if split == "stratified_speaker":
+        return list(StratifiedKFold(n_folds, shuffle=True, random_state=fold_seed).split(X, speaker))
     if split == "group_speaker":
-        return list(GroupKFold(n_folds).split(X, groups=label))
+        return list(GroupKFold(n_folds).split(X, groups=speaker))
     raise ValueError(f"Unknown split {split}")
 
 
@@ -296,11 +287,8 @@ def summarise_folds(folds, imps, args):
     return s
 
 
-def run_analysis(Z, Y, split_label, factors, n_classes, groups, run, args, match, null_parts, sim, test_idx=None):
-    "test_idx: frames that replace every fold's test part (the indep split), the folds still pick the training part"
-    folds = make_folds(split_label, run["split"], args.n_folds, args.fold_seed)
-    if test_idx is not None:
-        folds = [(tr, test_idx) for tr, _ in folds]
+def run_analysis(Z, Y, speaker, factors, n_classes, groups, run, args, match, null_parts, sim):
+    folds = make_folds(speaker, run["split"], args.n_folds, args.fold_seed)
     fold_res, imps = [], []
     for k, (tr, te) in enumerate(folds):
         t0 = time.time()
@@ -341,37 +329,20 @@ def process_model(model, args, refs, out_dir):
         raise ValueError(f"{model['name']}: dump latent_type is {sidecar.get('latent_type')}, expected 'all'")
     D, n_blocks = Z.shape[1], model["n_blocks"]
     groups = block_indices(D, n_blocks)
-    speaker_factor = ds_cfg.get("speaker_factor")
-    if speaker_factor is not None and speaker_factor not in factors:
+    speaker_factor = ds_cfg["speaker_factor"]
+    if speaker_factor not in factors:
         raise ValueError(f"{model['name']}: speaker factor {speaker_factor} not in the dump targets {factors}")
-    stratify = ds_cfg.get("stratify", "speaker")
-    if stratify not in ("speaker", "joint") or (stratify == "speaker" and speaker_factor is None):
-        raise ValueError(f"{model['dataset']}: set a speaker_factor, or stratify to 'joint'")
-    strat_raw = Y_raw[factors.index(speaker_factor)] if stratify == "speaker" else joint_cell(Y_raw)
-
-    "The unseen indep split (SimCoupled), saved apart from the train/test pool by the dump"
-    Z_indep = Y_indep_raw = None
-    if any(r.get("split") == "indep_test" for r in ds_cfg.get("extra_runs", [])):
-        d = np.load(model["dump"][:-4] + ".npz" if model["dump"].endswith(".npz") else model["dump"] + ".npz")
-        if "mu_indep" not in d.files:
-            raise ValueError(f"{model['name']}: an indep_test run is configured but the dump has no indep split")
-        Z_indep, Y_indep_raw = np.ascontiguousarray(d["mu_indep"].T), d["y_indep"]
 
     ref = refs.get(model["dataset"])
     if ref is None:
-        sub = stratified_subsample(strat_raw, n_sub, np.random.default_rng(args.subsample_seed))
-        refs[model["dataset"]] = {"Y": Y_raw, "Y_indep": Y_indep_raw, "sub": sub, "name": model["name"]}
+        sub = stratified_subsample(Y_raw[factors.index(speaker_factor)], n_sub, np.random.default_rng(args.subsample_seed))
+        refs[model["dataset"]] = {"Y": Y_raw, "sub": sub, "name": model["name"]}
     else:
         if Y_raw.shape != ref["Y"].shape or not np.array_equal(Y_raw, ref["Y"]):
             raise ValueError(f"{model['name']}: frames or labels differ from {ref['name']}'s; all models of "
                              f"{model['dataset']} must share the same frames")
-        if (Y_indep_raw is None) != (ref["Y_indep"] is None) or (
-                Y_indep_raw is not None and not np.array_equal(Y_indep_raw, ref["Y_indep"])):
-            raise ValueError(f"{model['name']}: indep frames or labels differ from {ref['name']}'s")
         sub = ref["sub"]
     frames_crc = zlib.crc32(sub.tobytes() + np.ascontiguousarray(Y_raw[:, sub]).tobytes())
-    if Y_indep_raw is not None:
-        frames_crc = zlib.crc32(np.ascontiguousarray(Y_indep_raw).tobytes(), frames_crc)
 
     if os.path.exists(json_path):
         with open(json_path) as f:
@@ -384,12 +355,11 @@ def process_model(model, args, refs, out_dir):
     logger.info(f"{model['name']}: {len(sub)} of {Z.shape[0]} frames, D = {D}, {n_blocks} blocks, factors {factors}")
     Zs, Ys_raw = np.ascontiguousarray(Z[sub]), Y_raw[:, sub]
     Ys, n_classes = encode(Ys_raw)
-    speaker = Ys[factors.index(speaker_factor)] if speaker_factor is not None else None
-    strat = speaker if stratify == "speaker" else joint_cell(Ys)
+    speaker = Ys[factors.index(speaker_factor)]
     "Create random partitions of the subspaces - Random subspaces"
     parts = null_partitions(D, n_blocks, args)
 
-    runs = [("main", {"split": "stratified_speaker" if stratify == "speaker" else "stratified_joint", "factors": factors})]
+    runs = [("main", {"split": "stratified_speaker", "factors": factors})]
     runs += [(r["tag"], r) for r in ds_cfg.get("extra_runs", [])]
     out_runs, npz = {}, {}
     for tag, run in runs:
@@ -400,8 +370,7 @@ def process_model(model, args, refs, out_dir):
             match = {run_factors.index(f): [run_factors.index(x) for x in keep if x in run_factors]
                      for f, keep in ds_cfg["swap_match"].items() if f in run_factors}
         sim = None
-        if ds_cfg.get("ground_truth") == "simvowels_formants" and "vowel" in run_factors and speaker_factor in run_factors \
-                and run["split"] != "indep_test":
+        if ds_cfg.get("ground_truth") == "simvowels_formants" and "vowel" in run_factors and speaker_factor in run_factors:
             vowel_classes = np.array(ds_cfg["vowel_classes"])
             sim = {"vowel_names": vowel_classes[Ys_raw[factors.index("vowel")]],
                    "speaker_vt": np.array([sidecar["speaker_vt"][str(int(s))] for s in Ys_raw[factors.index(speaker_factor)]]),
@@ -411,19 +380,8 @@ def process_model(model, args, refs, out_dir):
                 logger.warning(f"{model['name']}: {n_blocks - 1} OCs, the generator alignment needs 3, skipped")
                 sim = None
         logger.info(f"{model['name']} | {tag}: split {run['split']}, factors {run_factors}, match {match}")
-        if run["split"] == "indep_test":
-            "Train on each fold's training part of the pool, test on every indep frame; labels encoded jointly"
-            Y_run, n_classes_run = encode(np.concatenate((Ys_raw[idx], Y_indep_raw[idx]), axis=1))
-            out_runs[tag], npz[f"imps_{tag}"] = run_analysis(
-                np.concatenate((Zs, Z_indep)), Y_run, strat, run_factors, n_classes_run, groups, run, args, match, parts,
-                sim, test_idx=np.arange(len(sub), len(sub) + len(Z_indep)))
-            out_runs[tag]["n_indep"] = int(len(Z_indep))
-        else:
-            split_label = speaker if run["split"] == "group_speaker" else strat
-            if split_label is None:
-                raise ValueError(f"{model['dataset']}: the {run['split']} split needs a speaker_factor")
-            out_runs[tag], npz[f"imps_{tag}"] = run_analysis(Zs, Ys[idx], split_label, run_factors, [n_classes[i] for i in idx],
-                                                             groups, run, args, match, parts, sim)
+        out_runs[tag], npz[f"imps_{tag}"] = run_analysis(Zs, Ys[idx], speaker, run_factors, [n_classes[i] for i in idx],
+                                                         groups, run, args, match, parts, sim)
 
     npz["cka_Z"] = Zs
     npz["cka_frames"] = sub

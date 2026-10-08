@@ -1,7 +1,6 @@
-#' Subspace analysis figure (datasets other than SimVowels): prediction and swap matrices for TIMIT,
-#' IEMOCAP, VOC-ALS (and the VOC-ALS speaker-disjoint run) and SimCoupled (and its independent-factors
-#' run), and the selectivity of each against random partitions. Std over seeds where a configuration has
-#' several (SimCoupled FD), over CV folds otherwise (std_over column of the CSVs).
+#' Subspace analysis figure (real datasets): prediction and swap matrices for TIMIT, IEMOCAP and
+#' VOC-ALS (and the VOC-ALS speaker-disjoint run), and the selectivity of each against random
+#' partitions. Std over CV folds (one seed per model).
 #' Plots data/subspace/subspace_matrices.csv and config_summary.csv, written by
 #' scripts/post-training/subspace_analysis.py. One PNG per panel.
 
@@ -28,9 +27,9 @@ matrix_limits <- list(P = c(0, 1), dT = c(0, 0.5))
 matrix_legend <- c(P = "Prediction", dT = "Swap\nT − Tc")
 matrix_file <- c(P = "prediction", dT = "swap")
 display_factor_names <- c(phoneme = "Phoneme", phoneme_frame = "Phoneme", speaker_frame = "Speaker",
-                          cat_emotion_frame = "Emotion", king_stage_frame = "King's stage", lag = "Lag", gain = "Gain")
-display_dataset_names <- c(timit = "TIMIT", iemocap = "IEMOCAP", VOC_ALS = "VOC-ALS", sim_coupled = "SimCoupled")
-display_run_names <- c(main = "", speaker_disjoint = " (speaker-disjoint)", indep = " (independent factors)")
+                          cat_emotion_frame = "Emotion", king_stage_frame = "King's stage")
+display_dataset_names <- c(timit = "TIMIT", iemocap = "IEMOCAP", VOC_ALS = "VOC-ALS")
+display_run_names <- c(main = "", speaker_disjoint = " (speaker-disjoint)")
 display_partition_names <- c(own = "DecVAE subspaces", null = "Random partitions")
 
 # Load data from
