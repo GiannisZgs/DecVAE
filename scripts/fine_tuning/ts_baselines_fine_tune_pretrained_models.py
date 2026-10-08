@@ -88,7 +88,7 @@ JSON_FILE_NAME_MANUAL = "config_files/baselines/cost/iemocap/fine_tuning/config_
 logger = get_logger(__name__)
 
 "Hardcoded intervention: keep only this fraction of every IEMOCAP split. Set to None for the full dataset"
-IEMOCAP_SUBSET_FRACTION = 0.05
+IEMOCAP_SUBSET_FRACTION = None
 
 "Datasets a checkpoint can be transferred from. The source only enters through parent_dir, so the"
 "two differ solely in the frame count, which the banded Fourier layer is re-initialized for"
