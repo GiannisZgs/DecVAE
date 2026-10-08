@@ -1,0 +1,61 @@
+dataset,comparison,config_a,config_b,seed_a,seed_b,quantity,value
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,1,pearson:P,0.998942937831648
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,2,pearson:P,0.9941939164710192
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,1,2,pearson:P,0.9900660785120634
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,1,pearson:A,0.957336110499592
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,2,pearson:A,0.8875401098714478
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,1,2,pearson:A,0.9501110909829208
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,1,pearson:dT,0.939858960639143
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,2,pearson:dT,0.9715476220068668
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,1,2,pearson:dT,0.9277027782641436
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,1,cka_diag_mean,0.5776798628025773
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,1,cka_offdiag_mean,0.0728712556790921
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,1,cka_diag:X,0.779734088008378
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,1,cka_diag:OC1,0.1960111461290157
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,1,cka_diag:OC2,0.6830638064443112
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,1,cka_diag:OC3,0.6519104106286044
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,2,cka_diag_mean,0.5357592010945164
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,2,cka_offdiag_mean,0.0583368480078441
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,2,cka_diag:X,0.5649561418345241
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,2,cka_diag:OC1,0.1429602536625166
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,2,cka_diag:OC2,0.7664525936002669
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,0,2,cka_diag:OC3,0.6686678152807576
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,1,2,cka_diag_mean,0.6181998550463031
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,1,2,cka_offdiag_mean,0.0808767902579793
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,1,2,cka_diag:X,0.6183808665159829
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,1,2,cka_diag:OC1,0.5070467367006071
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,1,2,cka_diag:OC2,0.8599211686015457
+sim_vowels,ewt_b01,ewt_b01,ewt_b01,1,2,cka_diag:OC3,0.4874506483670767
+sim_vowels,fd_b01,fd_b01,fd_b01,0,1,pearson:P,0.9949050490396024
+sim_vowels,fd_b01,fd_b01,fd_b01,0,2,pearson:P,0.9952102906855256
+sim_vowels,fd_b01,fd_b01,fd_b01,1,2,pearson:P,0.9954877011916292
+sim_vowels,fd_b01,fd_b01,fd_b01,0,1,pearson:A,0.896621942312837
+sim_vowels,fd_b01,fd_b01,fd_b01,0,2,pearson:A,0.9566145553256848
+sim_vowels,fd_b01,fd_b01,fd_b01,1,2,pearson:A,0.9602363542762616
+sim_vowels,fd_b01,fd_b01,fd_b01,0,1,pearson:dT,0.8456916164454193
+sim_vowels,fd_b01,fd_b01,fd_b01,0,2,pearson:dT,0.94828714203702
+sim_vowels,fd_b01,fd_b01,fd_b01,1,2,pearson:dT,0.920661487119132
+sim_vowels,fd_b01,fd_b01,fd_b01,0,1,cka_diag_mean,0.6519973075607861
+sim_vowels,fd_b01,fd_b01,fd_b01,0,1,cka_offdiag_mean,0.0696817370584337
+sim_vowels,fd_b01,fd_b01,fd_b01,0,1,cka_diag:X,0.822807913407897
+sim_vowels,fd_b01,fd_b01,fd_b01,0,1,cka_diag:OC1,0.2843467826729063
+sim_vowels,fd_b01,fd_b01,fd_b01,0,1,cka_diag:OC2,0.6113950229809546
+sim_vowels,fd_b01,fd_b01,fd_b01,0,1,cka_diag:OC3,0.8894395111813863
+sim_vowels,fd_b01,fd_b01,fd_b01,0,2,cka_diag_mean,0.4976649063442765
+sim_vowels,fd_b01,fd_b01,fd_b01,0,2,cka_offdiag_mean,0.0741841305898085
+sim_vowels,fd_b01,fd_b01,fd_b01,0,2,cka_diag:X,0.8117803916991069
+sim_vowels,fd_b01,fd_b01,fd_b01,0,2,cka_diag:OC1,0.4344675582090231
+sim_vowels,fd_b01,fd_b01,fd_b01,0,2,cka_diag:OC2,0.5513150963603596
+sim_vowels,fd_b01,fd_b01,fd_b01,0,2,cka_diag:OC3,0.1930965791086166
+sim_vowels,fd_b01,fd_b01,fd_b01,1,2,cka_diag_mean,0.3785650411040242
+sim_vowels,fd_b01,fd_b01,fd_b01,1,2,cka_offdiag_mean,0.0577022146908503
+sim_vowels,fd_b01,fd_b01,fd_b01,1,2,cka_diag:X,0.6972020325616668
+sim_vowels,fd_b01,fd_b01,fd_b01,1,2,cka_diag:OC1,0.2811356775040492
+sim_vowels,fd_b01,fd_b01,fd_b01,1,2,cka_diag:OC2,0.3575379101810075
+sim_vowels,fd_b01,fd_b01,fd_b01,1,2,cka_diag:OC3,0.1783845441693735
+sim_vowels,ewt_b01 vs fd_b01,ewt_b01,fd_b01,0,0,cka_diag_mean,0.2620389176945189
+sim_vowels,ewt_b01 vs fd_b01,ewt_b01,fd_b01,0,0,cka_offdiag_mean,0.0616250419773311
+sim_vowels,ewt_b01 vs fd_b01,ewt_b01,fd_b01,0,0,cka_diag:X,0.5331685293259565
+sim_vowels,ewt_b01 vs fd_b01,ewt_b01,fd_b01,0,0,cka_diag:OC1,0.0848202348523295
+sim_vowels,ewt_b01 vs fd_b01,ewt_b01,fd_b01,0,0,cka_diag:OC2,0.0452758964098971
+sim_vowels,ewt_b01 vs fd_b01,ewt_b01,fd_b01,0,0,cka_diag:OC3,0.3848910101898924
