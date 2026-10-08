@@ -1,113 +1,65 @@
 dataset,config_a,config_b,seed_a,seed_b,block_a,block_b,value,comparison
-sim_vowels,ewt_b01,ewt_b01,0,1,X,X,0.779734088008378,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,1,X,OC1,0.242245755773037,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,1,X,OC2,0.0795226506620596,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,1,X,OC3,0.0966505124629121,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,1,OC1,X,0.0680510812171421,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,1,OC1,OC1,0.1960111461290157,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,1,OC1,OC2,0.0087541907424853,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,1,OC1,OC3,0.0294263355917639,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,1,OC2,X,0.0865554358504251,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,1,OC2,OC1,0.0198984505058165,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,1,OC2,OC2,0.6830638064443112,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,1,OC2,OC3,0.0297430156934958,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,1,OC3,X,0.1669114504366618,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,1,OC3,OC1,0.024783793570207,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,1,OC3,OC2,0.0219123956430993,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,1,OC3,OC3,0.6519104106286044,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,2,X,X,0.5649561418345241,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,2,X,OC1,0.1473597008118692,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,2,X,OC2,0.1233422204747348,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,2,X,OC3,0.142401693439484,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,2,OC1,X,0.0690459838903007,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,2,OC1,OC1,0.1429602536625166,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,2,OC1,OC2,0.011975338468055,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,2,OC1,OC3,0.0181489287748942,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,2,OC2,X,0.0668300291592717,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,2,OC2,OC1,0.012051102813988,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,2,OC2,OC2,0.7664525936002669,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,2,OC2,OC3,0.0145564286721616,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,2,OC3,X,0.0818207118704662,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,2,OC3,OC1,0.0068003256875432,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,2,OC3,OC2,0.005709712031361,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,0,2,OC3,OC3,0.6686678152807576,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,1,2,X,X,0.6183808665159829,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,1,2,X,OC1,0.1870579358232992,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,1,2,X,OC2,0.0783930470394678,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,1,2,X,OC3,0.183210713416951,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,1,2,OC1,X,0.2663272582151252,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,1,2,OC1,OC1,0.5070467367006071,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,1,2,OC1,OC2,0.0104100541475354,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,1,2,OC1,OC3,0.036888359964462,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,1,2,OC2,X,0.0526094569795945,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,1,2,OC2,OC1,0.0082200378802316,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,1,2,OC2,OC2,0.8599211686015457,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,1,2,OC2,OC3,0.0343228472618454,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,1,2,OC3,X,0.0664082257754853,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,1,2,OC3,OC1,0.0245676902895913,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,1,2,OC3,OC2,0.0221058563021635,ewt_b01
-sim_vowels,ewt_b01,ewt_b01,1,2,OC3,OC3,0.4874506483670767,ewt_b01
-sim_vowels,fd_b01,fd_b01,0,1,X,X,0.822807913407897,fd_b01
-sim_vowels,fd_b01,fd_b01,0,1,X,OC1,0.0692651917423964,fd_b01
-sim_vowels,fd_b01,fd_b01,0,1,X,OC2,0.0269677213754464,fd_b01
-sim_vowels,fd_b01,fd_b01,0,1,X,OC3,0.0919153943830006,fd_b01
-sim_vowels,fd_b01,fd_b01,0,1,OC1,X,0.2091528864035896,fd_b01
-sim_vowels,fd_b01,fd_b01,0,1,OC1,OC1,0.2843467826729063,fd_b01
-sim_vowels,fd_b01,fd_b01,0,1,OC1,OC2,0.042984931130983,fd_b01
-sim_vowels,fd_b01,fd_b01,0,1,OC1,OC3,0.0645925929824577,fd_b01
-sim_vowels,fd_b01,fd_b01,0,1,OC2,X,0.014731916700316,fd_b01
-sim_vowels,fd_b01,fd_b01,0,1,OC2,OC1,0.0120233617316469,fd_b01
-sim_vowels,fd_b01,fd_b01,0,1,OC2,OC2,0.6113950229809546,fd_b01
-sim_vowels,fd_b01,fd_b01,0,1,OC2,OC3,0.0673756255311464,fd_b01
-sim_vowels,fd_b01,fd_b01,0,1,OC3,X,0.0750538943534129,fd_b01
-sim_vowels,fd_b01,fd_b01,0,1,OC3,OC1,0.0287747793423682,fd_b01
-sim_vowels,fd_b01,fd_b01,0,1,OC3,OC2,0.1333425490244403,fd_b01
-sim_vowels,fd_b01,fd_b01,0,1,OC3,OC3,0.8894395111813863,fd_b01
-sim_vowels,fd_b01,fd_b01,0,2,X,X,0.8117803916991069,fd_b01
-sim_vowels,fd_b01,fd_b01,0,2,X,OC1,0.1802806686003888,fd_b01
-sim_vowels,fd_b01,fd_b01,0,2,X,OC2,0.0268164741375593,fd_b01
-sim_vowels,fd_b01,fd_b01,0,2,X,OC3,0.0205173866810592,fd_b01
-sim_vowels,fd_b01,fd_b01,0,2,OC1,X,0.2501053961896193,fd_b01
-sim_vowels,fd_b01,fd_b01,0,2,OC1,OC1,0.4344675582090231,fd_b01
-sim_vowels,fd_b01,fd_b01,0,2,OC1,OC2,0.0295172929924183,fd_b01
-sim_vowels,fd_b01,fd_b01,0,2,OC1,OC3,0.0178078258557984,fd_b01
-sim_vowels,fd_b01,fd_b01,0,2,OC2,X,0.0216628539275518,fd_b01
-sim_vowels,fd_b01,fd_b01,0,2,OC2,OC1,0.0241615185001448,fd_b01
-sim_vowels,fd_b01,fd_b01,0,2,OC2,OC2,0.5513150963603596,fd_b01
-sim_vowels,fd_b01,fd_b01,0,2,OC2,OC3,0.0291218613099434,fd_b01
-sim_vowels,fd_b01,fd_b01,0,2,OC3,X,0.1575003310438276,fd_b01
-sim_vowels,fd_b01,fd_b01,0,2,OC3,OC1,0.0875002280309871,fd_b01
-sim_vowels,fd_b01,fd_b01,0,2,OC3,OC2,0.0452177298084044,fd_b01
-sim_vowels,fd_b01,fd_b01,0,2,OC3,OC3,0.1930965791086166,fd_b01
-sim_vowels,fd_b01,fd_b01,1,2,X,X,0.6972020325616668,fd_b01
-sim_vowels,fd_b01,fd_b01,1,2,X,OC1,0.1554849668952358,fd_b01
-sim_vowels,fd_b01,fd_b01,1,2,X,OC2,0.0225909885650576,fd_b01
-sim_vowels,fd_b01,fd_b01,1,2,X,OC3,0.017609174303025,fd_b01
-sim_vowels,fd_b01,fd_b01,1,2,OC1,X,0.0758337326427398,fd_b01
-sim_vowels,fd_b01,fd_b01,1,2,OC1,OC1,0.2811356775040492,fd_b01
-sim_vowels,fd_b01,fd_b01,1,2,OC1,OC2,0.0165791491532066,fd_b01
-sim_vowels,fd_b01,fd_b01,1,2,OC1,OC3,0.0108340165050246,fd_b01
-sim_vowels,fd_b01,fd_b01,1,2,OC2,X,0.0367798030722685,fd_b01
-sim_vowels,fd_b01,fd_b01,1,2,OC2,OC1,0.0467803159107917,fd_b01
-sim_vowels,fd_b01,fd_b01,1,2,OC2,OC2,0.3575379101810075,fd_b01
-sim_vowels,fd_b01,fd_b01,1,2,OC2,OC3,0.0430486948723404,fd_b01
-sim_vowels,fd_b01,fd_b01,1,2,OC3,X,0.1490775746472433,fd_b01
-sim_vowels,fd_b01,fd_b01,1,2,OC3,OC1,0.083413247961032,fd_b01
-sim_vowels,fd_b01,fd_b01,1,2,OC3,OC2,0.0343949117622385,fd_b01
-sim_vowels,fd_b01,fd_b01,1,2,OC3,OC3,0.1783845441693735,fd_b01
-sim_vowels,ewt_b01,fd_b01,0,0,X,X,0.5331685293259565,ewt_b01 vs fd_b01
-sim_vowels,ewt_b01,fd_b01,0,0,X,OC1,0.1749210029290145,ewt_b01 vs fd_b01
-sim_vowels,ewt_b01,fd_b01,0,0,X,OC2,0.0211368642423827,ewt_b01 vs fd_b01
-sim_vowels,ewt_b01,fd_b01,0,0,X,OC3,0.1045316193718827,ewt_b01 vs fd_b01
-sim_vowels,ewt_b01,fd_b01,0,0,OC1,X,0.0667473698889312,ewt_b01 vs fd_b01
-sim_vowels,ewt_b01,fd_b01,0,0,OC1,OC1,0.0848202348523295,ewt_b01 vs fd_b01
-sim_vowels,ewt_b01,fd_b01,0,0,OC1,OC2,0.0116920436437202,ewt_b01 vs fd_b01
-sim_vowels,ewt_b01,fd_b01,0,0,OC1,OC3,0.0168003307759176,ewt_b01 vs fd_b01
-sim_vowels,ewt_b01,fd_b01,0,0,OC2,X,0.0804739995088966,ewt_b01 vs fd_b01
-sim_vowels,ewt_b01,fd_b01,0,0,OC2,OC1,0.0478856127890612,ewt_b01 vs fd_b01
-sim_vowels,ewt_b01,fd_b01,0,0,OC2,OC2,0.0452758964098971,ewt_b01 vs fd_b01
-sim_vowels,ewt_b01,fd_b01,0,0,OC2,OC3,0.0191562155401063,ewt_b01 vs fd_b01
-sim_vowels,ewt_b01,fd_b01,0,0,OC3,X,0.1066805295765036,ewt_b01 vs fd_b01
-sim_vowels,ewt_b01,fd_b01,0,0,OC3,OC1,0.0639506906574949,ewt_b01 vs fd_b01
-sim_vowels,ewt_b01,fd_b01,0,0,OC3,OC2,0.0255242248040619,ewt_b01 vs fd_b01
-sim_vowels,ewt_b01,fd_b01,0,0,OC3,OC3,0.3848910101898924,ewt_b01 vs fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,1,X,X,0.5916723312728749,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,1,X,OC1,0.0272628727085474,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,1,X,OC2,0.0488225146444738,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,1,X,OC3,0.0477914207230499,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,1,OC1,X,0.0058887644109783,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,1,OC1,OC1,0.173660998966905,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,1,OC1,OC2,0.0103785966589992,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,1,OC1,OC3,0.0069496855284948,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,1,OC2,X,0.0051472902282262,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,1,OC2,OC1,0.0061166376261495,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,1,OC2,OC2,0.1744079996543088,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,1,OC2,OC3,0.0129822332620804,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,1,OC3,X,0.0115390252078866,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,1,OC3,OC1,0.0025769187038624,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,1,OC3,OC2,0.0352758825156225,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,1,OC3,OC3,0.3359179445756275,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,2,X,X,0.4097391757301463,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,2,X,OC1,0.0456640802675465,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,2,X,OC2,0.0686792392996157,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,2,X,OC3,0.1044917886991903,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,2,OC1,X,0.0050919874678628,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,2,OC1,OC1,0.1417930729996343,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,2,OC1,OC2,0.0135550512899295,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,2,OC1,OC3,0.008333733543671,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,2,OC2,X,0.00618827658872,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,2,OC2,OC1,0.0054312641545318,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,2,OC2,OC2,0.1067599157076047,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,2,OC2,OC3,0.0100420268697842,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,2,OC3,X,0.0086948473485177,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,2,OC3,OC1,0.0030038509746435,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,2,OC3,OC2,0.0504479747307974,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,0,2,OC3,OC3,0.4168044840815204,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,1,2,X,X,0.9114519519882816,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,1,2,X,OC1,0.011460067430492,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,1,2,X,OC2,0.0144444131985107,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,1,2,X,OC3,0.0169315305185452,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,1,2,OC1,X,0.0008606104576704,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,1,2,OC1,OC1,0.8893807569328268,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,1,2,OC1,OC2,0.0038852998181124,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,1,2,OC1,OC3,0.0037753350388895,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,1,2,OC2,X,0.0078625611484706,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,1,2,OC2,OC1,0.0018862145487868,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,1,2,OC2,OC2,0.8023372409837688,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,1,2,OC2,OC3,0.0250443352193138,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,1,2,OC3,X,0.0043650248252892,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,1,2,OC3,OC1,0.0035909046933841,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,1,2,OC3,OC2,0.0477522489874372,coupled_fd_b01
+sim_coupled,coupled_fd_b01,coupled_fd_b01,1,2,OC3,OC3,0.3800729182745272,coupled_fd_b01
+sim_coupled,coupled_ewt_b01,coupled_fd_b01,0,0,X,X,0.0030479664493139,coupled_ewt_b01 vs coupled_fd_b01
+sim_coupled,coupled_ewt_b01,coupled_fd_b01,0,0,X,OC1,0.0066591778379298,coupled_ewt_b01 vs coupled_fd_b01
+sim_coupled,coupled_ewt_b01,coupled_fd_b01,0,0,X,OC2,0.0145995880548198,coupled_ewt_b01 vs coupled_fd_b01
+sim_coupled,coupled_ewt_b01,coupled_fd_b01,0,0,X,OC3,0.0367444202681009,coupled_ewt_b01 vs coupled_fd_b01
+sim_coupled,coupled_ewt_b01,coupled_fd_b01,0,0,OC1,X,0.0509362353522553,coupled_ewt_b01 vs coupled_fd_b01
+sim_coupled,coupled_ewt_b01,coupled_fd_b01,0,0,OC1,OC1,0.003213969721052,coupled_ewt_b01 vs coupled_fd_b01
+sim_coupled,coupled_ewt_b01,coupled_fd_b01,0,0,OC1,OC2,0.0023284743961364,coupled_ewt_b01 vs coupled_fd_b01
+sim_coupled,coupled_ewt_b01,coupled_fd_b01,0,0,OC1,OC3,0.0084837762945497,coupled_ewt_b01 vs coupled_fd_b01
+sim_coupled,coupled_ewt_b01,coupled_fd_b01,0,0,OC2,X,0.0078567118807161,coupled_ewt_b01 vs coupled_fd_b01
+sim_coupled,coupled_ewt_b01,coupled_fd_b01,0,0,OC2,OC1,0.0030746153190588,coupled_ewt_b01 vs coupled_fd_b01
+sim_coupled,coupled_ewt_b01,coupled_fd_b01,0,0,OC2,OC2,0.002770238808076,coupled_ewt_b01 vs coupled_fd_b01
+sim_coupled,coupled_ewt_b01,coupled_fd_b01,0,0,OC2,OC3,0.0035536020068293,coupled_ewt_b01 vs coupled_fd_b01
+sim_coupled,coupled_ewt_b01,coupled_fd_b01,0,0,OC3,X,0.0996640586183768,coupled_ewt_b01 vs coupled_fd_b01
+sim_coupled,coupled_ewt_b01,coupled_fd_b01,0,0,OC3,OC1,0.0078291960978692,coupled_ewt_b01 vs coupled_fd_b01
+sim_coupled,coupled_ewt_b01,coupled_fd_b01,0,0,OC3,OC2,0.0059450007927775,coupled_ewt_b01 vs coupled_fd_b01
+sim_coupled,coupled_ewt_b01,coupled_fd_b01,0,0,OC3,OC3,0.0185941280784566,coupled_ewt_b01 vs coupled_fd_b01

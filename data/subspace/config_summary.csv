@@ -1,97 +1,25 @@
 dataset,config,order,decomposition,beta,headline,run,quantity,matrix,partition,mean,std,n,std_over
-sim_vowels,ewt_b01,0,ewt,0.1,True,main,selectivity,P,own,0.1960216834294315,0.016858893236256244,3,seeds
-sim_vowels,ewt_b01,0,ewt,0.1,True,main,selectivity,P,null,0.11517028078763157,0.014905275555295699,60,null partitions
-sim_vowels,ewt_b01,0,ewt,0.1,True,main,alignment_mae,P,own,0.15542500134652468,0.003796577718893034,3,seeds
-sim_vowels,ewt_b01,0,ewt,0.1,True,main,selectivity,A,own,0.2807157663372229,0.06726954105054624,3,seeds
-sim_vowels,ewt_b01,0,ewt,0.1,True,main,selectivity,A,null,0.04912566013259762,0.027618009755590166,60,null partitions
-sim_vowels,ewt_b01,0,ewt,0.1,True,main,alignment_mae,A,own,0.1836283635869009,0.03657730101440981,3,seeds
-sim_vowels,ewt_b01,0,ewt,0.1,True,main,selectivity,dT,own,0.4627692766272218,0.08288826473326096,3,seeds
-sim_vowels,ewt_b01,0,ewt,0.1,True,main,selectivity,dT,null,0.22599296808504338,0.13027372491128833,60,null partitions
-sim_vowels,ewt_b01,0,ewt,0.1,True,main,alignment_mae,dT,own,0.07788010544994466,0.0032941501817714126,3,seeds
-sim_vowels,fd_b01,1,fd,0.1,False,main,selectivity,P,own,0.2038058831928966,0.005661235248268619,3,seeds
-sim_vowels,fd_b01,1,fd,0.1,False,main,selectivity,P,null,0.08743343322538007,0.004304178742810346,60,null partitions
-sim_vowels,fd_b01,1,fd,0.1,False,main,alignment_mae,P,own,0.09924166064075989,0.004779841619963456,3,seeds
-sim_vowels,fd_b01,1,fd,0.1,False,main,selectivity,A,own,0.2756130406114171,0.04931128109608582,3,seeds
-sim_vowels,fd_b01,1,fd,0.1,False,main,selectivity,A,null,0.04780600369257864,0.02018409723948113,60,null partitions
-sim_vowels,fd_b01,1,fd,0.1,False,main,alignment_mae,A,own,0.18672377677690413,0.050693678880978595,3,seeds
-sim_vowels,fd_b01,1,fd,0.1,False,main,selectivity,dT,own,0.3986984897246801,0.055785982292908584,3,seeds
-sim_vowels,fd_b01,1,fd,0.1,False,main,selectivity,dT,null,0.22091698023758116,0.12883508323549786,60,null partitions
-sim_vowels,fd_b01,1,fd,0.1,False,main,alignment_mae,dT,own,0.09657639255833916,0.006128982082811113,3,seeds
-sim_vowels,ewt_b0,2,ewt,0.0,False,main,selectivity,P,own,0.20183679236572827,0.0013531749580915514,5,folds
-sim_vowels,ewt_b0,2,ewt,0.0,False,main,selectivity,P,null,0.139220340698441,0.0024756503658507054,20,null partitions
-sim_vowels,ewt_b0,2,ewt,0.0,False,main,alignment_mae,P,own,0.17850515621477103,0.0023695041143261997,5,folds
-sim_vowels,ewt_b0,2,ewt,0.0,False,main,selectivity,A,own,0.099762349860262,0.01776231773212477,5,folds
-sim_vowels,ewt_b0,2,ewt,0.0,False,main,selectivity,A,null,0.022892145425651027,0.01910846399817352,20,null partitions
-sim_vowels,ewt_b0,2,ewt,0.0,False,main,alignment_mae,A,own,0.18252249433142267,0.027956455634615296,5,folds
-sim_vowels,ewt_b0,2,ewt,0.0,False,main,selectivity,dT,own,0.47780733051052915,0.01772699483971524,5,folds
-sim_vowels,ewt_b0,2,ewt,0.0,False,main,selectivity,dT,null,0.42762030891565495,0.17117047379461592,20,null partitions
-sim_vowels,ewt_b0,2,ewt,0.0,False,main,alignment_mae,dT,own,0.08557313863931196,0.007600536396154827,5,folds
-sim_vowels,ewt_b1,3,ewt,1.0,False,main,selectivity,P,own,0.22280700324879538,0.0032885191393809913,5,folds
-sim_vowels,ewt_b1,3,ewt,1.0,False,main,selectivity,P,null,0.19061266158212475,0.005350522124344067,20,null partitions
-sim_vowels,ewt_b1,3,ewt,1.0,False,main,alignment_mae,P,own,0.15335554345519326,0.008135076183654735,5,folds
-sim_vowels,ewt_b1,3,ewt,1.0,False,main,selectivity,A,own,0.2881079065816561,0.0404981281454572,5,folds
-sim_vowels,ewt_b1,3,ewt,1.0,False,main,selectivity,A,null,0.1828559657934523,0.02452878563248738,20,null partitions
-sim_vowels,ewt_b1,3,ewt,1.0,False,main,alignment_mae,A,own,0.2616652107672263,0.05096198270701265,5,folds
-sim_vowels,ewt_b1,3,ewt,1.0,False,main,selectivity,dT,own,0.6532422550557968,0.0360294636477372,5,folds
-sim_vowels,ewt_b1,3,ewt,1.0,False,main,selectivity,dT,null,0.20919325842270267,0.07685082017285409,20,null partitions
-sim_vowels,ewt_b1,3,ewt,1.0,False,main,alignment_mae,dT,own,0.08977977647609202,0.025411738781492162,5,folds
-sim_vowels,fd_b0,4,fd,0.0,False,main,selectivity,P,own,0.167789624259192,0.005385871734704853,5,folds
-sim_vowels,fd_b0,4,fd,0.0,False,main,selectivity,P,null,0.07046728992075571,0.0028284539067892508,20,null partitions
-sim_vowels,fd_b0,4,fd,0.0,False,main,alignment_mae,P,own,0.12093141595679853,0.0034955050254110885,5,folds
-sim_vowels,fd_b0,4,fd,0.0,False,main,selectivity,A,own,0.15456782251400966,0.01629207218319311,5,folds
-sim_vowels,fd_b0,4,fd,0.0,False,main,selectivity,A,null,0.0763629074457801,0.012139637191520721,20,null partitions
-sim_vowels,fd_b0,4,fd,0.0,False,main,alignment_mae,A,own,0.13896122590721321,0.020050131432225633,5,folds
-sim_vowels,fd_b0,4,fd,0.0,False,main,selectivity,dT,own,0.49313609072923514,0.016292842238211907,5,folds
-sim_vowels,fd_b0,4,fd,0.0,False,main,selectivity,dT,null,0.2949009755286981,0.09018723151812824,20,null partitions
-sim_vowels,fd_b0,4,fd,0.0,False,main,alignment_mae,dT,own,0.09750026519764755,0.00963467059907136,5,folds
-sim_vowels,fd_b1,5,fd,1.0,False,main,selectivity,P,own,0.25037295818873184,0.005742369375513656,5,folds
-sim_vowels,fd_b1,5,fd,1.0,False,main,selectivity,P,null,0.14630655641140303,0.005596056590061257,20,null partitions
-sim_vowels,fd_b1,5,fd,1.0,False,main,alignment_mae,P,own,0.0792501890891909,0.005638154702318883,5,folds
-sim_vowels,fd_b1,5,fd,1.0,False,main,selectivity,A,own,0.23902505985889871,0.022194673786047933,5,folds
-sim_vowels,fd_b1,5,fd,1.0,False,main,selectivity,A,null,0.09493192384209895,0.022006943237359966,20,null partitions
-sim_vowels,fd_b1,5,fd,1.0,False,main,alignment_mae,A,own,0.2690836482150075,0.01377170390697709,5,folds
-sim_vowels,fd_b1,5,fd,1.0,False,main,selectivity,dT,own,0.4856937588343163,0.00830068994101717,5,folds
-sim_vowels,fd_b1,5,fd,1.0,False,main,selectivity,dT,null,0.22111105108371198,0.11192793285843948,20,null partitions
-sim_vowels,fd_b1,5,fd,1.0,False,main,alignment_mae,dT,own,0.05798568917530221,0.013129283690393708,5,folds
-sim_vowels,emd_b01,6,emd,0.1,False,main,selectivity,P,own,0.3370734951005609,0.004612321898337672,5,folds
-sim_vowels,emd_b01,6,emd,0.1,False,main,selectivity,P,null,0.29561310409688346,0.00681090928947135,20,null partitions
-sim_vowels,emd_b01,6,emd,0.1,False,main,alignment_mae,P,own,0.26920981337174915,0.005258621924702004,5,folds
-sim_vowels,emd_b01,6,emd,0.1,False,main,selectivity,A,own,0.10440732933006558,0.04527761660989661,5,folds
-sim_vowels,emd_b01,6,emd,0.1,False,main,selectivity,A,null,0.1354793625945428,0.019874548749478183,20,null partitions
-sim_vowels,emd_b01,6,emd,0.1,False,main,alignment_mae,A,own,0.18578205796209787,0.023018294176031864,5,folds
-sim_vowels,emd_b01,6,emd,0.1,False,main,selectivity,dT,own,0.17155351503358934,0.0438047544343082,5,folds
-sim_vowels,emd_b01,6,emd,0.1,False,main,selectivity,dT,null,0.3509408244534272,0.16413931151155398,20,null partitions
-sim_vowels,emd_b01,6,emd,0.1,False,main,alignment_mae,dT,own,0.17611725349806448,0.014034687096061664,5,folds
-sim_vowels,vmd_b01,7,vmd,0.1,False,main,selectivity,P,own,0.22952739772798908,0.003765547353698002,5,folds
-sim_vowels,vmd_b01,7,vmd,0.1,False,main,selectivity,P,null,0.16550295139697152,0.005972909071009884,20,null partitions
-sim_vowels,vmd_b01,7,vmd,0.1,False,main,alignment_mae,P,own,0.1800207533149149,0.00743289303120341,5,folds
-sim_vowels,vmd_b01,7,vmd,0.1,False,main,selectivity,A,own,0.1910149698071241,0.017738988095355814,5,folds
-sim_vowels,vmd_b01,7,vmd,0.1,False,main,selectivity,A,null,0.11149602522115261,0.018782457616306803,20,null partitions
-sim_vowels,vmd_b01,7,vmd,0.1,False,main,alignment_mae,A,own,0.1849672854375255,0.010079810723747619,5,folds
-sim_vowels,vmd_b01,7,vmd,0.1,False,main,selectivity,dT,own,0.3472208013917748,0.031301800591528275,5,folds
-sim_vowels,vmd_b01,7,vmd,0.1,False,main,selectivity,dT,null,0.24290099900912931,0.12911297185377626,20,null partitions
-sim_vowels,vmd_b01,7,vmd,0.1,False,main,alignment_mae,dT,own,0.13157946732804654,0.04287408293859699,5,folds
-timit,timit_ewt_b01,8,ewt,0.1,False,main,selectivity,P,own,0.4517488915540044,0.009848814647441173,5,folds
-timit,timit_ewt_b01,8,ewt,0.1,False,main,selectivity,P,null,0.09078038132269792,0.0053260939747718505,20,null partitions
-timit,timit_ewt_b01,8,ewt,0.1,False,main,selectivity,A,own,0.646507038213388,0.09663325571404713,5,folds
-timit,timit_ewt_b01,8,ewt,0.1,False,main,selectivity,A,null,0.4592524760503826,0.02726040360463784,20,null partitions
-timit,timit_ewt_b01,8,ewt,0.1,False,main,selectivity,dT,own,0.5044156318617495,0.11286605038432171,5,folds
-timit,timit_ewt_b01,8,ewt,0.1,False,main,selectivity,dT,null,0.3693497072450847,0.17628027076064873,20,null partitions
-iemocap,iemocap_ewt_b01,9,ewt,0.1,False,main,selectivity,P,own,0.43002593537661066,0.019126489495886988,5,folds
-iemocap,iemocap_ewt_b01,9,ewt,0.1,False,main,selectivity,P,null,0.4058336834733753,0.011006944265608347,20,null partitions
-iemocap,iemocap_ewt_b01,9,ewt,0.1,False,main,selectivity,A,own,0.4518236087382985,0.15526205967778722,5,folds
-iemocap,iemocap_ewt_b01,9,ewt,0.1,False,main,selectivity,A,null,0.4965521341104105,0.10608518506925355,20,null partitions
-iemocap,iemocap_ewt_b01,9,ewt,0.1,False,main,selectivity,dT,own,0.647456071845202,0.07912745436845912,5,folds
-iemocap,iemocap_ewt_b01,9,ewt,0.1,False,main,selectivity,dT,null,0.7010155233698243,0.15853384571428383,20,null partitions
-VOC_ALS,voc_als_fd_b01,10,fd,0.1,False,main,selectivity,P,own,0.34878256570956945,0.01881284466837735,5,folds
-VOC_ALS,voc_als_fd_b01,10,fd,0.1,False,main,selectivity,P,null,0.4040986025340111,0.01633423912586353,20,null partitions
-VOC_ALS,voc_als_fd_b01,10,fd,0.1,False,main,selectivity,A,own,0.1480378931157932,0.06274712850290323,5,folds
-VOC_ALS,voc_als_fd_b01,10,fd,0.1,False,main,selectivity,A,null,0.14159535237970564,0.04960336244802759,20,null partitions
-VOC_ALS,voc_als_fd_b01,10,fd,0.1,False,main,selectivity,dT,own,0.14148480445789863,0.02434919826929382,5,folds
-VOC_ALS,voc_als_fd_b01,10,fd,0.1,False,main,selectivity,dT,null,0.3309270004946962,0.09054024796474404,20,null partitions
-VOC_ALS,voc_als_fd_b01,10,fd,0.1,False,speaker_disjoint,selectivity,P,own,0.4182682243080625,0.2963170996926241,5,folds
-VOC_ALS,voc_als_fd_b01,10,fd,0.1,False,speaker_disjoint,selectivity,P,null,0.42853455943882757,0.0170030814558119,20,null partitions
-VOC_ALS,voc_als_fd_b01,10,fd,0.1,False,speaker_disjoint,selectivity,A,own,0.6677999158901156,0.16593019089642724,5,folds
-VOC_ALS,voc_als_fd_b01,10,fd,0.1,False,speaker_disjoint,selectivity,A,null,0.7695649668510592,0.11538427759367788,20,null partitions
-VOC_ALS,voc_als_fd_b01,10,fd,0.1,False,speaker_disjoint,selectivity,dT,own,0.5633673065961184,0.17706650295780374,5,folds
-VOC_ALS,voc_als_fd_b01,10,fd,0.1,False,speaker_disjoint,selectivity,dT,null,0.4542688831741786,0.214354037374194,20,null partitions
+sim_coupled,coupled_fd_b01,0,fd,0.1,False,main,selectivity,P,own,0.013271068417727572,0.00213722757188014,3,seeds
+sim_coupled,coupled_fd_b01,0,fd,0.1,False,main,selectivity,P,null,0.011257490503459283,0.004899090079398429,60,null partitions
+sim_coupled,coupled_fd_b01,0,fd,0.1,False,main,selectivity,A,own,0.013169603008799139,0.004487924527603757,3,seeds
+sim_coupled,coupled_fd_b01,0,fd,0.1,False,main,selectivity,A,null,0.06381038303439669,0.05505107105565606,60,null partitions
+sim_coupled,coupled_fd_b01,0,fd,0.1,False,main,selectivity,dT,own,0.025017130674482996,0.011136724191430863,3,seeds
+sim_coupled,coupled_fd_b01,0,fd,0.1,False,main,selectivity,dT,null,0.2592780006801277,0.1293088912839882,60,null partitions
+sim_coupled,coupled_fd_b01,0,fd,0.1,False,indep,selectivity,P,own,0.049362536146185576,0.006095255191506319,3,seeds
+sim_coupled,coupled_fd_b01,0,fd,0.1,False,indep,selectivity,P,null,0.014195121638665296,0.010489489835869514,60,null partitions
+sim_coupled,coupled_fd_b01,0,fd,0.1,False,indep,selectivity,A,own,0.07283380040791726,0.05100807120091325,3,seeds
+sim_coupled,coupled_fd_b01,0,fd,0.1,False,indep,selectivity,A,null,0.3062242579423001,0.16706163322291712,60,null partitions
+sim_coupled,coupled_fd_b01,0,fd,0.1,False,indep,selectivity,dT,own,0.026178879734958704,0.018097046168154864,3,seeds
+sim_coupled,coupled_fd_b01,0,fd,0.1,False,indep,selectivity,dT,null,0.2536643758503061,0.1364034873592237,60,null partitions
+sim_coupled,coupled_ewt_b01,1,ewt,0.1,False,main,selectivity,P,own,0.01695559773367649,0.001815370153534299,5,folds
+sim_coupled,coupled_ewt_b01,1,ewt,0.1,False,main,selectivity,P,null,0.004536034384860883,0.00048586744457752775,20,null partitions
+sim_coupled,coupled_ewt_b01,1,ewt,0.1,False,main,selectivity,A,own,0.027949860001587147,0.018485576643168074,5,folds
+sim_coupled,coupled_ewt_b01,1,ewt,0.1,False,main,selectivity,A,null,0.08952814080396426,0.03137052306947939,20,null partitions
+sim_coupled,coupled_ewt_b01,1,ewt,0.1,False,main,selectivity,dT,own,0.060262074434796364,0.004849177619279608,5,folds
+sim_coupled,coupled_ewt_b01,1,ewt,0.1,False,main,selectivity,dT,null,0.257909575043775,0.1631120256668396,20,null partitions
+sim_coupled,coupled_ewt_b01,1,ewt,0.1,False,indep,selectivity,P,own,0.01313306601522248,0.00041785832887761097,5,folds
+sim_coupled,coupled_ewt_b01,1,ewt,0.1,False,indep,selectivity,P,null,0.00157018812318377,0.0013760021777308024,20,null partitions
+sim_coupled,coupled_ewt_b01,1,ewt,0.1,False,indep,selectivity,A,own,0.19660124610925173,0.014705700446402459,5,folds
+sim_coupled,coupled_ewt_b01,1,ewt,0.1,False,indep,selectivity,A,null,0.2984354892487954,0.07463974134342675,20,null partitions
+sim_coupled,coupled_ewt_b01,1,ewt,0.1,False,indep,selectivity,dT,own,0.062425839728958245,0.011206641745836552,5,folds
+sim_coupled,coupled_ewt_b01,1,ewt,0.1,False,indep,selectivity,dT,null,0.336724393776806,0.14944366396136632,20,null partitions
