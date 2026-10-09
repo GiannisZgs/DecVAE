@@ -20,7 +20,6 @@ from sklearn.dummy import DummyClassifier
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 from disentanglement_utils.disentanglement_eval import joint_cell
-from latent_analysis_utils.frame_subsampling import subsample_index_by_group
 
 from tqdm.auto import tqdm
 import time
@@ -164,7 +163,6 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
             prediction_eval(args_scheme, config, X, X_test, y, y_test, checkpoint, latent_type, target=target, X_indep=X_indep, y_indep=y_indep)
         return
     cv_scheme = cv_schemes[0]
-    utt_ids = None
 
     def log_memory_usage(label):
         """Log memory usage at specific points in execution"""
@@ -329,14 +327,8 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
             if y.shape[1] == 2:
                 y_support = y[:,1]
                 y = y[:,0]
-        counts = getattr(data_training_args, "iemocap_utt_frame_counts", None)
-        if getattr(data_training_args, "iemocap_frames_per_utterance", None) and counts is not None and int(np.sum(counts)) == len(X):
-            "Frame-level call: utterance id per frame, for subsampling the training rows of each fold"
-            utt_ids = np.repeat(np.arange(len(counts)), counts)
         disc = np.where(y == -100)[0]
         y = np.delete(y,disc)
-        if utt_ids is not None:
-            utt_ids = np.delete(utt_ids, disc)
         if 'y_support' in locals():
             y_support = np.delete(y_support,disc)
         X = X.drop(disc).reset_index(drop=True)
@@ -975,11 +967,6 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
 
             # For each fold
             for fold_idx, (train_index, test_index) in enumerate(skf_list):
-                if utt_ids is not None:
-                    "Train on at most k evenly spaced frames per utterance; test on every frame of the test fold"
-                    n_train_all = len(train_index)
-                    train_index = subsample_index_by_group(train_index, utt_ids, data_training_args.iemocap_frames_per_utterance)
-                    print(f"Fold {fold_idx+1}: training on {len(train_index)} of {n_train_all} frames, testing on all {len(test_index)}")
                 print(f"\n--- Fold {fold_idx+1}/5 ---")
                 
                 # Split data for this fold
@@ -1419,9 +1406,6 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                          'DummyClassifier_uniform': 'Chance (uniform)', 'DummyClassifier_most_frequent': 'Chance (most frequent)'}
             tick_names = [emotion_names.get(n, n) for n in label_names]
             for (cls_k, feat_k), cm in cm_sum_rs.items():
-                if cls_k.startswith('DummyClassifier'):
-                    "Chance baselines are kept in the CSVs but not plotted"
-                    continue
                 cm_norm = cm / np.maximum(cm.sum(axis=1, keepdims=True), 1)
                 fig, ax = plt.subplots(figsize=(3.4, 3.2))
                 ax.imshow(cm_norm, cmap='Blues', vmin=0, vmax=1, aspect='equal')

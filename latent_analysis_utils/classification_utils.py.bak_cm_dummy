@@ -1419,9 +1419,6 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                          'DummyClassifier_uniform': 'Chance (uniform)', 'DummyClassifier_most_frequent': 'Chance (most frequent)'}
             tick_names = [emotion_names.get(n, n) for n in label_names]
             for (cls_k, feat_k), cm in cm_sum_rs.items():
-                if cls_k.startswith('DummyClassifier'):
-                    "Chance baselines are kept in the CSVs but not plotted"
-                    continue
                 cm_norm = cm / np.maximum(cm.sum(axis=1, keepdims=True), 1)
                 fig, ax = plt.subplots(figsize=(3.4, 3.2))
                 ax.imshow(cm_norm, cmap='Blues', vmin=0, vmax=1, aspect='equal')

@@ -39,7 +39,7 @@ from data_preprocessing import prepare_extract_features_vae_pretraining_dataset
 from utils import parse_args, debugger_is_active, extract_epoch
 from utils.cache_utils import build_cache_file_names, build_map_cache_file_names
 from functools import partial
-from latent_analysis_utils import prediction_eval
+from latent_analysis_utils import prediction_eval, frames_per_utterance_index
 from disentanglement_utils import compute_disentanglement_metrics
 from feature_extraction import extract_mel_spectrogram
 
@@ -1135,10 +1135,14 @@ def main():
         print(f"Total loading time: {elapsed_time: .4f} seconds")
 
         if data_training_args.dataset_name == "iemocap" and data_training_args.iemocap_frames_per_utterance:
+            keep = frames_per_utterance_index(utt_frame_counts, data_training_args.iemocap_frames_per_utterance)
             n_before = len(emotion_frame)
             assert sum(utt_frame_counts) == n_before == z_mean.shape[0], "frame counts and latents disagree"
-            "Subsampling happens inside prediction_eval (training folds only) and compute_disentanglement_metrics"
-            data_training_args.iemocap_utt_frame_counts = [int(c) for c in utt_frame_counts]
+            z_mean = z_mean[keep]
+            phonemes = phonemes[keep]
+            emotion_frame = emotion_frame[keep]
+            speaker_id_frame = speaker_id_frame[keep]
+            print(f"IEMOCAP: kept {len(keep)} of {n_before} frames (at most {data_training_args.iemocap_frames_per_utterance} per utterance)")
 
         "Now use train/val representations to get the evaluation metrics"
         "1. Projection evaluation"

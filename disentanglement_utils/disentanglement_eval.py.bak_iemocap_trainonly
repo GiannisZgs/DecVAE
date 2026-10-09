@@ -74,22 +74,6 @@ def compute_disentanglement_metrics(data_training_args,config,checkpoint, latent
         target2 = ['None']
         target3 = ['None']
 
-    counts = getattr(data_training_args, "iemocap_utt_frame_counts", None)
-    k = getattr(data_training_args, "iemocap_frames_per_utterance", None)
-    if (data_training_args.dataset_name == "iemocap" and k and counts is not None and mu_test is None
-            and int(np.sum(counts)) == mu_train.shape[0]):
-        "Fixed subsample of the whole set: at most k evenly spaced frames per utterance"
-        "Imported here - latent_analysis_utils imports this module, so a top-level import would be circular"
-        import torch
-        from latent_analysis_utils.frame_subsampling import frames_per_utterance_index
-        keep = frames_per_utterance_index(counts, k)
-        mu_train = mu_train[keep] if torch.is_tensor(mu_train) else np.asarray(mu_train)[keep.numpy()]
-        if isinstance(y_train, pd.DataFrame):
-            y_train = y_train.iloc[keep.numpy()].reset_index(drop=True)
-        else:
-            y_train = y_train[keep] if torch.is_tensor(y_train) else np.asarray(y_train)[keep.numpy()]
-        print(f"IEMOCAP disentanglement: {len(keep)} of {int(np.sum(counts))} frames")
-
     latent_dim = mu_train.shape[1]
     colnames_X = ["X" + str(i) for i in range(latent_dim)]
     mu_train = pd.DataFrame(data = mu_train, columns = colnames_X)
