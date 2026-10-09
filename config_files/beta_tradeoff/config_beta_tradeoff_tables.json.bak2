@@ -1,0 +1,11 @@
+{
+    "comment": "R1 #6 beta trade-off tables (scripts/post-training/beta_tradeoff_tables.py). provisional adds the last-epoch validation divergences of the SI Fig 22a exports. divergence_files: per dataset, the decomposition_divergences.py output read from output_dir.",
+    "exports_dir": "data/results_wandb_exports_for_figures",
+    "output_dir": "data/beta_tradeoff",
+    "provisional": false,
+    "divergence_files": {
+        "sim_vowels": "divergences_sim_vowels_100frames.csv",
+        "timit": "divergences_timit.csv",
+        "iemocap": "divergences_iemocap.csv"
+    }
+}

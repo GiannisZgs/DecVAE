@@ -1,0 +1,43 @@
+{
+  "comment": "beta trade-off, SimVowels. Same base config as the paper's post-training evaluation; per model only the decomposition, the cached decomposed inputs and the pre-training folder change. {btag}: 0, 01, 1, 5, 10, 20, 40. SET: check every path against your folders before the first run.",
+  "base_config": "config_files/DecVAEs/sim_vowels/latent_evaluations/config_latent_anal_sim_vowels.json",
+  "output_csv": "data/beta_tradeoff/divergences_sim_vowels.csv",
+  "splits": ["validation", "test"],
+  "betas": [0, 0.1, 1, 5, 10, 20, 40],
+  "comment_options": "Run options (overridden by the command-line flags of the same name)",
+  "only": null,
+  "max_batches": null,
+  "overwrite": false,
+  "dry_run": false,
+  "models": [
+    {"name": "FD", "overrides": {
+      "decomp_to_perform": "filter",
+      "parent_dir": "/media/student3/PortableSSD/latents_SNR_beta_experiments/sim_vowels/filter",
+      "train_cache_file_name": "/media/student3/PortableSSD/vowels_decomposed/vowels_filter_NoC3_train_set.arrow",
+      "validation_cache_file_name": "/media/student3/PortableSSD/vowels_decomposed/vowels_filter_NoC3_dev_set.arrow",
+      "test_cache_file_name": "/media/student3/PortableSSD/vowels_decomposed/vowels_filter_NoC3_test_set.arrow"}},
+    {"name": "EWT", "overrides": {
+      "decomp_to_perform": "ewt",
+      "parent_dir": "/media/student3/PortableSSD/latents_SNR_beta_experiments/sim_vowels/ewt",
+      "train_cache_file_name": "/media/student3/PortableSSD/vowels_decomposed/vowels_ewt_NoC3_train_set.arrow",
+      "validation_cache_file_name": "/media/student3/PortableSSD/vowels_decomposed/vowels_ewt_NoC3_dev_set.arrow",
+      "test_cache_file_name": "/media/student3/PortableSSD/vowels_decomposed/vowels_ewt_NoC3_test_set.arrow"}}
+  ],
+  "exceptions": {
+    "comment": "Per-run overrides, keyed <model>_b<beta>. pretrained_models holds beta 0, 0.1 and 1 only; the beta 5-40 checkpoints of SI Fig 12 are elsewhere (SET), e.g.:",
+    "FD_b0": {"checkpoint": -2},
+    "FD_b0.1": {"checkpoint": -2},
+    "FD_b1": {"checkpoint": -2},
+    "FD_b5": {"checkpoint": -2},
+    "FD_b10": {"checkpoint": -2},
+    "FD_b20": {"checkpoint": -2},
+    "FD_b40": {"checkpoint": -2},
+    "EWT_b0": {"checkpoint": -2},
+    "EWT_b0.1": {"checkpoint": -2},
+    "EWT_b1": {"checkpoint": -2},
+    "EWT_b5": {"checkpoint": -2},
+    "EWT_b10": {"checkpoint": -2},
+    "EWT_b20": {"checkpoint": -2},
+    "EWT_b40": {"checkpoint": -2}
+  }
+}

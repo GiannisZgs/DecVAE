@@ -1,0 +1,6 @@
+{
+    "comment": "R1 #6 beta trade-off tables (scripts/post-training/beta_tradeoff_tables.py). provisional adds the last-epoch validation divergences of the SI Fig 22a exports.",
+    "exports_dir": "data/results_wandb_exports_for_figures",
+    "output_dir": "data/beta_tradeoff",
+    "provisional": false
+}

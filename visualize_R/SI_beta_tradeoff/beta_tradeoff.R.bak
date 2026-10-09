@@ -1,0 +1,135 @@
+#' SI Figure (R1 #6): the beta trade-off between component separation and downstream performance.
+#' (a,b) separation D_ortho and alignment D_recon of the trained checkpoints against beta, SimVowels;
+#' (c-e) SimVowels trade-off: D_ortho against vowel accuracy, speaker accuracy and DCI disentanglement,
+#' one point per beta; (f) TIMIT: D_ortho against DCI disentanglement; (g) IEMOCAP: D_ortho against
+#' emotion accuracy. Same style as SI Fig 12 (SI_fig_12/vowels_beta_ablation.R).
+#' Reads data/beta_tradeoff/tradeoff_wide.csv written by scripts/post-training/beta_tradeoff_tables.py.
+
+library(ggplot2)
+library(vscDebugger)
+library(dplyr)
+library(readr)
+library(scales)
+library(viridis)
+library(ggrepel)
+
+plot_font_family <- "Arial"
+plot_title_size <- 28
+title_font_face <- "plain"
+axis_title_size <- 28
+axis_text_size <- 22
+legend_title_size <- 20
+legend_text_size <- 18
+legend_font_face <- "plain"
+line_size <- 1.2
+point_size <- 2.5
+label_size <- 6
+errorbar_linewidth <- 1.2
+yellow_block_threshold <- 1.0
+
+# "checkpoint": divergences of the evaluated checkpoints (decomposition_divergences.py), per frame on the
+# rows the loss compared. "wandb_last_epoch": provisional, the loss values logged at the last pre-training epoch.
+divergence_source <- "checkpoint"
+
+# Load data from
+load_dir <- file.path('..', 'data', 'beta_tradeoff')
+# Save data at
+save_dir <- file.path('..', 'supplementary_figures', 'SI_beta_tradeoff', divergence_source)
+if (!dir.exists(save_dir)) {
+  dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
+}
+
+selected_betas <- c(0, 0.1, 1, 5, 10, 20, 40)
+models <- c("FD", "EWT", "EMD", "VMD")
+display_model_names <- c("β-DecVAE + FD", "β-DecVAE + EWT", "β-DecVAE + EMD", "β-DecVAE + VMD")
+transfer_names <- c(vowels = "SimVowels", timit = "TIMIT")
+
+if (divergence_source == "checkpoint") {
+  x_ortho <- "d_ortho"; x_recon <- "d_recon"
+  lab_ortho <- "Component separation D_ortho (nats)"
+  lab_recon <- "Alignment D_recon (nats)"
+} else {
+  x_ortho <- "model_div_neg"; x_recon <- "model_div_pos"
+  lab_ortho <- "D_ortho (loss, last epoch)"
+  lab_recon <- "D_recon (loss, last epoch)"
+}
+
+dat <- read_csv(file.path(load_dir, "tradeoff_wide.csv"), show_col_types = FALSE) %>%
+  filter(source == divergence_source) %>%
+  mutate(Model = factor(display_model_names[match(model, models)], levels = display_model_names),
+         Beta_label = as.character(beta),
+         Transfer = unname(transfer_names[as.character(transfer_from)]))
+
+model_colors <- setNames(viridis(length(display_model_names), option = "turbo", end = yellow_block_threshold),
+                         display_model_names)
+
+theme_results <- theme_minimal(base_size = 14, base_family = plot_font_family) +
+  theme(
+    plot.title = element_text(size = plot_title_size, face = title_font_face),
+    axis.title = element_text(size = axis_title_size),
+    axis.text = element_text(size = axis_text_size),
+    legend.title = element_text(size = legend_title_size, face = legend_font_face),
+    legend.text = element_text(size = legend_text_size),
+    panel.grid.minor = element_blank(),
+    legend.position = "right"
+  )
+
+save_plot <- function(p, name) {
+  save_path <- file.path(save_dir, paste0(name, ".png"))
+  ggsave(filename = save_path, plot = p, width = 14, height = 8, dpi = 600, bg = "white")
+  cat("Saved plot to:", save_path, "\n")
+}
+
+# (a, b) Divergence against beta, SimVowels; discrete beta axis as in SI Fig 12
+beta_plot <- function(d, yvar, ylab, name) {
+  if (!(yvar %in% names(d))) return(invisible(NULL))
+  d <- d %>% filter(!is.na(.data[[yvar]]))
+  if (nrow(d) == 0) return(invisible(NULL))
+  p <- ggplot(d, aes(x = factor(beta, levels = selected_betas), y = .data[[yvar]], color = Model, group = Model)) +
+    geom_line(linewidth = line_size, alpha = 0.8) +
+    geom_point(size = point_size, alpha = 0.9) +
+    scale_color_manual(values = model_colors, drop = TRUE) +
+    scale_x_discrete(labels = selected_betas, drop = TRUE) +
+    scale_y_continuous(breaks = pretty_breaks(n = 6), expand = expansion(mult = c(0.05, 0.05)),
+                       labels = label_number(accuracy = 0.01)) +
+    labs(title = "", x = "β value", y = ylab, color = "Model") +
+    theme_results
+  save_plot(p, name)
+}
+
+# (c-g) Trade-off: one point per beta, joined in beta order, labelled with beta
+tradeoff_plot <- function(d, yvar, ylab, name, ci = NULL, shape_by_transfer = FALSE) {
+  if (!all(c(x_ortho, yvar) %in% names(d))) return(invisible(NULL))
+  if (!is.null(ci) && !(ci %in% names(d))) ci <- NULL
+  d <- d %>% filter(!is.na(.data[[x_ortho]]), !is.na(.data[[yvar]])) %>% arrange(Model, Transfer, beta)
+  if (nrow(d) == 0) return(invisible(NULL))
+  d$grp <- if (shape_by_transfer) interaction(d$Model, d$Transfer) else d$Model
+  p <- ggplot(d, aes(x = .data[[x_ortho]], y = .data[[yvar]], color = Model)) +
+    geom_path(aes(group = grp), linewidth = line_size, alpha = 0.6)
+  if (!is.null(ci)) {
+    p <- p + geom_errorbar(aes(ymin = .data[[yvar]] - .data[[ci]], ymax = .data[[yvar]] + .data[[ci]]),
+                           width = 0, linewidth = errorbar_linewidth, alpha = 0.6, na.rm = TRUE)
+  }
+  p <- p + (if (shape_by_transfer) geom_point(aes(shape = Transfer), size = 2 * point_size) else geom_point(size = 2 * point_size)) +
+    geom_text_repel(aes(label = paste0("β=", Beta_label)), size = label_size, family = plot_font_family,
+                    show.legend = FALSE, seed = 1, max.overlaps = Inf) +
+    scale_color_manual(values = model_colors, drop = TRUE) +
+    scale_x_continuous(breaks = pretty_breaks(n = 6)) +
+    scale_y_continuous(breaks = pretty_breaks(n = 6), expand = expansion(mult = c(0.05, 0.05)),
+                       labels = label_number(accuracy = 0.01)) +
+    labs(title = "", x = lab_ortho, y = ylab, color = "Model", shape = "Pre-trained on") +
+    theme_results
+  save_plot(p, name)
+}
+
+sv <- dat %>% filter(dataset == "sim_vowels")
+beta_plot(sv, x_ortho, lab_ortho, "a_sim_vowels_d_ortho_vs_beta")
+beta_plot(sv, x_recon, lab_recon, "b_sim_vowels_d_recon_vs_beta")
+tradeoff_plot(sv, "accuracy_vowel", "Accuracy (vowel)", "c_sim_vowels_tradeoff_vowel")
+tradeoff_plot(sv, "accuracy_speaker", "Accuracy (speaker)", "d_sim_vowels_tradeoff_speaker")
+tradeoff_plot(sv, "disentanglement", "Disentanglement", "e_sim_vowels_tradeoff_disentanglement")
+tradeoff_plot(dat %>% filter(dataset == "timit"), "disentanglement", "Disentanglement", "f_timit_tradeoff_disentanglement")
+tradeoff_plot(dat %>% filter(dataset == "iemocap"), "accuracy_emotion", "Weighted Accuracy (ER)",
+              "g_iemocap_tradeoff_emotion", ci = "accuracy_emotion_ci", shape_by_transfer = TRUE)
+
+cat("Completed beta trade-off figures\n")

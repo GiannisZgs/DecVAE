@@ -67,7 +67,7 @@ RUN_OPTIONS = {
     "overwrite": False,
     "dry_run": False,  # only check that every checkpoint and cache file exists
 }
-SPEC_KEYS = {"base_config", "output_csv", "splits", "betas", "models", "exceptions"}
+SPEC_KEYS = {"base_config", "output_csv", "splits", "betas", "models", "exceptions", "max_frames_per_batch"}
 UNSET = "SET"  # placeholder in the runs files for a value still to be filled in
 
 
@@ -225,7 +225,8 @@ def run_one(run, base_config, splits, accelerator, max_batches=None):
     min_length = int(data_training_args.min_duration_in_seconds * feature_extractor.sampling_rate)
     model_args.max_duration_in_seconds = data_training_args.max_duration_in_seconds
     config = DecVAEConfig(**{**model_args.__dict__, **training_obj_args.__dict__, **decomp_args.__dict__})
-    assert config.max_frames_per_batch == "all", "Use every frame, as in the post-training evaluation"
+    assert config.max_frames_per_batch == "all" or (isinstance(config.max_frames_per_batch, int) and config.max_frames_per_batch > 0), \
+        "max_frames_per_batch must be 'all' or a positive integer (frames per utterance in the decomposition loss)"
 
     checkpoint_dir = run.get("checkpoint_dir") or resolve_checkpoint_dir(model_args, training_obj_args, decomp_args, data_training_args)
     ckp = select_checkpoint(checkpoint_dir, run.get("checkpoint", -1))
@@ -286,6 +287,7 @@ def run_one(run, base_config, splits, accelerator, max_batches=None):
             for measure, value in summary.items():
                 rows.append({"dataset": data_training_args.dataset_name, "model": run["model"], "beta": run["beta"],
                              "transfer_from": run.get("transfer_from", ""), "NoC": config.NoC if b == "z" else config.NoC_seq,
+                             "max_frames_per_batch": config.max_frames_per_batch,
                              "run_id": run["run_id"], "checkpoint": ckp, "branch": b, "split": split,
                              "measure": measure, "value": value})
         print(f"[{run['run_id']}] {split}: {time.time() - start:.0f} s")
@@ -296,7 +298,8 @@ def run_one(run, base_config, splits, accelerator, max_batches=None):
 
 def expand_runs(spec):
     """Runs from the runs file: every model x beta, with {btag} in parent_dir (or in checkpoint_dir, which
-    bypasses resolve_checkpoint_dir) replaced by the beta tag.
+    bypasses resolve_checkpoint_dir) replaced by the beta tag. max_frames_per_batch (frames per utterance in the
+    decomposition loss, 'all' by default) applies to every run unless a model or exception overrides it.
     An entry of 'exceptions' (keyed '<model>_b<beta>') adds or replaces overrides for that run only, e.g. a
     parent_dir on another drive, or a checkpoint_dir that bypasses resolve_checkpoint_dir."""
     runs = []
@@ -304,6 +307,7 @@ def expand_runs(spec):
         for beta in m.get("betas", spec.get("betas")):
             run_id = f"{m['name']}_b{beta}" + (f"_{m['transfer_from']}" if m.get("transfer_from") else "")
             ov = copy.deepcopy(m.get("overrides", {}))
+            ov.setdefault("max_frames_per_batch", spec.get("max_frames_per_batch", "all"))
             ov["beta_kl_prior_z"] = float(beta)
             ov["beta_kl_prior_s"] = float(beta)
             if "parent_dir" in ov:
