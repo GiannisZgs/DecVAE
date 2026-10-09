@@ -1,7 +1,6 @@
 #' SI Figure (decomposition sensitivity): metrics against the number of components C, on SimVowels and SimCoupled.
 #' Plots data/decomp_sensitivity/sweep_groups_long.csv, written by scripts/post-training/decomp_sensitivity_summary.py.
-#' One PNG per metric; classification accuracies are the best classifier's per target. Error bars: std over the
-#' three seeds at C = 3 (the other C values are single runs).
+#' One PNG per metric. Error bars: std over the three seeds at C = 3 (the other C values are single runs).
 #' Dashed vertical line: the SimVowels generator's C (3). Mutual information and Gaussian correlation are drawn
 #' as 1 - value, as in SI Fig. 10. The effective number of OC subspaces per factor is drawn with the line y = C
 #' (factor spread evenly over all OCs) for reference. SimCoupled's unseen (indep) split gets its own PNGs.
@@ -32,11 +31,6 @@ display_factor_names <- c(vowel = "vowel", speaker_frame = "speaker", lag = "lag
 # metric key -> display name; one_minus: drawn as 1 - value; bounded: on [0, 1]
 metrics <- tribble(
   ~metric, ~display, ~one_minus, ~bounded,
-  "accuracy:speaker_frame", "Accuracy (speaker)", FALSE, TRUE,
-  "accuracy:vowel", "Accuracy (vowel)", FALSE, TRUE,
-  "accuracy:speaker_seq", "Accuracy (speaker, sequence)", FALSE, TRUE,
-  "accuracy:lag", "Accuracy (lag)", FALSE, TRUE,
-  "accuracy:gain", "Accuracy (gain)", FALSE, TRUE,
   "IRS", "Robustness (IRS)", FALSE, TRUE,
   "mutual_info_score", "1 - Mutual Info.", TRUE, TRUE,
   "gaussian_total_correlation_norm", "1 - Gaussian Correlation", TRUE, TRUE,

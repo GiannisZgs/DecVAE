@@ -1,8 +1,8 @@
 #' SI Figure (decomposition sensitivity): FD peak-search interval variants on SimVowels at C = 3.
 #' Plots data/decomp_sensitivity/sweep_runs_long.csv and sweep_groups_long.csv, written by
 #' scripts/post-training/decomp_sensitivity_summary.py.
-#' One PNG per metric (classification accuracies: best classifier per target). Bars: group mean; points:
-#' individual runs; error bars: std over the three seeds of the power-law base intervals and over the three random draws (the other variants are single runs).
+#' One PNG per metric. Bars: group mean; points: individual runs; error bars: std over the three seeds of the
+#' power-law base intervals and over the three random draws (the other variants are single runs).
 #' Mutual information and Gaussian correlation are drawn as 1 - value, as in SI Fig. 10.
 
 library(vscDebugger)
@@ -28,9 +28,6 @@ display_group_names <- c(C3 = "Power law (3 seeds)", lin = "Linear", int3 = "3 i
                          rand = "Random (3 draws)")
 metrics <- tribble(
   ~metric, ~display, ~one_minus, ~bounded,
-  "accuracy:speaker_frame", "Accuracy (speaker)", FALSE, TRUE,
-  "accuracy:vowel", "Accuracy (vowel)", FALSE, TRUE,
-  "accuracy:speaker_seq", "Accuracy (speaker, sequence)", FALSE, TRUE,
   "IRS", "Robustness (IRS)", FALSE, TRUE,
   "mutual_info_score", "1 - Mutual Info.", TRUE, TRUE,
   "gaussian_total_correlation_norm", "1 - Gaussian Correlation", TRUE, TRUE,

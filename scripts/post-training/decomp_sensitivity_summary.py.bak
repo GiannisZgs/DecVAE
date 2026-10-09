@@ -16,9 +16,8 @@
 
 """Tables of the decomposition sensitivity sweep (C and FD search intervals).
 
-Collects, per run of models_decomp_sensitivity.json: the standard metric suite and the classification
-accuracies (best classifier per target) written by latents_post_analysis.py, and the subspace analysis
-written by subspace_analysis.py (per_model/).
+Collects, per run of models_decomp_sensitivity.json: the standard metric suite written by
+latents_post_analysis.py, and the subspace analysis written by subspace_analysis.py (per_model/).
 Adds the effective number of OC subspaces per factor, exp(entropy) of the factor's column over the OC
 rows of a matrix: 1 when one OC carries the factor, C when it is spread evenly over all of them.
 The figure data goes to figure_data_dir as tidy CSVs, drawn by visualize_R/SI_decomp_sensitivity/.
@@ -30,7 +29,6 @@ import os
 import sys
 import glob
 import json
-import re
 import numpy as np
 import pandas as pd
 
@@ -97,29 +95,6 @@ def standard_metrics(results_dir):
     return out
 
 
-def classification_metrics(results_dir):
-    """Accuracy and macro F1 of the best classifier per target of the 'all' latent (as wandb's "best test accuracy"),
-    from the supervised CV summaries of prediction_eval; the unseen split (SimCoupled) under "indep:"."""
-    out = {}
-    paths = glob.glob(os.path.join(results_dir, "*", "*_all_*_cv_summary_supervised.csv"))
-    if len({os.path.dirname(p) for p in paths}) > 1:
-        raise ValueError(f"classification results of several checkpoints in {results_dir}: {paths}")
-    for path in paths:
-        m = re.search(r"_all_(.+?)_z\d+_h\d+_cv_summary_supervised\.csv$", os.path.basename(path))
-        if m is None:
-            continue
-        target = m.group(1)
-        best = pd.read_csv(path).sort_values("Test_Accuracy_mean", ascending=False).iloc[0]
-        out[f"accuracy:{target}"] = float(best["Test_Accuracy_mean"])
-        out[f"f1_macro:{target}"] = float(best["Test_F1_Macro_mean"])
-        if "Indep_Accuracy_mean" in best:
-            out[f"indep:accuracy:{target}"] = float(best["Indep_Accuracy_mean"])
-            out[f"indep:f1_macro:{target}"] = float(best["Indep_F1_Macro_mean"])
-    if not out:
-        print(f"no classification results in {results_dir}")
-    return out
-
-
 def subspace_metrics(record):
     "Scalars of one per_model record of subspace_analysis.py, every run (main, and indep for SimCoupled)"
     out = {}
@@ -147,7 +122,6 @@ def collect(models, results_root, subspace_dir):
         ds, tag = m["dataset"], m["name"][len(m["dataset"]) + 1:]
         row = {"dataset": ds, "run": tag, "group": m["config"], "seed": m["seed"], "C": m["n_blocks"] - 1}
         row.update(standard_metrics(os.path.join(results_root, ds, tag)))
-        row.update(classification_metrics(os.path.join(results_root, ds, tag)))
         rec_path = os.path.join(subspace_dir, "per_model", f"{m['name']}.json")
         if os.path.exists(rec_path):
             with open(rec_path) as f:
