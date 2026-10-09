@@ -466,7 +466,7 @@ def main():
                         batch["global_step"] = 0
                         assert overlap_mask_batch != None if data_training_args.dataset_name in ["timit"] else True
                         if overlap_mask_batch is None or not data_training_args.discard_label_overlaps:
-                            overlap_mask_batch = torch.zeros_like(sub_attention_mask,dtype=torch.bool)
+                            overlap_mask_batch = torch.zeros_like(sub_attention_mask).astype(torch.bool)
                         else:
                             "Frames corresponding to padding are set as True in the overlap and discarded"
                             padded = sub_attention_mask.sum(dim = -1)
@@ -627,7 +627,7 @@ def main():
                     batch["global_step"] = 0
                     assert overlap_mask_batch != None if data_training_args.dataset_name in ["iemocap"] else True
                     if (overlap_mask_batch is None or not data_training_args.discard_label_overlaps) and not "VOC_ALS" in data_training_args.dataset_name:
-                        overlap_mask_batch = torch.zeros_like(sub_attention_mask,dtype=torch.bool)
+                        overlap_mask_batch = torch.zeros_like(sub_attention_mask).astype(torch.bool)
                     else:
                         if "VOC_ALS" in data_training_args.dataset_name:
                             overlap_mask_batch = torch.zeros_like(sub_attention_mask,dtype=torch.bool)
@@ -839,7 +839,7 @@ def main():
                     batch["global_step"] = 0
                     assert overlap_mask_batch != None if data_training_args.dataset_name in ["timit"] else True
                     if overlap_mask_batch is None or not data_training_args.discard_label_overlaps:
-                        overlap_mask_batch = torch.zeros_like(sub_attention_mask,dtype=torch.bool)
+                        overlap_mask_batch = torch.zeros_like(sub_attention_mask).astype(torch.bool)
                     else:
                         "Frames corresponding to padding are set as True in the overlap and discarded"
                         padded = sub_attention_mask.sum(dim = -1)
@@ -1004,7 +1004,7 @@ def main():
                         batch["global_step"] = 0
                         assert overlap_mask_batch != None if data_training_args.dataset_name in ["timit"] else True
                         if overlap_mask_batch is None or not data_training_args.discard_label_overlaps:
-                            overlap_mask_batch = torch.zeros_like(sub_attention_mask,dtype=torch.bool)
+                            overlap_mask_batch = torch.zeros_like(sub_attention_mask).astype(torch.bool)
                         else:
                             "Frames corresponding to padding are set as True in the overlap and discarded"
                             padded = sub_attention_mask.sum(dim = -1)
@@ -1210,7 +1210,7 @@ def main():
                         y = speaker_id_frame, y_test = None,
                         checkpoint = ckp, latent_type="z",target = "speaker_frame" 
                     )
-                if "emotion_frame" in data_training_args.classification_tasks or "emotion" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
+                if "emotion" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
                     "Check emotion recognition in z"
                     prediction_eval(data_training_args,config,
                         X = z_mean, X_test = None,
