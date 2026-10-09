@@ -2,6 +2,7 @@
 
   ckpdir <pretraining_config> <parent_dir>      checkpoint folder latents_post_analysis.py builds from parent_dir
   ckpsel <checkpoint_dir> <index>               checkpoint that epoch_range_to_evaluate = [index] selects
+  loss_weights <config>                         set the decomposition loss weights for the config's NoC
   sync <pretraining_config> <eval_config>       copy the model, decomposition and objective keys of the
                                                 pretraining config into an evaluation config
   compare <config> <saved_config>               print the settings that differ from a trained model's saved config
@@ -73,6 +74,23 @@ def ckpsel(ckp_dir, index):
     files.append('epoch_-01')
     files.sort(key=lambda f: int(m.group(1)) if (m := re.search(r'epoch_(\d+)', f)) else -1)
     return files[index]
+
+
+def loss_weights(path):
+    """Decomposition loss weights for the config's NoC, truncated to 4 decimals as in the existing configs.
+
+    Positive (X-OC) terms: 1/NoC each, in div_pos_weight and in weight_0_1, weight_0_2, weight_0_3_and_above,
+    which replace div_pos_weight for the JS divergence. Negative (OC-OC) terms: 1/(number of OC pairs).
+    """
+    cfg = load(path)
+    C = int(cfg["NoC"])
+    trunc = lambda x: np.floor(x * 1e4 + 1e-9) / 1e4
+    pos, neg = trunc(1 / C), trunc(1 / (C * (C - 1) / 2))
+    for k in ("div_pos_weight", "weight_0_1", "weight_0_2", "weight_0_3_and_above"):
+        cfg[k] = float(pos)
+    cfg["div_neg_weight"] = float(neg)
+    save(cfg, path)
+    print(f"  loss weights for NoC {C}: positive {pos}, negative {neg}")
 
 
 def sync(pre_path, eval_path):
@@ -162,6 +180,7 @@ def main():
     sub = p.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("ckpdir"); s.add_argument("config"); s.add_argument("parent")
     s = sub.add_parser("ckpsel"); s.add_argument("ckp_dir"); s.add_argument("index", type=int)
+    s = sub.add_parser("loss_weights"); s.add_argument("config")
     s = sub.add_parser("sync"); s.add_argument("pre"); s.add_argument("eval")
     s = sub.add_parser("compare"); s.add_argument("config"); s.add_argument("saved")
     s = sub.add_parser("boundaries")
@@ -179,6 +198,8 @@ def main():
         print(ckpdir(load(a.config), a.parent))
     elif a.cmd == "ckpsel":
         print(ckpsel(a.ckp_dir, a.index))
+    elif a.cmd == "loss_weights":
+        loss_weights(a.config)
     elif a.cmd == "sync":
         sync(a.pre, a.eval)
     elif a.cmd == "compare":
