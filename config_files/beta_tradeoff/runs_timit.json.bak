@@ -1,0 +1,29 @@
+{
+  "comment": "R1 #6 beta trade-off, TIMIT (no classification in the paper; paired with the SI Fig 14a disentanglement metrics). NoC 4 and NoC_seq 5, as in the TIMIT pre-training configs. The SI Fig 14a runs used 50 percent frames (experiment ssl_loss). SET: caches, and check the folder naming (the local ../pretrained_models/timit folders are named bz.._bs.._NoC4_mel_dual-bs8, without the percent_frames suffix).",
+  "base_config": "config_files/DecVAEs/timit/latent_evaluations/config_latent_anal_timit.json",
+  "output_csv": "data/beta_tradeoff/divergences_timit.csv",
+  "splits": ["test"],
+  "betas": [0, 0.1, 1],
+  "comment_options": "Run options (overridden by the command-line flags of the same name)",
+  "only": null,
+  "max_batches": null,
+  "overwrite": false,
+  "dry_run": false,
+  "models": [
+    {"name": "FD", "overrides": {
+      "decomp_to_perform": "filter", "NoC": 4, "NoC_seq": 5, "per_device_train_batch_size": 8,
+      "experiment": "snr",
+      "parent_dir": "/media/student3/PortableSSD/latents_SNR_beta_experiments/timit_z64/filter",
+      "train_cache_file_name": "/media/student3/PortableSSD/timit_decomposed/timit_filter_NoC4_train_set.arrow",
+      "validation_cache_file_name": "/media/student3/PortableSSD/timit_decomposed/timit_filter_NoC4_dev_set.arrow", 
+      "test_cache_file_name": "/media/student3/PortableSSD/timit_decomposed/timit_filter_NoC4_test_set.arrow"}},
+    {"name": "EWT", "overrides": {
+      "decomp_to_perform": "ewt", "NoC": 4, "NoC_seq": 4, "per_device_train_batch_size": 8,
+      "experiment": "snr",
+      "parent_dir": "/media/student3/PortableSSD/latents_SNR_beta_experiments/timit_z64/ewt",
+      "train_cache_file_name": "/media/student3/PortableSSD/timit_decomposed/timit_ewt_NoC4_train_set.arrow",
+      "validation_cache_file_name": "/media/student3/PortableSSD/timit_decomposed/timit_ewt_NoC4_dev_set.arrow", 
+      "test_cache_file_name": "/media/student3/PortableSSD/timit_decomposed/timit_ewt_NoC4_test_set.arrow"}}
+  ],
+  "exceptions": {}
+}

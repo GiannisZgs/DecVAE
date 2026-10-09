@@ -45,15 +45,18 @@ DEFAULT_ARGS = {
     "exports_dir": os.path.join("data", "results_wandb_exports_for_figures"),
     "output_dir": os.path.join("data", "beta_tradeoff"),  # also where the divergences_<dataset>.csv files are read from
     "provisional": False,  # add the pre-training log divergences for SimVowels
+    "divergence_files": {  # per dataset, the decomposition_divergences.py output in output_dir
+        "sim_vowels": "divergences_sim_vowels_100frames.csv",
+        "timit": "divergences_timit_178frames.csv",
+        "iemocap": "divergences_iemocap_175frames.csv",
+    },
 }
 MODEL_NAMES = {"filter": "FD", "ewt": "EWT", "emd": "EMD", "vmd": "VMD"}
 
 "Which divergence rows go into the figure: frame branch, the split the paper's metrics come from"
-DIVERGENCE_FILES = {"sim_vowels": ("divergences_sim_vowels.csv", "test"),
-                    "timit": ("divergences_timit.csv", "test"),
-                    "iemocap": ("divergences_iemocap.csv", "all")}
+DIVERGENCE_SPLITS = {"sim_vowels": "test", "timit": "test", "iemocap": "all"}
 DIVERGENCE_MEASURES = ["d_ortho", "d_recon", "d_ortho_norm", "d_recon_norm", "d_ortho_utt", "d_recon_utt",
-                       "model_div_neg", "model_div_pos", "rate_per_frame", "clamp_frac_ortho",
+                       "model_div_neg", "model_div_pos", "rate_per_frame", "clamp_frac_ortho", "clamp_frac_recon",
                        "check_max_abs_diff"]
 
 
@@ -138,10 +141,11 @@ def paper_metrics_iemocap(exports_dir):
     return pd.DataFrame(out)
 
 
-def divergences(output_dir):
+def divergences(output_dir, divergence_files):
     "Checkpoint divergences written by decomposition_divergences.py (frame branch)"
     out = []
-    for dataset, (fname, split) in DIVERGENCE_FILES.items():
+    for dataset, fname in divergence_files.items():
+        split = DIVERGENCE_SPLITS[dataset]
         path = os.path.join(output_dir, fname)
         if not os.path.exists(path):
             print(f"not found, skipped: {path}")
@@ -188,7 +192,7 @@ def main():
 
     paper = pd.concat([paper_metrics_sim_vowels(args.exports_dir), paper_metrics_timit(args.exports_dir),
                        paper_metrics_iemocap(args.exports_dir)]).assign(source="paper_eval")
-    parts = [paper, divergences(args.output_dir)]
+    parts = [paper, divergences(args.output_dir, args.divergence_files)]
     if args.provisional:
         parts.append(provisional_divergences(args.exports_dir))
     long = pd.concat([p for p in parts if len(p)], ignore_index=True)

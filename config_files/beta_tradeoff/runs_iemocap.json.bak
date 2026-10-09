@@ -1,0 +1,29 @@
+{
+  "comment": "R1 #6 beta trade-off, IEMOCAP. Models pre-trained on SimVowels (the Fig 5h frame-branch results) and on TIMIT, evaluated on the same set as the paper (train + validation + test). Model arguments are those of the checkpoints (config_finetune_iemocap_NoC4.json): from SimVowels z 48, s 24, NoC_seq 4, project_OCs, 6 S-attention heads; from TIMIT the base config values (z 64, s 32, NoC_seq 5). checkpoint_dir bypasses the folder naming of latents_post_analysis.py. SET every path.",
+  "base_config": "config_files/DecVAEs/iemocap/latent_evaluations/config_latent_anal_iemocap.json",
+  "output_csv": "data/beta_tradeoff/divergences_iemocap.csv",
+  "splits": ["all"],
+  "betas": [0, 0.1, 1],
+  "comment_options": "Run options (overridden by the command-line flags of the same name)",
+  "only": null,
+  "max_batches": null,
+  "overwrite": false,
+  "dry_run": false,
+  "models": [
+    {"name": "FD", "transfer_from": "vowels", "checkpoint_dir": "SET/iemocap_from_vowels/filter/decvae_filter_b{btag}/SET",
+     "overrides": {"decomp_to_perform": "filter", "NoC": 4, "NoC_seq": 4,
+                   "z_latent_dim": 48, "s_latent_dim": 24, "project_OCs": true, "attention_heads_s": 6,
+                   "train_cache_file_name": "SET", "validation_cache_file_name": "SET", "test_cache_file_name": "SET"}},
+    {"name": "EWT", "transfer_from": "vowels", "checkpoint_dir": "SET/iemocap_from_vowels/ewt/decvae_ewt_b{btag}/SET",
+     "overrides": {"decomp_to_perform": "ewt", "NoC": 4, "NoC_seq": 4,
+                   "z_latent_dim": 48, "s_latent_dim": 24, "project_OCs": true, "attention_heads_s": 6,
+                   "train_cache_file_name": "SET", "validation_cache_file_name": "SET", "test_cache_file_name": "SET"}},
+    {"name": "FD", "transfer_from": "timit", "checkpoint_dir": "SET/iemocap_from_timit/filter/decvae_filter_b{btag}/SET",
+     "overrides": {"decomp_to_perform": "filter", "NoC": 4, "NoC_seq": 5,
+                   "train_cache_file_name": "SET", "validation_cache_file_name": "SET", "test_cache_file_name": "SET"}},
+    {"name": "EWT", "transfer_from": "timit", "checkpoint_dir": "SET/iemocap_from_timit/ewt/decvae_ewt_b{btag}/SET",
+     "overrides": {"decomp_to_perform": "ewt", "NoC": 4, "NoC_seq": 5,
+                   "train_cache_file_name": "SET", "validation_cache_file_name": "SET", "test_cache_file_name": "SET"}}
+  ],
+  "exceptions": {}
+}
