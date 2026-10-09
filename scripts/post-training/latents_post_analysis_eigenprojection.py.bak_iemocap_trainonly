@@ -46,7 +46,7 @@ from args_configs import (
 )
 from utils import parse_args, debugger_is_active
 from utils.cache_utils import build_cache_file_names, cache_feature_type
-from latent_analysis_utils import prediction_eval
+from latent_analysis_utils import prediction_eval, frames_per_utterance_index
 from disentanglement_utils import compute_disentanglement_metrics
 from sklearn.decomposition import PCA, FastICA, KernelPCA
 from sksfa import SFA
@@ -1043,12 +1043,14 @@ def main():
           + (f", {tuple(z_test.shape)} test ({tensor_mb(z_test):.1f} MB)" if z_test is not None else "")
           + (f", {tuple(z_tiled.shape)} tiled ({tensor_mb(z_tiled):.1f} MB)" if z_tiled is not None else ""))
 
-    "IEMOCAP frame subsampling: the projection is fitted on every frame"
+    "IEMOCAP frame subsampling: the projection is still fitted on every frame, only the evaluations see the kept ones"
+    keep = None
     if on_iemocap and data_training_args.iemocap_frames_per_utterance:
+        keep = frames_per_utterance_index(seq_lengths, data_training_args.iemocap_frames_per_utterance)
         n_before = z.shape[0]
         assert sum(seq_lengths) == n_before == len(labels["phoneme"]) == len(labels["speaker_frame"]) == len(labels["emotion_frame"]), "frame counts and labels disagree"
-        "Subsampling happens inside prediction_eval (training folds only) and compute_disentanglement_metrics"
-        data_training_args.iemocap_utt_frame_counts = [int(c) for c in seq_lengths]
+        labels = {**labels, **{n: labels[n][keep] for n in ("phoneme", "speaker_frame", "emotion_frame")}}
+        print(f"IEMOCAP: kept {len(keep)} of {n_before} frames (at most {data_training_args.iemocap_frames_per_utterance} per utterance)")
 
     if on_iemocap:
         "Every split is already in the single evaluation set - fit on it"
@@ -1136,6 +1138,8 @@ def main():
         seq_pooling = eigenprojection_args.projection_seq_pooling
         z_seq = pool_segments(z_proj, seq_lengths, seq_pooling)
         z_seq_test = pool_segments(z_proj_test, seq_lengths_test, seq_pooling)
+        if keep is not None:
+            z_proj = z_proj[keep]
 
         evaluate_projection(data_training_args, config, eigenprojection_args, ckp,
                             z_proj, z_proj_test, labels, labels_test, z_seq, z_seq_test,

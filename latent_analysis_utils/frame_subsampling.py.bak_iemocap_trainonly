@@ -16,19 +16,3 @@ def frames_per_utterance_index(frame_counts, k):
     keep = [s + (np.arange(n) if n <= k else np.round(np.linspace(0, n - 1, k)).astype(int))
             for s, n in zip(starts, frame_counts)]
     return torch.as_tensor(np.concatenate(keep), dtype=torch.long)
-
-
-def subsample_index_by_group(index, groups, k):
-    """Subset of index with at most k entries per group, evenly spaced in index order (time order within an
-    utterance). index: row indices (e.g. a fold's training rows); groups: group id of every row of the full
-    array (e.g. utterance id per frame). None or 0 returns index unchanged."""
-    index = np.asarray(index)
-    if not k or len(index) == 0:
-        return index
-    index = np.sort(index)
-    g = np.asarray(groups)[index]
-    order = np.argsort(g, kind="stable")
-    idx_sorted, g_sorted = index[order], g[order]
-    parts = np.split(idx_sorted, np.flatnonzero(np.diff(g_sorted)) + 1)
-    keep = [p if len(p) <= k else p[np.round(np.linspace(0, len(p) - 1, k)).astype(int)] for p in parts]
-    return np.sort(np.concatenate(keep))
