@@ -32,8 +32,8 @@ declare -A RUNS EXISTING
 case $DATASET in
   sim_vowels)
     # Templates: the FD, beta = 0.1 seed config of the subspace plan, and its dump config
-    PRE_TPL=config_files/subspace/pre-training/config_pretraining_sim_vowels_NoC3_fd_b01_s1.json
-    EVAL_TPL=config_files/subspace/dumps/config_dump_decvae_fd_b01_s1_sim_vowels.json
+    PRE_TPL=config_files/DecVAEs/sim_vowels/pre-training/config_pretraining_sim_vowels_NoC3_template.json
+    EVAL_TPL=config_files/DecVAEs/sim_vowels/latent_evaluations/config_latent_anal_sim_vowels_template.json
     MODEL_ROOT=../pretrained_models/sim_vowels/filter/decomp_sensitivity
     SUBSET_VAR=""
     TPL_OVERRIDES=""
@@ -59,10 +59,11 @@ case $DATASET in
     # expected in <parent_dir>/<leaf>, and the decomposed data in the template's cache folder under <cache tag>
     # (NoC3 -> vowels_filter_NoC3_*_set.arrow). Add C2 here if an FD, beta = 0.1, C = 2 model already exists.
     EXISTING=(
-      [C3_s0]="../pretrained_models/sim_vowels/filter/decvae_filter_b01|NoC3"
-      [C3_s1]="../pretrained_models/sim_vowels/filter/decvae_filter_b01_s1|NoC3"
-      [C3_s2]="../pretrained_models/sim_vowels/filter/decvae_filter_b01_s2|NoC3"
-      [C4]="SET: parent folder of the existing FD, beta = 0.1, C = 4 model|SET: its cache tag"
+      [C2]="../latents_SNR_beta_experiments/sim_vowels/filter/|NoC2"
+      [C3_s0]="../latents_SNR_beta_experiments/sim_vowels/filter/|NoC3"
+      [C3_s1]="../c-sensitivity-experiment-fd/sim_vowels/filter/decvae_filter_b01_s1|NoC3"
+      [C3_s2]="../c-sensitivity-experiment-fd/sim_vowels/filter/decvae_filter_b01_s2|NoC3"
+      [C4]="../latents_SNR_beta_experiments/sim_vowels/filter/|NoC4"
     )
     ;;
   sim_coupled)
@@ -86,9 +87,9 @@ case $DATASET in
     )
     # The Experiment B FD models (subspace dumps decvae_fd_b01_s<seed>_sim_coupled); checkpoints sit in <parent_dir>
     EXISTING=(
-      [C3_s0]="../pretrained_models/sim_coupled/filter/decvae_filter_NoC3_seed0|NoC3"
-      [C3_s1]="../pretrained_models/sim_coupled/filter/decvae_filter_NoC3_seed1|NoC3"
-      [C3_s2]="../pretrained_models/sim_coupled/filter/decvae_filter_NoC3_seed2|NoC3"
+      [C3_s0]="../c-sensitivity-experiment-fd/sim_coupled/filter/decvae_filter_NoC3_seed0|NoC3"
+      [C3_s1]="../c-sensitivity-experiment-fd/sim_coupled/filter/decvae_filter_NoC3_seed1|NoC3"
+      [C3_s2]="../c-sensitivity-experiment-fd/sim_coupled/filter/decvae_filter_NoC3_seed2|NoC3"
     )
     ;;
   *) echo "unknown dataset $DATASET" >&2; exit 1 ;;
