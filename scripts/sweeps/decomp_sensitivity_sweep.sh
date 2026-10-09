@@ -59,11 +59,11 @@ case $DATASET in
     # expected in <parent_dir>/<leaf>, and the decomposed data in the template's cache folder under <cache tag>
     # (NoC3 -> vowels_filter_NoC3_*_set.arrow). Add C2 here if an FD, beta = 0.1, C = 2 model already exists.
     EXISTING=(
-      [C2]="../latents_SNR_beta_experiments/sim_vowels/filter/|NoC2"
-      [C3_s0]="../latents_SNR_beta_experiments/sim_vowels/filter/|NoC3"
-      [C3_s1]="../c-sensitivity-experiment-fd/sim_vowels/filter/decvae_filter_b01_s1|NoC3"
-      [C3_s2]="../c-sensitivity-experiment-fd/sim_vowels/filter/decvae_filter_b01_s2|NoC3"
-      [C4]="../latents_SNR_beta_experiments/sim_vowels/filter/|NoC4"
+      [C2]="/media/student3/PortableSSD/latents_SNR_beta_experiments/sim_vowels/filter/|NoC2"
+      [C3_s0]="/media/student3/PortableSSD/latents_SNR_beta_experiments/sim_vowels/filter/|NoC3"
+      [C3_s1]="../c-sensitivity-experiment-fd/sim_vowels/decvae_filter_b01_s1|NoC3"
+      [C3_s2]="../c-sensitivity-experiment-fd/sim_vowels/decvae_filter_b01_s2|NoC3"
+      [C4]="/media/student3/PortableSSD/latents_SNR_beta_experiments/sim_vowels/filter/|NoC4"
     )
     ;;
   sim_coupled)
@@ -177,7 +177,7 @@ for TAG in "${TAGS[@]}"; do
   $UPD "$EVAL" output_dir "$RESULTS/$DATASET/$TAG"
   $UPD "$EVAL" epoch_range_to_evaluate "$EVAL_EPOCHS"
   $UPD "$EVAL" measure_disentanglement true
-  $UPD "$EVAL" classify false
+  $UPD "$EVAL" classify true
   $UPD "$EVAL" with_wandb false
   $UPD "$EVAL" eval_dump_only false
   cp "$EVAL" "$DUMP"
