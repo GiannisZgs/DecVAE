@@ -146,6 +146,7 @@ for TAG in "${TAGS[@]}"; do
     fi
     $UPD "$PRE" "$KEY" "$VAL"
   done
+  $HELP loss_weights "$PRE"              # positive 1/NoC, negative 1/(NoC pairs)
   $UPD "$PRE" with_wandb false
   if [[ -n ${EXISTING[$TAG]+x} ]]; then
     PARENT=${EXISTING[$TAG]%%|*}
