@@ -34,10 +34,10 @@ display_run_names <- c(main = "", speaker_disjoint = " (speaker-disjoint)", inde
 display_partition_names <- c(own = "DecVAE subspaces", null = "Random partitions")
 
 # Load data from
-load_dir <- file.path('..', 'data', 'subspace')
+load_dir <- file.path('..', 'data', 'subspace-simcoupled')
 
 # Save data at
-save_dir <- file.path('..', 'supplementary_figures', 'SI_subspace', 'subspace_real')
+save_dir <- file.path('..', 'supplementary_figures', 'SI_subspace', 'subspace_real_simcoupled')
 if (!dir.exists(save_dir)) {
   dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
 }
