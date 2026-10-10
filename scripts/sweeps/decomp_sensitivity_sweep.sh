@@ -61,8 +61,8 @@ case $DATASET in
     EXISTING=(
       [C2]="/media/student3/PortableSSD/latents_SNR_beta_experiments/sim_vowels/filter/|NoC2"
       [C3_s0]="/media/student3/PortableSSD/latents_SNR_beta_experiments/sim_vowels/filter/|NoC3"
-      [C3_s1]="../c-sensitivity-experiment-fd/sim_vowels/decvae_filter_b01_s1|NoC3"
-      [C3_s2]="../c-sensitivity-experiment-fd/sim_vowels/decvae_filter_b01_s2|NoC3"
+      [C3_s1]="/home/student3/Documents/IoannisZiogas/c-sensitivity-experiment-fd/sim_vowels/decvae_filter_b01_s1/|NoC3"
+      [C3_s2]="/home/student3/Documents/IoannisZiogas/c-sensitivity-experiment-fd/sim_vowels/decvae_filter_b01_s2/|NoC3"
       [C4]="/media/student3/PortableSSD/latents_SNR_beta_experiments/sim_vowels/filter/|NoC4"
     )
     ;;
