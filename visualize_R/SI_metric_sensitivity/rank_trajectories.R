@@ -23,6 +23,20 @@ point_size <- 2.5
 
 yellow_block_threshold <- 1.0
 
+# x-axis tick labels: condition name in the CSV -> displayed label (unlisted conditions keep their name)
+condition_labels <- list(
+  "ref_full" = "No intervention",
+  "ref_sub" = "No intervention, 10k samples",
+  "imbalance Zipf a = 1" = "Imbalanced sampling, Zipf a = 1",
+  "imbalance Zipf a = 2" = "Imbalanced sampling, Zipf a = 2",
+  "correlated V = 0.3" = "Correlated factors, Cramér's V = 0.3",
+  "correlated V = 0.6" = "Correlated factors, Cramér's V = 0.6",
+  "label_noise 10%" = "Label noise 10%",
+  "label_noise 30%" = "Label noise 30%",
+  "partial 5 speaker groups" = "Partial observability - speaker",
+  "dimensionality +d noise dims" = "Noise dimensions appended"
+)
+
 # Load data from
 load_dir <- file.path('..', 'data', 'metric_sensitivity')
 
@@ -50,6 +64,7 @@ for (agg in unique(positions$aggregation[order(positions$aggregation_order)])) {
     geom_point(size = point_size, alpha = 0.9) +
     scale_color_manual(values = colors, labels = labels, name = "") +
     scale_shape_manual(values = shapes, labels = labels, name = "") +
+    scale_x_discrete(labels = function(x) vapply(x, function(c) if (is.null(condition_labels[[c]])) c else condition_labels[[c]], character(1))) +
     scale_y_reverse(breaks = seq_len(n_models), limits = c(n_models + 0.5, 0.5), expand = expansion(mult = c(0, 0))) +
     labs(title = "", x = "", y = "Rank position (1 is best)") +
     theme_minimal(base_size = 14, base_family = plot_font_family) +

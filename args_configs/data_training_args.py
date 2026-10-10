@@ -428,6 +428,13 @@ class DataTrainingArgumentsPost:
         metadata={"help": "IEMOCAP only: when iemocap_cv_scheme is 'session' alone, classify emotion only (emotion_frame, "
                   "emotion_seq) and skip disentanglement and clustering, which do not depend on the CV scheme."},
     )
+    voc_als_cv_scheme: List[str] = list_field(
+        default=["shared"],
+        metadata={"help": "Outer cross-validation scheme(s) for VOC-ALS King's stage, disease duration and phoneme classification: 'shared' "
+                  "(stratified K-fold over frames or sequences, speakers in both train and test - the previous behaviour) "
+                  "and/or 'speaker' (stratified group K-fold by speaker, classif_eval_cv_splits folds, no speaker in both). "
+                  "A list runs each scheme in turn in the same run, e.g. ['shared', 'speaker']; a single string is also accepted."},
+    )
     sim_snr_db: float = field(
         default=None,
         metadata={"help": "The SNR for the simulated datasets."},

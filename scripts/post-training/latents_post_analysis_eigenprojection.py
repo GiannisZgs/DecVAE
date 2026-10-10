@@ -21,7 +21,7 @@ split and applied to the evaluation splits.
 Frames are kept in their sequence structure while they are gathered, one group of frames per utterance.
 SFA reads one-step differences along that axis, so a flat concatenation would take differences across
 utterance boundaries. PCA, ICA and kernel PCA ignore the structure and see the frames as a set.
-Supported for SimVowels, TIMIT and IEMOCAP.
+Supported for SimVowels, TIMIT, IEMOCAP and VOC-ALS.
 
 Decomposition of inputs is not supported here so if it's not already calculated then another script
 like vaes_pretraining.py should be ran first."""
@@ -75,7 +75,27 @@ JSON_FILE_NAME_MANUAL = "config_files/baselines/sfa/iemocap/latent_evaluations/c
 
 logger = get_logger(__name__)
 
-SUPPORTED_DATASETS = ["sim_vowels", "sim_coupled", "timit", "iemocap"]
+SUPPORTED_DATASETS = ["sim_vowels", "sim_coupled", "timit", "iemocap", "VOC_ALS"]
+
+"VOC-ALS labels, all utterance-level: batch key -> label name, gathered as '<name>_frame' and '<name>_seq'"
+VOC_ALS_LABELS = {"phonemes": "phoneme", "speaker_id": "speaker", "king_stage": "king_stage",
+                  "disease_duration": "disease_duration", "group": "group", "alsfrs_total": "alsfrs_total",
+                  "alsfrs_speech": "alsfrs_speech", "cantagallo": "cantagallo"}
+
+"VOC-ALS targets: label name, target name as latents_post_analysis.py records it, and the task that switches it on"
+"Phoneme, King's stage and disease duration carry the speaker as support, for the speaker-independent split (voc_als_cv_scheme)"
+VOC_ALS_FRAME_TARGETS = [("phoneme_frame", ["phoneme_frame", "speaker_frame"], "phoneme_frame"),
+                         ("speaker_frame", "speaker_frame", "speaker_frame"),
+                         ("king_stage_frame", ["kings_stage_frame", "speaker_frame"], "kings_stage_frame"),
+                         ("disease_duration_frame", ["disease_duration_frame", "speaker_frame"], "disease_duration_frame"),
+                         ("group_frame", "group_frame", "group_frame"),
+                         ("alsfrs_total_frame", "alsfrs_total_frame", "alsfrs_total_frame"),
+                         ("alsfrs_speech_frame", "alsfrs_speech_frame", "alsfrs_speech_frame"),
+                         ("cantagallo_frame", "cantagallo_frame", "cantagallo_frame")]
+VOC_ALS_SEQ_TARGETS = [(label.replace("_frame", "_seq"),
+                        [t.replace("_frame", "_seq") for t in target] if isinstance(target, list) else target.replace("_frame", "_seq"),
+                        task.replace("_frame", "_seq"))
+                       for label, target, task in VOC_ALS_FRAME_TARGETS]
 SUPPORTED_METHODS = ["pca", "ica", "kpca-rbf", "kpca-poly", "kpca-sigmoid", "sfa"]
 
 "Dimensionality each input type was projected to in latents_post_analysis_vae1D.py, used when"
@@ -588,6 +608,8 @@ def evaluate_projection(data_training_args, config, eigenprojection_args, ckp,
         elif dataset_name == "timit":
             frame_targets = [("phoneme48", "phoneme48", "phoneme"),
                              ("speaker_frame", "speaker_frame", "speaker_frame")]
+        elif dataset_name == "VOC_ALS":
+            frame_targets = VOC_ALS_FRAME_TARGETS
         else:
             frame_targets = [("phoneme", "phoneme_frame", "phoneme"),
                              ("speaker_frame", "speaker_frame", "speaker_frame"),
@@ -609,6 +631,8 @@ def evaluate_projection(data_training_args, config, eigenprojection_args, ckp,
             if dataset_name == "iemocap":
                 seq_targets = [("speaker_seq", "speaker_seq", "speaker_seq"),
                                ("emotion_seq", ["cat_emotion_seq", "speaker_seq"], "emotion_seq")]
+            elif dataset_name == "VOC_ALS":
+                seq_targets = VOC_ALS_SEQ_TARGETS
             else:
                 seq_targets = [("speaker_seq", "speaker_seq", "speaker_seq")]
 
@@ -633,6 +657,10 @@ def evaluate_projection(data_training_args, config, eigenprojection_args, ckp,
         elif dataset_name == "timit":
             columns = ["phoneme", "speaker_frame"]
             names = ["phoneme39", "speaker_frame"]
+        elif dataset_name == "VOC_ALS":
+            "King's stage - phoneme - speaker, as latents_post_analysis.py evaluates VOC-ALS"
+            columns = ["king_stage_frame", "phoneme_frame", "speaker_frame"]
+            names = ["king_stage_frame", "phoneme_frame", "speaker_frame"]
         else:
             columns = ["phoneme", "speaker_frame", "cat_emotion_frame"]
             names = ["phoneme", "speaker_frame", "emotion_frame"]
@@ -659,14 +687,18 @@ def evaluate_projection(data_training_args, config, eigenprojection_args, ckp,
 
         "Sequence-level disentanglement, read off the pooled embeddings. IEMOCAP is the dataset with"
         "two utterance-level factors, so emotion against speaker is evaluated the way"
-        "latents_post_analysis.py evaluates it for the DecVAE models"
-        if dataset_name == "iemocap":
+        "latents_post_analysis.py evaluates it for the DecVAE models; VOC-ALS as it does for the S branch"
+        if dataset_name in ["iemocap", "VOC_ALS"]:
             if z_seq is None:
                 print("Skipping the sequence-level disentanglement - projection_seq_pooling is not "
                       "set, so there are no pooled embeddings to evaluate")
             else:
-                seq_columns = ["speaker_seq", "cat_emotion_seq"]
-                seq_names = ["speaker_seq", "emotion_seq"]
+                if dataset_name == "VOC_ALS":
+                    seq_columns = ["king_stage_seq", "phoneme_seq", "speaker_seq"]
+                    seq_names = ["king_stage_seq", "phoneme_seq", "speaker_seq"]
+                else:
+                    seq_columns = ["speaker_seq", "cat_emotion_seq"]
+                    seq_names = ["speaker_seq", "emotion_seq"]
 
                 y_seq_train = torch.cat([labels[n].reshape(-1, 1) for n in seq_names], dim=1)
                 y_seq_train = pd.DataFrame(y_seq_train.cpu().numpy(), columns=seq_columns)
@@ -757,6 +789,8 @@ def gather_split(dataloader, data_training_args, eigenprojection_args, gather_fi
                 batch.pop("start_phonemes", None)
                 batch.pop("stop_phonemes", None)
                 speaker_id_batch = list(batch.pop("speaker_id", None))
+            elif dataset_name == "VOC_ALS":
+                voc_als_batch = {name: list(batch.pop(key)) for key, name in VOC_ALS_LABELS.items()}
 
             "There is no encoder here - the selected components are the representation"
             frames = select_features(batch, input_type, batch_size)
@@ -784,6 +818,10 @@ def gather_split(dataloader, data_training_args, eigenprojection_args, gather_fi
                 append("emotion_frame", _expand_to_frames(emotion_batch, overlap_mask_batch))
                 append("speaker_seq", torch.stack(speaker_id_batch))
                 append("emotion_seq", torch.stack(emotion_batch))
+            elif dataset_name == "VOC_ALS":
+                for name, values in voc_als_batch.items():
+                    append(name + "_frame", _expand_to_frames(values, overlap_mask_batch))
+                    append(name + "_seq", torch.stack(values))
 
             if dataset_name == "sim_vowels":
                 overlap_mask_batch = overlap_mask_batch[sub_attention_mask].view(batch_size, -1)
@@ -905,6 +943,8 @@ def main():
         else:
             vectorized_datasets["validation"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["validation"]])
         vectorized_datasets["test"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["test"]])
+        if data_training_args.dataset_name == "VOC_ALS":
+            vectorized_datasets["dev"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["dev"]])
         if data_training_args.dataset_name == "sim_coupled":
             "Independent-factors split - an unseen set, encoded and evaluated on its own"
             vectorized_datasets["indep"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["indep"]])
@@ -971,9 +1011,12 @@ def main():
         mask_time_length=mask_time_length,
     )
 
-    "The baselines are evaluated on ordered frames"
-    if data_training_args.dataset_name == "iemocap":
-        eval_dataset = concatenate_datasets([vectorized_datasets["train"], vectorized_datasets["validation"], vectorized_datasets["test"]])
+    "The baselines are evaluated on ordered frames. IEMOCAP and VOC-ALS are evaluated on a single set,"
+    "which the projection is also fitted on"
+    single_set = data_training_args.dataset_name in ["iemocap", "VOC_ALS"]
+    if single_set:
+        eval_splits = ["train", "validation", "test"] + (["dev"] if data_training_args.dataset_name == "VOC_ALS" else [])
+        eval_dataset = concatenate_datasets([vectorized_datasets[split] for split in eval_splits])
         eval_dataloader = DataLoader(
             eval_dataset.with_format("numpy"),
             shuffle=False,
@@ -1009,7 +1052,7 @@ def main():
 
     "Prepare everything with HF accelerator. FrameGeometry holds no parameters and is never called"
     "for a forward pass, so only the dataloaders are prepared"
-    if data_training_args.dataset_name == "iemocap":
+    if single_set:
         "Evaluates on a single set"
         eval_dataloader = accelerator.prepare(eval_dataloader)
     else:
@@ -1023,12 +1066,11 @@ def main():
     start_time = time.time()
     "Get the representations"
     "SFA takes its differences on the tiling grid, so that split also has to be cut that way"
-    on_iemocap = data_training_args.dataset_name == "iemocap"
     z, seq_lengths, labels, z_tiled, seq_lengths_tiled = gather_split(
         eval_dataloader, data_training_args, eigenprojection_args,
-        gather_fit_grid=use_tiling_grid and on_iemocap
+        gather_fit_grid=use_tiling_grid and single_set
     )
-    if on_iemocap:
+    if single_set:
         z_test, seq_lengths_test, labels_test = None, [], {}
     else:
         z_test, seq_lengths_test, labels_test, _, _ = gather_split(
@@ -1044,13 +1086,13 @@ def main():
           + (f", {tuple(z_tiled.shape)} tiled ({tensor_mb(z_tiled):.1f} MB)" if z_tiled is not None else ""))
 
     "IEMOCAP frame subsampling: the projection is fitted on every frame"
-    if on_iemocap and data_training_args.iemocap_frames_per_utterance:
+    if data_training_args.dataset_name == "iemocap" and data_training_args.iemocap_frames_per_utterance:
         n_before = z.shape[0]
         assert sum(seq_lengths) == n_before == len(labels["phoneme"]) == len(labels["speaker_frame"]) == len(labels["emotion_frame"]), "frame counts and labels disagree"
         "Subsampling happens inside prediction_eval (training folds only) and compute_disentanglement_metrics"
         data_training_args.iemocap_utt_frame_counts = [int(c) for c in seq_lengths]
 
-    if on_iemocap:
+    if single_set:
         "Every split is already in the single evaluation set - fit on it"
         z_fit, seq_lengths_fit = z, seq_lengths
         z_tiled_fit, seq_lengths_tiled_fit = z_tiled, seq_lengths_tiled
@@ -1068,7 +1110,7 @@ def main():
         "Preprocessing hops mel_hops times across a frame, which leaves one bin more than that"
         bins = data_training_args.mel_hops + 1
         z = pool_mel_bins(z, n_mels, bins)
-        z_fit = z if on_iemocap else pool_mel_bins(z_fit, n_mels, bins)
+        z_fit = z if single_set else pool_mel_bins(z_fit, n_mels, bins)
         z_test = pool_mel_bins(z_test, n_mels, bins) if z_test is not None else None
         z_indep = pool_mel_bins(z_indep, n_mels, bins) if z_indep is not None else None
         z_tiled_fit = pool_mel_bins(z_tiled_fit, n_mels, bins) if z_tiled_fit is not None else None
@@ -1077,7 +1119,7 @@ def main():
     if eigenprojection_args.projection_standardize:
         mean, std = fit_standardizer(z_fit, input_type, eigenprojection_args.projection_n_mels)
         z = (z - mean) / std
-        z_fit = z if on_iemocap else (z_fit - mean) / std
+        z_fit = z if single_set else (z_fit - mean) / std
         z_test = (z_test - mean) / std if z_test is not None else None
         z_indep = (z_indep - mean) / std if z_indep is not None else None
         z_tiled_fit = (z_tiled_fit - mean) / std if z_tiled_fit is not None else None
@@ -1089,7 +1131,7 @@ def main():
         expansion = eigenprojection_args.projection_expansion
         width_before = z.shape[1]
         z = expand_frames(z, seq_lengths, expansion, context)
-        z_fit = z if on_iemocap else expand_frames(z_fit, seq_lengths_fit, expansion, context)
+        z_fit = z if single_set else expand_frames(z_fit, seq_lengths_fit, expansion, context)
         z_test = expand_frames(z_test, seq_lengths_test, expansion, context)
         z_indep = expand_frames(z_indep, seq_lengths_indep, expansion, context) if z_indep is not None else None
         z_tiled_fit = expand_frames(z_tiled_fit, seq_lengths_tiled_fit, expansion, context)
@@ -1102,7 +1144,7 @@ def main():
                                         ckp_base + "_expansion_pca.joblib")
             reducer = fit_expansion_pca(z_fit, reduce_to, eigenprojection_args, reducer_path)
             z = torch.tensor(reducer.transform(z), dtype=torch.float32)
-            z_fit = z if on_iemocap else torch.tensor(reducer.transform(z_fit), dtype=torch.float32)
+            z_fit = z if single_set else torch.tensor(reducer.transform(z_fit), dtype=torch.float32)
             z_test = torch.tensor(reducer.transform(z_test), dtype=torch.float32) if z_test is not None else None
             z_indep = torch.tensor(reducer.transform(z_indep), dtype=torch.float32) if z_indep is not None else None
             if z_tiled_fit is not None:
