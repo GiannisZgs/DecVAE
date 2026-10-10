@@ -1036,6 +1036,7 @@ def main():
 
 
             elif "VOC_ALS" in data_training_args.dataset_name:
+                "Phoneme, King's stage and disease duration carry the speaker as support, for the speaker-independent split (voc_als_cv_scheme)"
                 if config.dual_branched_latent or config.only_z_branch:
                     if "OCs_joint_emb" in data_training_args.aggregations_to_use:
                         "OCs combination ([OC1,OC2,...,OCn])"
@@ -1043,8 +1044,8 @@ def main():
                             "Check phoneme in z"
                             prediction_eval(data_training_args,config,
                                 X = mu_joint_components_z, X_test = None,
-                                y = phonemes_frame, y_test = None,
-                                checkpoint = ckp, latent_type="OCs_joint_emb",target = "phoneme_frame"
+                                y = torch.stack((phonemes_frame,speaker_id_frame), dim = 1), y_test = None,
+                                checkpoint = ckp, latent_type="OCs_joint_emb",target = ["phoneme_frame", "speaker_frame"]
                             )
                         if "group_frame" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
                             "Check group in z"
@@ -1057,15 +1058,15 @@ def main():
                             "Check King's staging in z"
                             prediction_eval(data_training_args,config,
                                 X = mu_joint_components_z, X_test = None,
-                                y = king_stage_frame, y_test = None,
-                                checkpoint = ckp, latent_type="OCs_joint_emb",target = "kings_stage_frame"
+                                y = torch.stack((king_stage_frame,speaker_id_frame), dim = 1), y_test = None,
+                                checkpoint = ckp, latent_type="OCs_joint_emb",target = ["kings_stage_frame", "speaker_frame"]
                             )
                         if "disease_duration_frame" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:   
                             "Check disease duration in z"
                             prediction_eval(data_training_args,config,
                                 X = mu_joint_components_z, X_test = None,
-                                y = disease_duration_frame, y_test = None,
-                                checkpoint = ckp, latent_type="OCs_joint_emb",target = "disease_duration_frame"
+                                y = torch.stack((disease_duration_frame,speaker_id_frame), dim = 1), y_test = None,
+                                checkpoint = ckp, latent_type="OCs_joint_emb",target = ["disease_duration_frame", "speaker_frame"]
                             )
                         if "alsfrs_total_frame" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:   
                             "Check ALSFRS-total staging in z"
@@ -1095,8 +1096,8 @@ def main():
                             "Check phoneme in z"
                             prediction_eval(data_training_args,config,
                                 X = mu_all_z, X_test = None,
-                                y = phonemes_frame, y_test = None,
-                                checkpoint = ckp, latent_type="all",target = "phoneme_frame"
+                                y = torch.stack((phonemes_frame,speaker_id_frame), dim = 1), y_test = None,
+                                checkpoint = ckp, latent_type="all",target = ["phoneme_frame", "speaker_frame"]
                             )
                         if "speaker_frame" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
                             "Check speaker in z"
@@ -1109,8 +1110,8 @@ def main():
                             "Check disease duration in z"
                             prediction_eval(data_training_args,config,
                                 X = mu_all_z, X_test = None,
-                                y = disease_duration_frame, y_test = None,
-                                checkpoint = ckp, latent_type="all",target = "disease_duration_frame"
+                                y = torch.stack((disease_duration_frame,speaker_id_frame), dim = 1), y_test = None,
+                                checkpoint = ckp, latent_type="all",target = ["disease_duration_frame", "speaker_frame"]
                             )
                         if "group_frame" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
                             "Check group in z"
@@ -1123,8 +1124,8 @@ def main():
                             "Check King's staging in z"
                             prediction_eval(data_training_args,config,
                                 X = mu_all_z, X_test = None,
-                                y = king_stage_frame, y_test = None,
-                                checkpoint = ckp, latent_type="all",target = "kings_stage_frame"
+                                y = torch.stack((king_stage_frame,speaker_id_frame), dim = 1), y_test = None,
+                                checkpoint = ckp, latent_type="all",target = ["kings_stage_frame", "speaker_frame"]
                             )
                         if "alsfrs_total_frame" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
                             "Check ALSFRS-total in z"
@@ -1156,8 +1157,8 @@ def main():
                             "Check phoneme in s"
                             prediction_eval(data_training_args,config,
                                 X = mu_joint_components_s, X_test = None,
-                                y = phonemes_seq, y_test = None,
-                                checkpoint = ckp, latent_type="OCs_joint_emb",target = "phoneme_seq"
+                                y = torch.stack((phonemes_seq,speaker_id_seq), dim = 1), y_test = None,
+                                checkpoint = ckp, latent_type="OCs_joint_emb",target = ["phoneme_seq", "speaker_seq"]
                             )
                         if "group_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
                             "Check group in s"
@@ -1170,15 +1171,15 @@ def main():
                             "Check King's staging in s"
                             prediction_eval(data_training_args,config,
                                 X = mu_joint_components_s, X_test = None,
-                                y = king_stage_seq, y_test = None,
-                                checkpoint = ckp, latent_type="OCs_joint_emb",target = "kings_stage_seq"
+                                y = torch.stack((king_stage_seq,speaker_id_seq), dim = 1), y_test = None,
+                                checkpoint = ckp, latent_type="OCs_joint_emb",target = ["kings_stage_seq", "speaker_seq"]
                             )
                         if "disease_duration_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
                             "Check disease duration staging in s"
                             prediction_eval(data_training_args,config,
                                 X = mu_joint_components_s, X_test = None,
-                                y = disease_duration_seq, y_test = None,
-                                checkpoint = ckp, latent_type="OCs_joint_emb",target = "disease_duration_seq"
+                                y = torch.stack((disease_duration_seq,speaker_id_seq), dim = 1), y_test = None,
+                                checkpoint = ckp, latent_type="OCs_joint_emb",target = ["disease_duration_seq", "speaker_seq"]
                             )
                         if "alsfrs_total_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
                             "Check ALSFRS-total staging in s"
@@ -1201,8 +1202,8 @@ def main():
                             "Check phoneme in s"
                             prediction_eval(data_training_args,config,
                                 X = mu_all_s, X_test = None,
-                                y = phonemes_seq, y_test = None,
-                                checkpoint = ckp, latent_type="all",target = "phoneme_seq"
+                                y = torch.stack((phonemes_seq,speaker_id_seq), dim = 1), y_test = None,
+                                checkpoint = ckp, latent_type="all",target = ["phoneme_seq", "speaker_seq"]
                             )
                         if "speaker_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
                             "Check speaker in s"
@@ -1214,8 +1215,8 @@ def main():
                         if "disease_duration_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
                             prediction_eval(data_training_args,config,
                                 X = mu_all_s, X_test = None,
-                                y = disease_duration_seq, y_test = None,
-                                checkpoint = ckp, latent_type="all",target = "disease_duration_seq"
+                                y = torch.stack((disease_duration_seq,speaker_id_seq), dim = 1), y_test = None,
+                                checkpoint = ckp, latent_type="all",target = ["disease_duration_seq", "speaker_seq"]
                             )
 
                         if "group_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
@@ -1229,8 +1230,8 @@ def main():
                             "Check King's staging in s"
                             prediction_eval(data_training_args,config,
                                 X = mu_all_s, X_test = None,
-                                y = king_stage_seq, y_test = None,
-                                checkpoint = ckp, latent_type="all",target = "kings_stage_seq"
+                                y = torch.stack((king_stage_seq,speaker_id_seq), dim = 1), y_test = None,
+                                checkpoint = ckp, latent_type="all",target = ["kings_stage_seq", "speaker_seq"]
                             )
                         if "alsfrs_total_seq" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
                             "Check ALSFRS-total in s"

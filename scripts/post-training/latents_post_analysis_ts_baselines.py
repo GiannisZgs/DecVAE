@@ -18,7 +18,8 @@ time-series baselines (CoST, TF-C, TCL, CPC, FHVAE), checkpoint by checkpoint as
 ts_baselines_pretraining.py. The methods are frame-level: they read the framed decomposition and
 emit one embedding per frame of the DecVAE grid. Sequence-level targets are read off the mean of the
 frame embeddings of each utterance, as latents_post_analysis_frozen_ssl.py does.
-Supported for SimVowels, TIMIT and IEMOCAP. The caches must already exist."""
+Supported for SimVowels, TIMIT, IEMOCAP and VOC-ALS. VOC-ALS is evaluated zero-shot from the SimVowels
+or TIMIT checkpoints, without CoST. The caches must already exist."""
 
 import os
 import sys
@@ -76,7 +77,27 @@ JSON_FILE_NAME_MANUAL = "config_files/baselines/tfc/sim_vowels/latent_evaluation
 
 logger = get_logger(__name__)
 
-SUPPORTED_DATASETS = ["sim_vowels", "sim_coupled", "timit", "iemocap"]
+SUPPORTED_DATASETS = ["sim_vowels", "sim_coupled", "timit", "iemocap", "VOC_ALS"]
+
+"VOC-ALS labels, all utterance-level: batch key -> label name, gathered as '<name>_frame' and '<name>_seq'"
+VOC_ALS_LABELS = {"phonemes": "phoneme", "speaker_id": "speaker", "king_stage": "king_stage",
+                  "disease_duration": "disease_duration", "group": "group", "alsfrs_total": "alsfrs_total",
+                  "alsfrs_speech": "alsfrs_speech", "cantagallo": "cantagallo"}
+
+"VOC-ALS targets: label name, target name as latents_post_analysis.py records it, and the task that switches it on"
+"Phoneme, King's stage and disease duration carry the speaker as support, for the speaker-independent split (voc_als_cv_scheme)"
+VOC_ALS_FRAME_TARGETS = [("phoneme_frame", ["phoneme_frame", "speaker_frame"], "phoneme_frame"),
+                         ("speaker_frame", "speaker_frame", "speaker_frame"),
+                         ("king_stage_frame", ["kings_stage_frame", "speaker_frame"], "kings_stage_frame"),
+                         ("disease_duration_frame", ["disease_duration_frame", "speaker_frame"], "disease_duration_frame"),
+                         ("group_frame", "group_frame", "group_frame"),
+                         ("alsfrs_total_frame", "alsfrs_total_frame", "alsfrs_total_frame"),
+                         ("alsfrs_speech_frame", "alsfrs_speech_frame", "alsfrs_speech_frame"),
+                         ("cantagallo_frame", "cantagallo_frame", "cantagallo_frame")]
+VOC_ALS_SEQ_TARGETS = [(label.replace("_frame", "_seq"),
+                        [t.replace("_frame", "_seq") for t in target] if isinstance(target, list) else target.replace("_frame", "_seq"),
+                        task.replace("_frame", "_seq"))
+                       for label, target, task in VOC_ALS_FRAME_TARGETS]
 
 "Random initialization, evaluated alongside the checkpoints as the VAE script does"
 RANDOM_INIT = "epoch_-01"
@@ -247,6 +268,10 @@ def check_against_pretraining(checkpoint_dir, config_path, baseline_args, method
     for key in MUST_MATCH_PRETRAINING[baseline_args.baseline_method]:
         if key not in pretraining:
             continue
+        "VOC-ALS is evaluated zero-shot from checkpoints pre-trained at another duration. The methods"
+        "allowed on it size nothing by the duration (TCL's segment head is rebuilt to the checkpoint's)"
+        if key == "max_duration_in_seconds" and data_training_args.dataset_name == "VOC_ALS":
+            continue
         if pretraining[key] != current.get(key):
             mismatches.append(f"{key}: pre-training {pretraining[key]!r}, evaluation {current.get(key)!r}")
     if mismatches:
@@ -302,6 +327,31 @@ def table_rows_from_checkpoint(checkpoint_dir, checkpoints):
         "training utterances it was pre-trained with cannot be recovered. Point parent_dir at the "
         "directory the FHVAE pre-training run wrote."
     )
+
+
+def tcl_pretraining_seq_length(checkpoint_dir, checkpoints, frames_per_segment):
+    """
+    Frame count that gives TCL the segment head of its checkpoints, for a zero-shot evaluation on
+    utterances of another duration.
+
+    TCL encodes each frame on its own; only the pretext classifier, unused for the representation, is
+    sized by the number of segments, so the model is built with the checkpoint's count for the strict
+    load to succeed.
+
+    Returns:
+        int, or None when no checkpoint holds the head
+    """
+    for name in checkpoints:
+        if name == RANDOM_INIT:
+            continue
+        path = os.path.join(checkpoint_dir, name, "model.safetensors")
+        if not os.path.exists(path):
+            continue
+        with safe_open(path, framework="pt") as handle:
+            for key in handle.keys():
+                if key.endswith("mlr.weight"):
+                    return int(handle.get_slice(key).get_shape()[0]) * frames_per_segment
+    return None
 
 
 def _common_device(*values):
@@ -367,7 +417,10 @@ def gather_split(dataloader, representation_function, data_training_args, compon
             overlap_mask_batch = batch.pop("overlap_mask", None)
 
             assert overlap_mask_batch is not None if dataset_name in ["timit", "iemocap"] else True
-            if overlap_mask_batch is None or not data_training_args.discard_label_overlaps:
+            if dataset_name == "VOC_ALS":
+                "VOC-ALS carries no overlap mask - only the padding is discarded, as latents_post_analysis.py does"
+                overlap_mask_batch = ~sub_attention_mask.bool()
+            elif overlap_mask_batch is None or not data_training_args.discard_label_overlaps:
                 overlap_mask_batch = torch.zeros_like(sub_attention_mask, dtype=torch.bool)
             else:
                 "Frames corresponding to padding are set as True in the overlap and discarded"
@@ -398,6 +451,8 @@ def gather_split(dataloader, representation_function, data_training_args, compon
                 batch.pop("start_phonemes", None)
                 batch.pop("stop_phonemes", None)
                 speaker_id_batch = list(batch.pop("speaker_id", None))
+            elif dataset_name == "VOC_ALS":
+                voc_als_batch = {name: list(batch.pop(key)) for key, name in VOC_ALS_LABELS.items()}
 
             "Same front-end as pre-training: one component, optionally pooled mel bins, padding zeroed"
             frames = batch["input_values"][:, component, ...]
@@ -434,6 +489,10 @@ def gather_split(dataloader, representation_function, data_training_args, compon
                 append("emotion_seq", torch.stack(emotion_batch))
                 "Frames each utterance kept, for the IEMOCAP frame subsampling"
                 append("frames_per_utterance", (~overlap_mask_batch).sum(dim=-1).cpu())
+            elif dataset_name == "VOC_ALS":
+                for name, values in voc_als_batch.items():
+                    append(name + "_frame", _expand_to_frames(values, overlap_mask_batch))
+                    append(name + "_seq", torch.stack(values))
 
             "Gather latents for evaluations"
             z_batch = torch.masked_select(
@@ -501,6 +560,11 @@ def main():
             f"'{data_training_args.dataset_name}'."
         )
 
+    "CoST's seasonal filters are learned per frequency bin of the pre-training duration, so it cannot be"
+    "applied zero-shot to VOC-ALS"
+    if data_training_args.dataset_name == "VOC_ALS" and baseline_args.baseline_method == "cost":
+        raise ValueError("CoST is not evaluated on VOC-ALS: its filters are sized by the pre-training duration.")
+
     method_args, input_type, n_mels, mel_norm, pool_mel_bins = resolve_method_args(baseline_args, cost_args, tfc_args, tcl_args, cpc_args, fhvae_args)
     component = baseline_args.baseline_component
     seq_pooling = resolve_seq_pooling(baseline_args, method_args)
@@ -561,6 +625,8 @@ def main():
         else:
             vectorized_datasets["validation"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["validation"]])
         vectorized_datasets["test"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["test"]])
+        if data_training_args.dataset_name == "VOC_ALS":
+            vectorized_datasets["dev"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["dev"]])
         if data_training_args.dataset_name == "sim_coupled":
             "Independent-factors split - an unseen set, encoded and evaluated on its own"
             vectorized_datasets["indep"] = concatenate_datasets([Dataset.from_file(file) for file in cache_file_names["indep"]])
@@ -588,6 +654,15 @@ def main():
     if baseline_args.baseline_method == "fhvae":
         n_train_utts = table_rows_from_checkpoint(checkpoint_dir, checkpoints)
         print(f"fhvae was pre-trained with {n_train_utts} utterances in its prior-mean table")
+
+    "Zero-shot on VOC-ALS: TCL's segment head is built as large as its checkpoint's"
+    if data_training_args.dataset_name == "VOC_ALS" and baseline_args.baseline_method == "tcl":
+        frames_per_segment = max(1, int(round(method_args.tcl_segment_duration_in_seconds / config.stride)))
+        pretraining_length = tcl_pretraining_seq_length(checkpoint_dir, checkpoints, frames_per_segment)
+        if pretraining_length is not None:
+            print(f"tcl is built for {pretraining_length} frames, the segment count of its checkpoint, "
+                  f"and reads the {seq_length} frames of VOC-ALS frame by frame")
+            seq_length = pretraining_length
 
     "Below this point we need to iterate across checkpoints"
     for ckp_dir in checkpoints:
@@ -629,8 +704,11 @@ def main():
         "The baselines are evaluated on ordered frames. Rows are read as numpy arrays rather than"
         "nested lists, which is what made loading slow; the collator reads every column, so all stay"
         num_workers = baseline_args.baseline_dataloader_num_workers
-        if data_training_args.dataset_name == "iemocap":
-            eval_dataset = concatenate_datasets([vectorized_datasets["train"], vectorized_datasets["validation"], vectorized_datasets["test"]])
+        "IEMOCAP and VOC-ALS are evaluated on a single set"
+        single_set = data_training_args.dataset_name in ["iemocap", "VOC_ALS"]
+        if single_set:
+            eval_splits = ["train", "validation", "test"] + (["dev"] if data_training_args.dataset_name == "VOC_ALS" else [])
+            eval_dataset = concatenate_datasets([vectorized_datasets[split] for split in eval_splits])
             eval_dataloader = DataLoader(
                 eval_dataset.with_format("numpy"),
                 shuffle=False,
@@ -663,7 +741,7 @@ def main():
                 )
 
         "Prepare everything with HF accelerator"
-        if data_training_args.dataset_name == "iemocap":
+        if single_set:
             "Evaluates on a single set"
             representation_function, eval_dataloader = accelerator.prepare(
                 representation_function, eval_dataloader
@@ -681,7 +759,7 @@ def main():
         "Get the representations"
         z, z_seq, labels = gather_split(eval_dataloader, representation_function, data_training_args,
                                         component, n_mels, pool_mel_bins, seq_pooling)
-        if data_training_args.dataset_name == "iemocap":
+        if single_set:
             z_test, z_seq_test, labels_test = None, None, {}
         else:
             z_test, z_seq_test, labels_test = gather_split(test_dataloader, representation_function, data_training_args,
@@ -725,6 +803,8 @@ def main():
             elif data_training_args.dataset_name == "timit":
                 frame_targets = [("phoneme48", "phoneme48", "phoneme"),
                                  ("speaker_frame", "speaker_frame", "speaker_frame")]
+            elif data_training_args.dataset_name == "VOC_ALS":
+                frame_targets = VOC_ALS_FRAME_TARGETS
             else:
                 frame_targets = [("phoneme", "phoneme_frame", "phoneme"),
                                  ("speaker_frame", "speaker_frame", "speaker_frame"),
@@ -755,6 +835,8 @@ def main():
                 if data_training_args.dataset_name == "iemocap":
                     seq_targets = [("speaker_seq", "speaker_seq", "speaker_seq"),
                                    ("emotion_seq", ["cat_emotion_seq", "speaker_seq"], "emotion_seq")]
+                elif data_training_args.dataset_name == "VOC_ALS":
+                    seq_targets = VOC_ALS_SEQ_TARGETS
                 else:
                     seq_targets = [("speaker_seq", "speaker_seq", "speaker_seq")]
 
@@ -780,6 +862,10 @@ def main():
             elif data_training_args.dataset_name == "timit":
                 columns = ["phoneme", "speaker_frame"]
                 names = ["phoneme39", "speaker_frame"]
+            elif data_training_args.dataset_name == "VOC_ALS":
+                "King's stage - phoneme - speaker, as latents_post_analysis.py evaluates VOC-ALS"
+                columns = ["king_stage_frame", "phoneme_frame", "speaker_frame"]
+                names = ["king_stage_frame", "phoneme_frame", "speaker_frame"]
             else:
                 columns = ["phoneme", "speaker_frame", "cat_emotion_frame"]
                 names = ["phoneme", "speaker_frame", "emotion_frame"]
@@ -804,14 +890,19 @@ def main():
                 mu_indep=z_indep, y_indep=y_frame_indep
             )
 
-            "Sequence-level disentanglement on IEMOCAP, emotion against speaker, off the pooled embeddings"
-            if data_training_args.dataset_name == "iemocap":
+            "Sequence-level disentanglement on IEMOCAP, emotion against speaker, and on VOC-ALS, King's stage"
+            "against phoneme and speaker, off the pooled embeddings"
+            if data_training_args.dataset_name in ["iemocap", "VOC_ALS"]:
                 if z_seq is None:
                     print("Skipping the sequence-level disentanglement - the sequence pooling is not set, so "
                           "there are no pooled embeddings to evaluate")
                 else:
-                    seq_columns = ["speaker_seq", "cat_emotion_seq"]
-                    seq_names = ["speaker_seq", "emotion_seq"]
+                    if data_training_args.dataset_name == "VOC_ALS":
+                        seq_columns = ["king_stage_seq", "phoneme_seq", "speaker_seq"]
+                        seq_names = ["king_stage_seq", "phoneme_seq", "speaker_seq"]
+                    else:
+                        seq_columns = ["speaker_seq", "cat_emotion_seq"]
+                        seq_names = ["speaker_seq", "emotion_seq"]
 
                     y_seq_train = torch.cat([labels[n].reshape(-1, 1) for n in seq_names], dim=1)
                     y_seq_train = pd.DataFrame(y_seq_train.cpu().numpy(), columns=seq_columns)

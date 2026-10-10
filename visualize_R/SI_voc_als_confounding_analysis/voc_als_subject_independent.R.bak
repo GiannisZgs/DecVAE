@@ -1,0 +1,122 @@
+#' SI Figure (VOC-ALS, R5 #9): King's stage and disease duration prediction under the paper's
+#' speaker-shared protocol and under subject-independent protocols, per model, with the subject-level
+#' permutation tests. One set of figures per branch (frames, sequences) and probe (Random Forest as in
+#' the paper, and linear). Bars in the style of Fig. 4h (fig_4/voc_als_total_model_results_bar_chart_CIs_supervised.R),
+#' null distributions in the same results style.
+#' Reads the CSVs written by scripts/post-training/voc_als_confound_analysis.py.
+
+library(vscDebugger)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(scales)
+library(viridis)
+library(stringr)
+
+plot_font_family <- "Arial"
+plot_title_size <- 28
+title_font_face <- "plain"
+axis_title_size <- 28
+axis_text_size <- 20
+legend_title_size <- 20
+legend_text_size <- 18
+legend_font_face <- "plain"
+strip_text_size <- 20
+errorbar_width <- 0.5
+errorbar_linewidth <- 1.2
+chance_line_color <- "grey40"
+axis_text_x_angle <- 45
+
+yellow_block_threshold <- 1.0
+
+# Load data from
+load_dir <- file.path('..', 'data', 'voc_als_confounding_analysis')
+# Save data at
+save_dir <- file.path('..', 'supplementary_figures', 'SI_voc_als_confounding_analysis')
+if (!dir.exists(save_dir)) {
+  dir.create(save_dir, recursive = TRUE, showWarnings = FALSE)
+}
+
+target_names <- c(king_stage = "King's Stage", disease_duration = "Disease Duration")
+level_units <- c(frame = "Frames", seq = "Sequences")
+protocol_keys <- c("units_shared", "units_grouped", "subject_from_units_grouped", "subject_probe_mean")
+protocol_display <- function(level) {
+  u <- level_units[[level]]
+  c(paste0(u, ", speakers shared"), paste0(u, ", subject-disjoint"),
+    paste0("Subjects, from ", tolower(u), " probe"), "Subjects, probe (mean)")
+}
+
+theme_results <- theme_minimal(base_size = 14, base_family = plot_font_family) +
+  theme(
+    plot.title = element_text(size = plot_title_size, face = title_font_face),
+    axis.title = element_text(size = axis_title_size),
+    axis.text = element_text(size = axis_text_size),
+    legend.title = element_text(size = legend_title_size, face = legend_font_face),
+    legend.text = element_text(size = legend_text_size),
+    strip.text = element_text(size = strip_text_size),
+    panel.grid.minor = element_blank(),
+    legend.position = "right"
+  )
+
+probe_names <- c(rf = "Random Forest", lr = "linear probe")
+scores_all <- read_csv(file.path(load_dir, "scores_by_protocol.csv"), show_col_types = FALSE)
+nulls_all <- read_csv(file.path(load_dir, "permutation_nulls.csv"), show_col_types = FALSE)
+model_order <- unique(scores_all$label)
+
+# One set of figures per branch and probe: Random Forest (the paper's classifier, main) and linear (secondary)
+for (lv in intersect(names(level_units), unique(scores_all$level))) {
+for (pb in intersect(names(probe_names), unique(scores_all$probe))) {
+scores <- scores_all %>% filter(level == lv, probe == pb)
+nulls <- nulls_all %>% filter(level == lv, probe == pb, test == "subject_probe_mean")
+# Chance per model and target: mean of the subject-level permutation null
+chance <- nulls %>% group_by(model, label, target) %>%
+  summarise(chance = mean(null), .groups = "drop")
+protocol_levels <- protocol_display(lv)
+
+for (tg in names(target_names)) {
+  # (1) Balanced accuracy per model and protocol
+  d <- scores %>% filter(target == tg, protocol %in% protocol_keys) %>%
+    mutate(Model = factor(label, levels = model_order),
+           Protocol = factor(protocol_levels[match(protocol, protocol_keys)], levels = protocol_levels))
+  if (nrow(d) == 0) next
+  ch <- chance %>% filter(target == tg) %>% mutate(Model = factor(label, levels = model_order))
+  p <- ggplot(d, aes(x = Model, y = value, fill = Protocol)) +
+    geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+    geom_errorbar(aes(ymin = ci_low, ymax = ci_high), position = position_dodge(width = 0.8),
+                  width = errorbar_width, linewidth = errorbar_linewidth, color = "black", na.rm = TRUE) +
+    geom_errorbar(data = ch, aes(x = Model, ymin = chance, ymax = chance), inherit.aes = FALSE,
+                  width = 0.9, linewidth = 0.8, linetype = "dashed", color = chance_line_color) +
+    scale_fill_viridis_d(option = "turbo", end = yellow_block_threshold) +
+    scale_y_continuous(breaks = pretty_breaks(n = 6), expand = expansion(mult = c(0, 0.05)),
+                       labels = label_number(accuracy = 0.01)) +
+    coord_cartesian(ylim = c(0, 1)) +
+    labs(title = "", x = "", y = paste0(target_names[[tg]], " (Bal. Acc.)"), fill = "Protocol") +
+    theme_results +
+    theme(axis.text.x = element_text(angle = axis_text_x_angle, hjust = 1))
+  save_path <- file.path(save_dir, paste0(lv, "_", tg, "_protocols_", pb, ".png"))
+  ggsave(filename = save_path, plot = p, width = 18, height = 8, dpi = 600, bg = "white")
+  cat("Saved plot to:", save_path, "\n")
+
+  # (2) Subject-level permutation null distributions with the observed score, one panel per model
+  n <- nulls %>% filter(target == tg) %>% mutate(Model = factor(label, levels = model_order))
+  if (nrow(n) == 0) next
+  obs <- n %>% distinct(Model, observed)
+  pv <- scores %>% filter(target == tg, protocol == "subject_probe_mean") %>% distinct(label, p_value) %>%
+    mutate(Model = factor(label, levels = model_order), p_label = paste0("p = ", formatC(p_value, format = "g", digits = 2)))
+  p <- ggplot(n, aes(x = null)) +
+    geom_histogram(bins = 30, fill = viridis(1, option = "turbo", begin = 0.15), alpha = 0.8) +
+    geom_vline(data = obs, aes(xintercept = observed),
+               color = viridis(1, option = "turbo", begin = 0.9), linewidth = 1.2) +
+    geom_text(data = pv, aes(x = Inf, y = Inf, label = p_label), hjust = 1.1, vjust = 1.5,
+              size = 6, family = plot_font_family, inherit.aes = FALSE) +
+    facet_wrap(~ Model, nrow = 2) +
+    scale_x_continuous(labels = label_number(accuracy = 0.1)) +
+    labs(title = "", x = "Balanced accuracy under shuffled subject labels", y = "Count") +
+    theme_results
+  save_path <- file.path(save_dir, paste0(lv, "_", tg, "_permutation_null_", pb, ".png"))
+  ggsave(filename = save_path, plot = p, width = 18, height = 9, dpi = 600, bg = "white")
+  cat("Saved plot to:", save_path, "\n")
+}
+}
+}

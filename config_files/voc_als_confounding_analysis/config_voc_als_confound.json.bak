@@ -1,0 +1,38 @@
+{
+    "models_file": "config_files/voc_als_confounding_analysis/models_voc_als_confounding_analysis.json",
+    "subject_table": "data/voc_als_confounding_analysis/subject_table.csv",
+    "output_dir": "../post-training_results/voc_als_confounding_analysis",
+    "figure_data_dir": "data/voc_als_confounding_analysis",
+    "levels": {
+        "frame": {"speaker_factor": "speaker_frame", "phoneme_factor": "phoneme_frame", "stage_factor": "king_stage_frame",
+                  "n_sub": 30000, "n_sub_unit_perm": 10000,
+                  "unit_permutation_models": ["decvae_fd_simvowels_noc4", "beta_vae_simvowels", "raw_mels"]},
+        "seq": {"speaker_factor": "speaker_seq", "phoneme_factor": "phoneme_seq", "stage_factor": "king_stage_seq",
+                "n_sub": null, "n_sub_unit_perm": null,
+                "unit_permutation_models": "all"}
+    },
+    "targets": {
+        "king_stage": {"column": "king_stage", "merge": null},
+        "disease_duration": {"column": "disease_duration", "merge": null}
+    },
+    "n_folds": 5,
+    "fold_seed": 0,
+    "subsample_seed": 0,
+    "probe_C": 1.0,
+    "probe_max_iter": 1000,
+    "probes": ["rf", "lr"],
+    "subject_feature_modes": ["mean", "phoneme_concat"],
+    "subject_repeats": 10,
+    "n_boot": 1000,
+    "n_perm_subject": 1000,
+    "n_perm_unit": 100,
+    "perm_seed": 0,
+    "permute_within_category": false,
+    "strata": {
+        "sustained_vowels": {"column": "phoneme", "values": [0, 1, 2, 3, 4]},
+        "syllables": {"column": "phoneme", "values": [5, 6, 7]},
+        "als_only": {"column": "category", "values": [1]}
+    },
+    "n_jobs": 32,
+    "recompute": false
+}

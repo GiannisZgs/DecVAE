@@ -13,7 +13,7 @@ from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import f1_score, accuracy_score, confusion_matrix
-from sklearn.model_selection import StratifiedKFold, GridSearchCV, StratifiedShuffleSplit, LeaveOneGroupOut, GroupShuffleSplit
+from sklearn.model_selection import StratifiedKFold, GridSearchCV, StratifiedShuffleSplit, LeaveOneGroupOut, GroupShuffleSplit, StratifiedGroupKFold
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.decomposition import PCA
 from sklearn.dummy import DummyClassifier
@@ -164,6 +164,23 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
             prediction_eval(args_scheme, config, X, X_test, y, y_test, checkpoint, latent_type, target=target, X_indep=X_indep, y_indep=y_indep)
         return
     cv_scheme = cv_schemes[0]
+
+    "VOC-ALS outer CV scheme(s), for the targets passed with the speaker as support (King's stage, disease duration, phoneme);"
+    "several schemes rerun the supervised evaluation once per scheme"
+    voc_cv_schemes = getattr(data_training_args, "voc_als_cv_scheme", "shared")
+    voc_cv_schemes = [voc_cv_schemes] if isinstance(voc_cv_schemes, str) else list(voc_cv_schemes)
+    assert len(voc_cv_schemes) > 0 and all(s in ["shared", "speaker"] for s in voc_cv_schemes), "voc_als_cv_scheme must hold 'shared' and/or 'speaker'"
+    if len(voc_cv_schemes) > 1 and data_training_args.dataset_name == "VOC_ALS" and isinstance(target, (list, tuple)):
+        for k, scheme in enumerate(voc_cv_schemes):
+            print(f"\n##### VOC-ALS outer CV scheme: {scheme} #####")
+            args_scheme = copy.copy(data_training_args)
+            args_scheme.voc_als_cv_scheme = scheme
+            if k > 0:
+                "Clustering does not depend on the CV scheme"
+                args_scheme.unsup_eval = False
+            prediction_eval(args_scheme, config, X, X_test, y, y_test, checkpoint, latent_type, target=target, X_indep=X_indep, y_indep=y_indep)
+        return
+    voc_cv_scheme = voc_cv_schemes[0]
     utt_ids = None
 
     def log_memory_usage(label):
@@ -175,10 +192,13 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
         import wandb
 
     assert isinstance(target, str) or (isinstance(target, (list, tuple)) and len(target) <= 2), "Target must be a string or a list/tuple of max length 2"
+    target_support = None
     if len(target) > 1 and isinstance(target, (list, tuple)):
         "In case of stratified CV based on support variable"
         target_support = target[1]
         target = target[0]
+    "VOC-ALS speaker-independent folds: only for a target passed with the speaker as support"
+    voc_speaker_cv = data_training_args.dataset_name == "VOC_ALS" and voc_cv_scheme == "speaker" and target_support is not None
     
     if X.device == 'cuda':
         X = X.cpu()
@@ -390,6 +410,10 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
     
     elif "VOC_ALS" in data_training_args.dataset_name:
         y = y.detach().cpu()
+        if len(y.shape) == 2 and y.shape[1] == 2:
+            "Second column: the speaker, read by the speaker-independent split"
+            y_support = pd.DataFrame(data = y[:, 1].numpy(), columns=[target_support]).astype({target_support: int})
+            y = y[:, 0]
         le_y_unsup = LabelEncoder().fit(np.array(y).ravel())
         y_unsup = pd.DataFrame(data = le_y_unsup.transform(np.array(y).ravel()), columns=[target])
         y = y_unsup.copy()
@@ -961,6 +985,11 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
                     print("Warning: No speaker information provided. Using standard stratification.")
                     skf = StratifiedKFold(n_splits=data_training_args.classif_eval_cv_splits, shuffle=True, random_state=rs)
                     skf_list = list(skf.split(X_merged, y_merged))
+            elif voc_speaker_cv:
+                "No speaker in both the training and the test fold, stratified on the target"
+                sgkf = StratifiedGroupKFold(n_splits=data_training_args.classif_eval_cv_splits, shuffle=True, random_state=rs)
+                skf_list = list(sgkf.split(X_merged, y_merged[target], groups=y_support[target_support].values))
+                print(f"Created {len(skf_list)} speaker-independent folds")
             elif data_training_args.dataset_name == "sim_coupled":
                 "Stratified on the joint (lag, gain) cell"
                 skf = StratifiedKFold(n_splits=data_training_args.classif_eval_cv_splits, shuffle=True, random_state=rs)
@@ -1006,7 +1035,7 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
 
                 "Catch split errors due to few samples of some classes"
                 try:
-                    if data_training_args.dataset_name == "iemocap" and 'emotion' in target:
+                    if (data_training_args.dataset_name == "iemocap" and 'emotion' in target) or voc_speaker_cv:
                         "Setup again LOGO here"
                         if target_support is not None:
                             # Extract speaker IDs from target_support for the training set
@@ -1377,6 +1406,9 @@ def prediction_eval(data_training_args, config,X,X_test,y,y_test,checkpoint,late
         if data_training_args.dataset_name == "iemocap" and 'emotion' in target and cv_scheme == "session":
             base_fname = f'{base_fname}_session_cv'
             wandb_label = f'{wandb_label}_session_cv'
+        if voc_speaker_cv:
+            base_fname = f'{base_fname}_speaker_cv'
+            wandb_label = f'{wandb_label}_speaker_cv'
 
         # Save detailed results by fold
         results_df.to_csv(os.path.join(current_result_dir, f'{base_fname}_cv_details_supervised.csv'), index=False)
