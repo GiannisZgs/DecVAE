@@ -1,0 +1,265 @@
+model,label,level,target,probe,stratum,value,std,n_subjects
+raw_mels,Raw Mel Fbank,frame,king_stage,rf,sustained_vowels,0.23314908722109537,0.026847750728554415,153
+raw_mels,Raw Mel Fbank,frame,king_stage,rf,syllables,0.24497630182341137,0.024042028210409825,153
+raw_mels,Raw Mel Fbank,frame,king_stage,rf,als_only,0.2942084017515052,0.027791170198609844,102
+raw_mels,Raw Mel Fbank,frame,king_stage,lr,sustained_vowels,0.22500103968790586,0.02050066056533156,153
+raw_mels,Raw Mel Fbank,frame,king_stage,lr,syllables,0.21402919309486249,0.030427028730890794,153
+raw_mels,Raw Mel Fbank,frame,king_stage,lr,als_only,0.2273430373107097,0.018944930288893946,102
+raw_mels,Raw Mel Fbank,frame,disease_duration,rf,sustained_vowels,0.20894205112875192,0.010408569154699364,153
+raw_mels,Raw Mel Fbank,frame,disease_duration,rf,syllables,0.2231863575469714,0.018576716415673235,153
+raw_mels,Raw Mel Fbank,frame,disease_duration,rf,als_only,0.23437088274044796,0.019875820863720417,102
+raw_mels,Raw Mel Fbank,frame,disease_duration,lr,sustained_vowels,0.20695414134033063,0.02804954942748594,153
+raw_mels,Raw Mel Fbank,frame,disease_duration,lr,syllables,0.2502858692884268,0.02387691118266209,153
+raw_mels,Raw Mel Fbank,frame,disease_duration,lr,als_only,0.23427206851119892,0.02170545091908834,102
+raw_mels,Raw Mel Fbank,seq,king_stage,rf,sustained_vowels,0.23315927616257232,0.019361632613290363,153
+raw_mels,Raw Mel Fbank,seq,king_stage,rf,syllables,0.25636562671045426,0.01673239856336132,153
+raw_mels,Raw Mel Fbank,seq,king_stage,rf,als_only,0.3111865136380222,0.022843937793952156,102
+raw_mels,Raw Mel Fbank,seq,king_stage,lr,sustained_vowels,0.2266268097277225,0.021395485603524767,153
+raw_mels,Raw Mel Fbank,seq,king_stage,lr,syllables,0.2185367834873413,0.03449180969214042,153
+raw_mels,Raw Mel Fbank,seq,king_stage,lr,als_only,0.22731224913336984,0.024684163579877638,102
+raw_mels,Raw Mel Fbank,seq,disease_duration,rf,sustained_vowels,0.2119444536707964,0.008709967280408638,153
+raw_mels,Raw Mel Fbank,seq,disease_duration,rf,syllables,0.22039293187630782,0.020433497926806123,153
+raw_mels,Raw Mel Fbank,seq,disease_duration,rf,als_only,0.23341920760399018,0.025779837205714376,102
+raw_mels,Raw Mel Fbank,seq,disease_duration,lr,sustained_vowels,0.20984809734170348,0.022444194911895938,153
+raw_mels,Raw Mel Fbank,seq,disease_duration,lr,syllables,0.23950841996877803,0.026606971951812455,153
+raw_mels,Raw Mel Fbank,seq,disease_duration,lr,als_only,0.23177818558253338,0.02298920690579884,102
+pca,PCA,frame,king_stage,rf,sustained_vowels,0.23220930996919842,0.01664278625380749,153
+pca,PCA,frame,king_stage,rf,syllables,0.21503836112989258,0.02126709308744145,153
+pca,PCA,frame,king_stage,rf,als_only,0.2759369013409962,0.02720620123872169,102
+pca,PCA,frame,king_stage,lr,sustained_vowels,0.20779630434549298,0.020420052589679594,153
+pca,PCA,frame,king_stage,lr,syllables,0.2135916320551209,0.03133487278634957,153
+pca,PCA,frame,king_stage,lr,als_only,0.23287279351395726,0.03174323238758382,102
+pca,PCA,frame,disease_duration,rf,sustained_vowels,0.23432928111956247,0.01905450022389963,153
+pca,PCA,frame,disease_duration,rf,syllables,0.1968404357790547,0.017477891000445903,153
+pca,PCA,frame,disease_duration,rf,als_only,0.25221155655938265,0.031547542245548184,102
+pca,PCA,frame,disease_duration,lr,sustained_vowels,0.2063363448146057,0.021752095568472875,153
+pca,PCA,frame,disease_duration,lr,syllables,0.2607745153397327,0.026418348564691906,153
+pca,PCA,frame,disease_duration,lr,als_only,0.2552359777903256,0.017731156710669868,102
+pca,PCA,seq,king_stage,rf,sustained_vowels,0.2313288821275637,0.020968965644614028,153
+pca,PCA,seq,king_stage,rf,syllables,0.21635165464653294,0.02420724928423326,153
+pca,PCA,seq,king_stage,rf,als_only,0.266087962962963,0.020461453504247176,102
+pca,PCA,seq,king_stage,lr,sustained_vowels,0.20472375156959335,0.02190989954118974,153
+pca,PCA,seq,king_stage,lr,syllables,0.20648164917307915,0.02841703710241568,153
+pca,PCA,seq,king_stage,lr,als_only,0.2323432653712826,0.02808376352532764,102
+pca,PCA,seq,disease_duration,rf,sustained_vowels,0.2374257370932563,0.012531404630525734,153
+pca,PCA,seq,disease_duration,rf,syllables,0.193774592841089,0.018974255745918118,153
+pca,PCA,seq,disease_duration,rf,als_only,0.2497364953886693,0.02515289292993681,102
+pca,PCA,seq,disease_duration,lr,sustained_vowels,0.20417704631259617,0.017473776906267294,153
+pca,PCA,seq,disease_duration,lr,syllables,0.25661878190011184,0.02937000872406534,153
+pca,PCA,seq,disease_duration,lr,als_only,0.24732142857142855,0.02037212363415144,102
+ica,ICA,frame,king_stage,rf,sustained_vowels,0.24526721320712191,0.01851524832154167,153
+ica,ICA,frame,king_stage,rf,syllables,0.21519326121253096,0.022677637476162256,153
+ica,ICA,frame,king_stage,rf,als_only,0.30779952905491703,0.028241951310171032,102
+ica,ICA,frame,king_stage,lr,sustained_vowels,0.21003914592656986,0.02298212546916686,153
+ica,ICA,frame,king_stage,lr,syllables,0.21197379047404402,0.026085940305888306,153
+ica,ICA,frame,king_stage,lr,als_only,0.22642352558839626,0.03059211319727486,102
+ica,ICA,frame,disease_duration,rf,sustained_vowels,0.22156115410591112,0.0217097418868865,153
+ica,ICA,frame,disease_duration,rf,syllables,0.21714844831213118,0.023427352267116862,153
+ica,ICA,frame,disease_duration,rf,als_only,0.2539196310935442,0.02383419727545039,102
+ica,ICA,frame,disease_duration,lr,sustained_vowels,0.20652351059000673,0.024989566932929638,153
+ica,ICA,frame,disease_duration,lr,syllables,0.26025758129338694,0.03135991027482497,153
+ica,ICA,frame,disease_duration,lr,als_only,0.2627670336909467,0.019113851060641205,102
+ica,ICA,seq,king_stage,rf,sustained_vowels,0.24004451205769667,0.020269997601507387,153
+ica,ICA,seq,king_stage,rf,syllables,0.22490342305504574,0.027845068331947206,153
+ica,ICA,seq,king_stage,rf,als_only,0.29114483556832693,0.02821917385101092,102
+ica,ICA,seq,king_stage,lr,sustained_vowels,0.2059948337572577,0.020844635907809786,153
+ica,ICA,seq,king_stage,lr,syllables,0.20690380941648692,0.026611896425558387,153
+ica,ICA,seq,king_stage,lr,als_only,0.2283332478106185,0.0265518612017856,102
+ica,ICA,seq,disease_duration,rf,sustained_vowels,0.21688732409960032,0.019230722625990695,153
+ica,ICA,seq,disease_duration,rf,syllables,0.20757636651498546,0.022156817802268882,153
+ica,ICA,seq,disease_duration,rf,als_only,0.23807288725766984,0.029770277824986407,102
+ica,ICA,seq,disease_duration,lr,sustained_vowels,0.20291532423245978,0.01864604365918862,153
+ica,ICA,seq,disease_duration,lr,syllables,0.25016873152423025,0.03616655042833856,153
+ica,ICA,seq,disease_duration,lr,als_only,0.254492518351214,0.023613065619327578,102
+beta_vae_simvowels,Vowels β-VAE,frame,king_stage,rf,sustained_vowels,0.250774876042371,0.024544618148905396,153
+beta_vae_simvowels,Vowels β-VAE,frame,king_stage,rf,syllables,0.2844250056344376,0.016356902267081818,153
+beta_vae_simvowels,Vowels β-VAE,frame,king_stage,rf,als_only,0.3606326115216202,0.020253804188879967,102
+beta_vae_simvowels,Vowels β-VAE,frame,king_stage,lr,sustained_vowels,0.28126931807205635,0.023211545765381265,153
+beta_vae_simvowels,Vowels β-VAE,frame,king_stage,lr,syllables,0.23548637941766745,0.029205707736516612,153
+beta_vae_simvowels,Vowels β-VAE,frame,king_stage,lr,als_only,0.2938325294198139,0.014797961888057857,102
+beta_vae_simvowels,Vowels β-VAE,frame,disease_duration,rf,sustained_vowels,0.22964222052457348,0.014622385684070479,153
+beta_vae_simvowels,Vowels β-VAE,frame,disease_duration,rf,syllables,0.24249078287441458,0.017834400287229695,153
+beta_vae_simvowels,Vowels β-VAE,frame,disease_duration,rf,als_only,0.2604296066252588,0.022068103050411562,102
+beta_vae_simvowels,Vowels β-VAE,frame,disease_duration,lr,sustained_vowels,0.24959688223115334,0.035239915843390306,153
+beta_vae_simvowels,Vowels β-VAE,frame,disease_duration,lr,syllables,0.20115189158667418,0.024793296848825086,153
+beta_vae_simvowels,Vowels β-VAE,frame,disease_duration,lr,als_only,0.23603660831921705,0.035661990597752664,102
+beta_vae_simvowels,Vowels β-VAE,seq,king_stage,rf,sustained_vowels,0.2598304973330329,0.023373780204018306,153
+beta_vae_simvowels,Vowels β-VAE,seq,king_stage,rf,syllables,0.2880194079547528,0.021909372333876104,153
+beta_vae_simvowels,Vowels β-VAE,seq,king_stage,rf,als_only,0.3497851954479109,0.02221193541337219,102
+beta_vae_simvowels,Vowels β-VAE,seq,king_stage,lr,sustained_vowels,0.27299387858591717,0.018612890919569428,153
+beta_vae_simvowels,Vowels β-VAE,seq,king_stage,lr,syllables,0.24836632833209915,0.03092523165101938,153
+beta_vae_simvowels,Vowels β-VAE,seq,king_stage,lr,als_only,0.33897327130085747,0.022674068500462725,102
+beta_vae_simvowels,Vowels β-VAE,seq,disease_duration,rf,sustained_vowels,0.24077274388016073,0.01545577929721184,153
+beta_vae_simvowels,Vowels β-VAE,seq,disease_duration,rf,syllables,0.23207836494281503,0.009887923419640576,153
+beta_vae_simvowels,Vowels β-VAE,seq,disease_duration,rf,als_only,0.2706251176359872,0.026029238240174602,102
+beta_vae_simvowels,Vowels β-VAE,seq,disease_duration,lr,sustained_vowels,0.2511883725822345,0.03014528858023052,153
+beta_vae_simvowels,Vowels β-VAE,seq,disease_duration,lr,syllables,0.19240110273358355,0.011209496079760527,153
+beta_vae_simvowels,Vowels β-VAE,seq,disease_duration,lr,als_only,0.2560382552230378,0.03533682631628223,102
+beta_vae_timit,TIMIT β-VAE,frame,king_stage,rf,sustained_vowels,0.2463508564345278,0.016889997646884886,153
+beta_vae_timit,TIMIT β-VAE,frame,king_stage,rf,syllables,0.23919568402073468,0.032208966606806055,153
+beta_vae_timit,TIMIT β-VAE,frame,king_stage,rf,als_only,0.31841375319284804,0.021159501515502454,102
+beta_vae_timit,TIMIT β-VAE,frame,king_stage,lr,sustained_vowels,0.26039539666441286,0.02563090625946518,153
+beta_vae_timit,TIMIT β-VAE,frame,king_stage,lr,syllables,0.26174650799016924,0.01943526935792767,153
+beta_vae_timit,TIMIT β-VAE,frame,king_stage,lr,als_only,0.29125658524904213,0.02228901232954553,102
+beta_vae_timit,TIMIT β-VAE,frame,disease_duration,rf,sustained_vowels,0.22712331572945388,0.0149865549596423,153
+beta_vae_timit,TIMIT β-VAE,frame,disease_duration,rf,syllables,0.21675789683462315,0.01634986007314447,153
+beta_vae_timit,TIMIT β-VAE,frame,disease_duration,rf,als_only,0.2304453698475437,0.01959527284452427,102
+beta_vae_timit,TIMIT β-VAE,frame,disease_duration,lr,sustained_vowels,0.2551298147717585,0.028265883761862575,153
+beta_vae_timit,TIMIT β-VAE,frame,disease_duration,lr,syllables,0.22599091019807133,0.017562961730163907,153
+beta_vae_timit,TIMIT β-VAE,frame,disease_duration,lr,als_only,0.24363354037267082,0.021254743414134247,102
+beta_vae_timit,TIMIT β-VAE,seq,king_stage,rf,sustained_vowels,0.24930907707910746,0.013921082435017556,153
+beta_vae_timit,TIMIT β-VAE,seq,king_stage,rf,syllables,0.24559429902229094,0.025366165615365432,153
+beta_vae_timit,TIMIT β-VAE,seq,king_stage,rf,als_only,0.33110233077905493,0.021936686649128914,102
+beta_vae_timit,TIMIT β-VAE,seq,king_stage,lr,sustained_vowels,0.26454839981969797,0.024851900192871635,153
+beta_vae_timit,TIMIT β-VAE,seq,king_stage,lr,syllables,0.2604722396621484,0.022772237050841096,153
+beta_vae_timit,TIMIT β-VAE,seq,king_stage,lr,als_only,0.30194008278598794,0.022021944365933212,102
+beta_vae_timit,TIMIT β-VAE,seq,disease_duration,rf,sustained_vowels,0.23043611120337465,0.012064560451084654,153
+beta_vae_timit,TIMIT β-VAE,seq,disease_duration,rf,syllables,0.21611618560467663,0.014288402555835222,153
+beta_vae_timit,TIMIT β-VAE,seq,disease_duration,rf,als_only,0.23647539055147745,0.017783427357252274,102
+beta_vae_timit,TIMIT β-VAE,seq,disease_duration,lr,sustained_vowels,0.255960020371785,0.027742869609605356,153
+beta_vae_timit,TIMIT β-VAE,seq,disease_duration,lr,syllables,0.22829037543871303,0.016588193484987315,153
+beta_vae_timit,TIMIT β-VAE,seq,disease_duration,lr,als_only,0.24062088274044796,0.022067793589641685,102
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,king_stage,rf,sustained_vowels,0.26539079520697173,0.020149146718065662,153
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,king_stage,rf,syllables,0.22053278303658627,0.01932665537001128,153
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,king_stage,rf,als_only,0.3330260217113665,0.0247772170574882,102
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,king_stage,lr,sustained_vowels,0.2225432308938901,0.02993931362329933,153
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,king_stage,lr,syllables,0.2097439013919744,0.02095392708793862,153
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,king_stage,lr,als_only,0.2745683953658091,0.03150285825752228,102
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,disease_duration,rf,sustained_vowels,0.19922797577529036,0.017760196871784054,153
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,disease_duration,rf,syllables,0.2165659149035108,0.016407962797511867,153
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,disease_duration,rf,als_only,0.22972543760587238,0.01916691596906058,102
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,disease_duration,lr,sustained_vowels,0.22493279525248835,0.01755734359066212,153
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,disease_duration,lr,syllables,0.18698768835597476,0.022359004455630164,153
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,disease_duration,lr,als_only,0.2368835874270657,0.03422175567536838,102
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,king_stage,rf,sustained_vowels,0.2186684884681842,0.01707138715035106,153
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,king_stage,rf,syllables,0.25711051949515434,0.016465230264112972,153
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,king_stage,rf,als_only,0.31436182950191577,0.019444817464989543,102
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,king_stage,lr,sustained_vowels,0.21326411024179787,0.02537564848369773,153
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,king_stage,lr,syllables,0.27069676529615677,0.026302062023918247,153
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,king_stage,lr,als_only,0.2796970500364897,0.0266680842814463,102
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,disease_duration,rf,sustained_vowels,0.17771669932795256,0.018086036178778363,153
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,disease_duration,rf,syllables,0.2462159962799349,0.014046992872558815,153
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,disease_duration,rf,als_only,0.2608166290231507,0.026354112643046844,102
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,disease_duration,lr,sustained_vowels,0.1627442123094297,0.028152949287015526,153
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,disease_duration,lr,syllables,0.28471778434694034,0.029342988880131992,153
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,disease_duration,lr,als_only,0.2594485224920008,0.024185556419243304,102
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,king_stage,rf,sustained_vowels,0.2288526406731275,0.012761130188221802,153
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,king_stage,rf,syllables,0.2180193073397942,0.012926409960093914,153
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,king_stage,rf,als_only,0.39608776340996166,0.03198632113509484,102
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,king_stage,lr,sustained_vowels,0.2768383023707567,0.019816809364976446,153
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,king_stage,lr,syllables,0.25661542011440586,0.016650039815713776,153
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,king_stage,lr,als_only,0.32714234400656816,0.03716623479180771,102
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,disease_duration,rf,sustained_vowels,0.2234134365208534,0.019892789602938468,153
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,disease_duration,rf,syllables,0.23459500005535813,0.021209656299558625,153
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,disease_duration,rf,als_only,0.22739977413890458,0.019750670664857247,102
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,disease_duration,lr,sustained_vowels,0.20726691467100672,0.017564180257921776,153
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,disease_duration,lr,syllables,0.22505779386853556,0.024282955679385067,153
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,disease_duration,lr,als_only,0.21052136269527572,0.02171983344421638,102
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,king_stage,rf,sustained_vowels,0.26060776801141916,0.018810577088783104,153
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,king_stage,rf,syllables,0.20076412365712568,0.018048574526747414,153
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,king_stage,rf,als_only,0.33133979885057474,0.023075430661899085,102
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,king_stage,lr,sustained_vowels,0.29437159250673445,0.02324265110980458,153
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,king_stage,lr,syllables,0.20326818850145423,0.01607105408349327,153
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,king_stage,lr,als_only,0.35360549511950373,0.04279604221707182,102
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,disease_duration,rf,sustained_vowels,0.19523560412307214,0.011340780781340947,153
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,disease_duration,rf,syllables,0.17881954362772778,0.020714198176920922,153
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,disease_duration,rf,als_only,0.25861918878223233,0.02423014148563462,102
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,disease_duration,lr,sustained_vowels,0.17245053752726386,0.020415910050881537,153
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,disease_duration,lr,syllables,0.1564558076194905,0.015897539375627653,153
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,disease_duration,lr,als_only,0.172755505364201,0.024062501934484,102
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,king_stage,rf,sustained_vowels,0.2568169652918638,0.014386553364495246,153
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,king_stage,rf,syllables,0.22772021260611525,0.010799817503476795,153
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,king_stage,rf,als_only,0.3384748164112389,0.019710285901414652,102
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,king_stage,lr,sustained_vowels,0.21508846067162496,0.029954569757957454,153
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,king_stage,lr,syllables,0.2369640375307211,0.025204540233857303,153
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,king_stage,lr,als_only,0.2531143096606459,0.01407796277508788,102
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,disease_duration,rf,sustained_vowels,0.2169075851684547,0.007623055049309358,153
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,disease_duration,rf,syllables,0.22464698132217312,0.01176183826064814,153
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,disease_duration,rf,als_only,0.22660455486542444,0.013188402946811938,102
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,disease_duration,lr,sustained_vowels,0.19973959544292025,0.018889472314075693,153
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,disease_duration,lr,syllables,0.23459444647424185,0.03707321028386391,153
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,disease_duration,lr,als_only,0.2240812629399586,0.025532908440536236,102
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,king_stage,rf,sustained_vowels,0.20976466831943505,0.011245906432537764,153
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,king_stage,rf,syllables,0.22748797986627603,0.017452011397472378,153
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,king_stage,rf,als_only,0.3089828783524904,0.029434887779659642,102
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,king_stage,lr,sustained_vowels,0.1962260871781663,0.022559848337755147,153
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,king_stage,lr,syllables,0.21099748999216547,0.01879656374580659,153
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,king_stage,lr,als_only,0.29278159779237367,0.03660609592248018,102
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,disease_duration,rf,sustained_vowels,0.20934732786395188,0.02287410632172815,153
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,disease_duration,rf,syllables,0.21293032628070993,0.01901990243471538,153
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,disease_duration,rf,als_only,0.24003740824393,0.032192515692234046,102
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,disease_duration,lr,sustained_vowels,0.2067002690404225,0.02137353076850164,153
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,disease_duration,lr,syllables,0.20632427674627163,0.017600776333195668,153
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,disease_duration,lr,als_only,0.2475084697910785,0.03248340840244225,102
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,king_stage,rf,sustained_vowels,0.23556658966268498,0.014639291528217205,153
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,king_stage,rf,syllables,0.2490840282473143,0.01490096069341676,153
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,king_stage,rf,als_only,0.33136773627075355,0.0218265980022978,102
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,king_stage,lr,sustained_vowels,0.18321560712407567,0.02390392148342452,153
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,king_stage,lr,syllables,0.2562305947283128,0.026103660065716804,153
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,king_stage,lr,als_only,0.24764114098704612,0.024768139915685498,102
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,disease_duration,rf,sustained_vowels,0.246100519259087,0.022922337973032145,153
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,disease_duration,rf,syllables,0.23482047364400302,0.018846593536611403,153
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,disease_duration,rf,als_only,0.2624188311688312,0.024133643917603996,102
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,disease_duration,lr,sustained_vowels,0.23973782398334825,0.02495631845946119,153
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,disease_duration,lr,syllables,0.19209309020050705,0.02619627676461903,153
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,disease_duration,lr,als_only,0.27585050818746465,0.02909059567507421,102
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,king_stage,rf,sustained_vowels,0.2333877995642702,0.02329429458444939,153
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,king_stage,rf,syllables,0.21646683865116928,0.01656350465211119,153
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,king_stage,rf,als_only,0.34527800583835067,0.022539909312154292,102
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,king_stage,lr,sustained_vowels,0.24358402556424866,0.023415277511140555,153
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,king_stage,lr,syllables,0.20673957226568787,0.025482098840792684,153
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,king_stage,lr,als_only,0.24785366493340635,0.029671487606330545,102
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,disease_duration,rf,sustained_vowels,0.22851972409517166,0.012861960721870146,153
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,disease_duration,rf,syllables,0.17251790834911035,0.01860581950276152,153
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,disease_duration,rf,als_only,0.26155773574251834,0.022606259502619352,102
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,disease_duration,lr,sustained_vowels,0.22489515173658395,0.015834884094449827,153
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,disease_duration,lr,syllables,0.15844709425272088,0.015197379544047783,153
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,disease_duration,lr,als_only,0.2010093167701863,0.037480261873096395,102
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,king_stage,rf,sustained_vowels,0.24003911238825032,0.015373418926923626,153
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,king_stage,rf,syllables,0.1887483566223424,0.01941757063681503,153
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,king_stage,rf,als_only,0.3118025622605364,0.01863716507284158,102
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,king_stage,lr,sustained_vowels,0.26844344634405487,0.02261955527238665,153
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,king_stage,lr,syllables,0.20584710416733745,0.016719424554646267,153
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,king_stage,lr,als_only,0.26824484583105274,0.013834927080220156,102
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,disease_duration,rf,sustained_vowels,0.20259397039448185,0.010910516011648446,153
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,disease_duration,rf,syllables,0.20738582389477528,0.022509111284599384,153
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,disease_duration,rf,als_only,0.23262281197063803,0.01993136894776878,102
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,disease_duration,lr,sustained_vowels,0.24495698674726807,0.023029796775448447,153
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,disease_duration,lr,syllables,0.18056686706303074,0.02124492810107989,153
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,disease_duration,lr,als_only,0.21524680030114812,0.036128190140231074,102
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,king_stage,rf,sustained_vowels,0.23280829764856134,0.020837474787433006,153
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,king_stage,rf,syllables,0.21601058335211482,0.016060883888714676,153
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,king_stage,rf,als_only,0.3145683668582375,0.021988667272617838,102
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,king_stage,lr,sustained_vowels,0.2176978895006278,0.02426793612991935,153
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,king_stage,lr,syllables,0.20700781845305172,0.025345407091912405,153
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,king_stage,lr,als_only,0.23849876277139206,0.030351903266036987,102
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,disease_duration,rf,sustained_vowels,0.22324536929396266,0.009332515153019603,153
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,disease_duration,rf,syllables,0.240305576776165,0.015760291862094412,153
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,disease_duration,rf,als_only,0.23299571805006586,0.014948625184503357,102
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,disease_duration,lr,sustained_vowels,0.21892267578968347,0.022817235726254544,153
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,disease_duration,lr,syllables,0.20507639419404122,0.030034199529524512,153
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,disease_duration,lr,als_only,0.2239471579145492,0.017067603952693935,102
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,king_stage,rf,sustained_vowels,0.22980913342348433,0.02471614155708559,153
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,king_stage,rf,syllables,0.2267516058147397,0.021669747755061242,153
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,king_stage,rf,als_only,0.2795927123243934,0.03108448069364795,102
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,king_stage,lr,sustained_vowels,0.18230623571267585,0.023390803342840105,153
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,king_stage,lr,syllables,0.20605687294074718,0.014401219228394914,153
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,king_stage,lr,als_only,0.22442200898558656,0.01963647354727856,102
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,disease_duration,rf,sustained_vowels,0.1912043157183822,0.013816903665459065,153
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,disease_duration,rf,syllables,0.22566579200850306,0.015690614540280333,153
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,disease_duration,rf,als_only,0.24455698287220023,0.027532080635421948,102
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,disease_duration,lr,sustained_vowels,0.2013091086236866,0.027886086034161987,153
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,disease_duration,lr,syllables,0.18762353162608916,0.018957053332066008,153
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,disease_duration,lr,als_only,0.22502117447769626,0.03921674370526896,102
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,king_stage,rf,sustained_vowels,0.2717137142213207,0.0168333026863429,153
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,king_stage,rf,syllables,0.20232988693561715,0.013483206645897838,153
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,king_stage,rf,als_only,0.34903259555738,0.026960949382537604,102
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,king_stage,lr,sustained_vowels,0.2639015462506842,0.0239693262387476,153
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,king_stage,lr,syllables,0.20189128620796976,0.014215788533126904,153
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,king_stage,lr,als_only,0.3121436553548622,0.044823808710097675,102
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,disease_duration,rf,sustained_vowels,0.237703966962279,0.015648687108261644,153
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,disease_duration,rf,syllables,0.17656165232891574,0.018493947630760416,153
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,disease_duration,rf,als_only,0.25581827592697154,0.021994285035490745,102
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,disease_duration,lr,sustained_vowels,0.23405409594667903,0.0262593650992638,153
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,disease_duration,lr,syllables,0.17332176348800388,0.02676978253262436,153
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,disease_duration,lr,als_only,0.25718285337850555,0.016419535409028723,102
