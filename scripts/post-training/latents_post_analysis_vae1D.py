@@ -224,6 +224,17 @@ def main():
                 )
             vectorized_datasets = vectorized_datasets.remove_columns("input_length")
 
+    "The VAE caches hold (components, frames, features) per utterance. DecVAE's caches use the same file"
+    "names but hold (1, components, frames, features), which the collator would misread as few frames"
+    if model_args.vae_type == "VAE_1D_FC":
+        example_shape = np.asarray(vectorized_datasets["train"][0]["input_values"]).shape
+        if len(example_shape) == 4:
+            raise ValueError(
+                f"The cache in train_cache_file_name holds input_values of shape {example_shape}, the layout of "
+                "DecVAE's preprocessing, not the VAE's (components, frames, features). Point the cache file names "
+                "at a separate VAE cache directory, which this script builds from data_dir when it is missing."
+            )
+
     "Checkpoint directory"
     if model_args.vae_type == "VAE_1D":
         model_type = "vae1d"
