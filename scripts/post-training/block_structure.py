@@ -29,8 +29,8 @@ same config and seed and does not load weights (control).
 S branch: the per-batch JS(R_i, P) and JS(R_i, R_j) are cross-checked against the model's own divergences and
 ComponentDivergences from the same forward pass (measure check_max_abs_diff, warning above 1e-4).
 Writes one long CSV (one row per run, branch, split, measure and component / pair) and, per run, branch and
-split, mean_distributions_<run_id>_<branch>_<split>.csv (rows R_bar_1..C and P_bar) next to it.
-Runs already in the CSV are skipped, unless overwrite is set.
+split, mean_distributions_<dataset>_<run_id>_<branch>_<split>.csv (rows R_bar_1..C and P_bar) next to it.
+Runs already in the CSV are skipped, unless overwrite is set; overwrite replaces only the runs evaluated again.
 """
 
 import os
@@ -207,7 +207,7 @@ def run_one(run, base_config, splits, accelerator, out_dir, max_batches=None):
             R_bar, P_bar = a.mean_distributions()
             md = pd.DataFrame(np.vstack([R_bar, P_bar[None]]), columns=[f"u{u + 1}" for u in range(R_bar.shape[1])])
             md.insert(0, "row", [f"R{i + 1}" for i in range(R_bar.shape[0])] + ["P"])
-            md.to_csv(os.path.join(out_dir, f"mean_distributions_{run['run_id']}_{b}_{split}.csv"), index=False)
+            md.to_csv(os.path.join(out_dir, f"mean_distributions_{data_training_args.dataset_name}_{run['run_id']}_{b}_{split}.csv"), index=False)
         print(f"[{run['run_id']}] {split}: {time.time() - start:.0f} s")
     del model
     torch.cuda.empty_cache()
@@ -275,7 +275,7 @@ def main():
     out_csv = spec["output_csv"] if opts["max_batches"] is None else spec["output_csv"].replace(".csv", "_smoke.csv")
     out_dir = os.path.dirname(out_csv) if opts["max_batches"] is None else os.path.join(os.path.dirname(out_csv), "smoke")
     os.makedirs(out_dir, exist_ok=True)
-    done = pd.read_csv(out_csv) if os.path.exists(out_csv) and not opts["overwrite"] else pd.DataFrame(columns=["run_id", "split"])
+    done = pd.read_csv(out_csv) if os.path.exists(out_csv) else pd.DataFrame(columns=["run_id", "split"])
 
     if opts["dry_run"]:
         n_bad = 0
@@ -296,7 +296,7 @@ def main():
         if unset:
             print(f"[{run['run_id']}] SKIPPED, not set: {', '.join(unset)}")
             continue
-        todo = [s for s in spec["splits"] if not ((done["run_id"] == run["run_id"]) & (done["split"] == s)).any()]
+        todo = [s for s in spec["splits"] if opts["overwrite"] or not ((done["run_id"] == run["run_id"]) & (done["split"] == s)).any()]
         if not todo:
             print(f"[{run['run_id']}] already in {out_csv}, skipped")
             continue
@@ -305,6 +305,7 @@ def main():
         except FileNotFoundError as e:
             print(f"[{run['run_id']}] SKIPPED, checkpoint or cache not found: {e}")
             continue
+        done = done[~((done["run_id"] == run["run_id"]) & done["split"].isin(todo))]
         done = pd.concat([done, pd.DataFrame(rows)], ignore_index=True) if len(done) else pd.DataFrame(rows)
         done.to_csv(out_csv, index=False)  # after every run, so an interruption loses at most one run
     print(f"Saved {out_csv}")

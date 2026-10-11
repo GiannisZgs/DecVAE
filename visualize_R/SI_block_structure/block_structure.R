@@ -3,7 +3,7 @@
 #' one panel per model x beta, S and Z branches separately; (b) consistency index CI per model x beta x branch,
 #' with the null (CI = 0) and the untrained control; (c) per-sample JS of the negatives and positives against
 #' beta (S branch), with the references ln 2 and j_C of Proposition 2. Same style as beta_tradeoff.R.
-#' Reads data/block_structure/block_structure_<dataset>.csv and mean_distributions_<run_id>_<branch>_<split>.csv
+#' Reads data/block_structure/block_structure_<dataset>.csv and mean_distributions_<dataset>_<run_id>_<branch>_<split>.csv
 #' written by scripts/post-training/block_structure.py.
 
 library(ggplot2)
@@ -91,7 +91,7 @@ heatmap_plot <- function(d, ds, br) {
     distinct(run_id, Model, beta)
   if (nrow(runs) == 0) return(invisible(NULL))
   hm <- bind_rows(lapply(seq_len(nrow(runs)), function(k) {
-    f <- file.path(load_dir, paste0("mean_distributions_", runs$run_id[k], "_", br, "_", selected_split, ".csv"))
+    f <- file.path(load_dir, paste0("mean_distributions_", ds, "_", runs$run_id[k], "_", br, "_", selected_split, ".csv"))
     if (!file.exists(f)) return(NULL)
     read_csv(f, show_col_types = FALSE) %>% filter(row != "P") %>%
       pivot_longer(-row, names_to = "unit", values_to = "mass") %>%

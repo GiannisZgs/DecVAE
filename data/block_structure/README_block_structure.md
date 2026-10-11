@@ -33,7 +33,7 @@ As `config_files/beta_tradeoff/runs_*.json` (the paper's post-training evaluatio
   Measures: `js_pos(_sd)`, `js_neg(_sd)`, `cos_ps`, `js_pos_mean`, `js_neg_mean`, `cos_ps_mean`, `js_mix`, `cos_ds`, `js_ds`,
   `unit_count`, `purity`, `captured_mass(_p05)`, `C_mass`, `C_oracle`, `C_null`, `C_null_p95`, `CI`, references `j_C`, `ln2`,
   `n_samples`, `H`, and for the S branch `check_max_abs_diff` (cross-check against the model's divergences, tolerance 1e-4).
-- `mean_distributions_<run_id>_<branch>_<split>.csv`: R_bar_1..C and P_bar over the H hidden units.
+- `mean_distributions_<dataset>_<run_id>_<branch>_<split>.csv`: R_bar_1..C and P_bar over the H hidden units.
 
 Conventions: float64, softmax over hidden units, JS in nats with the eps (1e-8) of `divergence_utils.js_rows`; under it
 the JS of identical rows is about H * eps (~2e-6 for H = 192), not exactly 0, and the disjoint maximum is ln 2 + O(1e-4).
