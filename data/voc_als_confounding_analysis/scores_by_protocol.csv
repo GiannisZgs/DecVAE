@@ -1,0 +1,397 @@
+model,label,level,target,probe,protocol,value,f1_macro,accuracy,ci_low,ci_high,p_value,p_value_within_category
+raw_mels,Raw Mel Fbank,frame,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+raw_mels,Raw Mel Fbank,frame,king_stage,rf,units_shared,0.3506646848677088,0.37572941652545416,0.497265572895825,,,,
+raw_mels,Raw Mel Fbank,frame,king_stage,rf,units_grouped,0.18330210283101353,0.1607303383537275,0.31149126317193543,,,0.009900990099009901,
+raw_mels,Raw Mel Fbank,frame,king_stage,rf,subject_from_units_grouped,0.2047022512708787,0.15582010582010583,0.37254901960784315,,,,
+raw_mels,Raw Mel Fbank,frame,king_stage,rf,subject_probe_mean,0.1926274165477174,0.1763187725405144,0.3098039215686274,0.16348807949713917,0.28870473788567347,0.15684315684315683,0.15184815184815184
+raw_mels,Raw Mel Fbank,frame,king_stage,lr,units_shared,0.21432264574952686,0.19420178189465476,0.35344137655062025,,,,
+raw_mels,Raw Mel Fbank,frame,king_stage,lr,units_grouped,0.17529151590270653,0.1434803463178029,0.31149126317193543,,,0.019801980198019802,
+raw_mels,Raw Mel Fbank,frame,king_stage,lr,subject_from_units_grouped,0.17804783950617284,0.10628579790125005,0.3464052287581699,,,,
+raw_mels,Raw Mel Fbank,frame,king_stage,lr,subject_probe_mean,0.17617036781801826,0.1733952153582488,0.2607843137254902,0.1118076097410775,0.22067994688539025,0.33266733266733267,0.4915084915084915
+raw_mels,Raw Mel Fbank,frame,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+raw_mels,Raw Mel Fbank,frame,disease_duration,rf,units_shared,0.3806850521123187,0.39366260182860036,0.5013005202080832,,,,
+raw_mels,Raw Mel Fbank,frame,disease_duration,rf,units_grouped,0.21090017316921122,0.18167505633060432,0.3190276110444178,,,0.07920792079207921,
+raw_mels,Raw Mel Fbank,frame,disease_duration,rf,subject_from_units_grouped,0.2234015345268542,0.1726876362503893,0.35294117647058826,,,,
+raw_mels,Raw Mel Fbank,frame,disease_duration,rf,subject_probe_mean,0.21941004860442198,0.19670883242079013,0.3196078431372549,0.15112634820175794,0.2431552131121237,0.2727272727272727,0.21178821178821178
+raw_mels,Raw Mel Fbank,frame,disease_duration,lr,units_shared,0.23659277093107142,0.1958300075353875,0.36321195144724555,,,,
+raw_mels,Raw Mel Fbank,frame,disease_duration,lr,units_grouped,0.20240809762640236,0.16416203590421233,0.31412565026010403,,,0.32673267326732675,
+raw_mels,Raw Mel Fbank,frame,disease_duration,lr,subject_from_units_grouped,0.20374331550802136,0.13526840933454276,0.3333333333333333,,,,
+raw_mels,Raw Mel Fbank,frame,disease_duration,lr,subject_probe_mean,0.21037139757088608,0.20547476800485742,0.2823529411764706,0.16700259758576533,0.2915934669977433,0.36663336663336665,0.5044955044955045
+raw_mels,Raw Mel Fbank,seq,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+raw_mels,Raw Mel Fbank,seq,king_stage,rf,units_shared,0.2699066233416935,0.26753155328241685,0.41013071895424835,,,,
+raw_mels,Raw Mel Fbank,seq,king_stage,rf,units_grouped,0.20160708038127326,0.18898322548010518,0.3243464052287582,,,0.009900990099009901,
+raw_mels,Raw Mel Fbank,seq,king_stage,rf,subject_from_units_grouped,0.2277142338416848,0.20142857142857143,0.38562091503267976,,,,
+raw_mels,Raw Mel Fbank,seq,king_stage,rf,subject_probe_mean,0.19158171969298576,0.17537255377051444,0.3071895424836601,0.15889543889018912,0.2775920114722239,0.17082917082917082,0.17782217782217782
+raw_mels,Raw Mel Fbank,seq,king_stage,lr,units_shared,0.2555545788594935,0.25368205562594826,0.38235294117647056,,,,
+raw_mels,Raw Mel Fbank,seq,king_stage,lr,units_grouped,0.19086978200505078,0.1820748148020476,0.3014705882352941,,,0.0297029702970297,
+raw_mels,Raw Mel Fbank,seq,king_stage,lr,subject_from_units_grouped,0.2035499305086019,0.18283372521719088,0.33986928104575165,,,,
+raw_mels,Raw Mel Fbank,seq,king_stage,lr,subject_probe_mean,0.17887102423000834,0.17528000159665863,0.2660130718954249,0.10298188861353755,0.20558498202739017,0.2997002997002997,0.4885114885114885
+raw_mels,Raw Mel Fbank,seq,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+raw_mels,Raw Mel Fbank,seq,disease_duration,rf,units_shared,0.274542880393264,0.25723051039907463,0.39133986928104575,,,,
+raw_mels,Raw Mel Fbank,seq,disease_duration,rf,units_grouped,0.22054014293464422,0.19054913349923402,0.33251633986928103,,,0.0594059405940594,
+raw_mels,Raw Mel Fbank,seq,disease_duration,rf,subject_from_units_grouped,0.23021390374331546,0.17602397602397601,0.3660130718954248,,,,
+raw_mels,Raw Mel Fbank,seq,disease_duration,rf,subject_probe_mean,0.21308178607411343,0.19441965312549497,0.3045751633986928,0.16408042354470925,0.2855206658311642,0.3436563436563437,0.3156843156843157
+raw_mels,Raw Mel Fbank,seq,disease_duration,lr,units_shared,0.2888540594103254,0.277283666590068,0.40032679738562094,,,,
+raw_mels,Raw Mel Fbank,seq,disease_duration,lr,units_grouped,0.2211606381683108,0.19899262466127018,0.32598039215686275,,,0.1188118811881188,
+raw_mels,Raw Mel Fbank,seq,disease_duration,lr,subject_from_units_grouped,0.21764705882352944,0.17095950886390288,0.33986928104575165,,,,
+raw_mels,Raw Mel Fbank,seq,disease_duration,lr,subject_probe_mean,0.20920018600325507,0.20304770242352702,0.2856209150326797,0.18078819169960472,0.30680537314237216,0.38461538461538464,0.5634365634365635
+pca,PCA,frame,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+pca,PCA,frame,king_stage,rf,units_shared,0.27975401419655205,0.2798237618778462,0.4377417633720155,,,,
+pca,PCA,frame,king_stage,rf,units_grouped,0.17721011155960564,0.14708485683379627,0.31205815659597175,,,,
+pca,PCA,frame,king_stage,rf,subject_from_units_grouped,0.18423202614379086,0.11879040305436243,0.35294117647058826,,,,
+pca,PCA,frame,king_stage,rf,subject_probe_mean,0.2013481957278441,0.18430723184697723,0.3281045751633987,0.15797695360195357,0.27257177740366095,0.07992007992007992,0.22877122877122877
+pca,PCA,frame,king_stage,lr,units_shared,0.19257777329297965,0.15063688014813023,0.347172202214219,,,,
+pca,PCA,frame,king_stage,lr,units_grouped,0.17184513400359655,0.1260106805356574,0.31859410430839,,,,
+pca,PCA,frame,king_stage,lr,subject_from_units_grouped,0.17804783950617284,0.10628579790125005,0.3464052287581699,,,,
+pca,PCA,frame,king_stage,lr,subject_probe_mean,0.1679259213509552,0.16442408983522785,0.24836601307189543,0.11177294255923287,0.2298931972050725,0.45554445554445555,0.6013986013986014
+pca,PCA,frame,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+pca,PCA,frame,disease_duration,rf,units_shared,0.3159911706071475,0.30551728885223406,0.4448779511804722,,,,
+pca,PCA,frame,disease_duration,rf,units_grouped,0.21029181859079035,0.17493832486596494,0.3232292917166867,,,,
+pca,PCA,frame,disease_duration,rf,subject_from_units_grouped,0.20953654188948306,0.14760078277886496,0.33986928104575165,,,,
+pca,PCA,frame,disease_duration,rf,subject_probe_mean,0.24095636673641793,0.21508338089819873,0.3562091503267974,0.21162336742031515,0.32572063523491807,0.07892107892107893,0.19880119880119881
+pca,PCA,frame,disease_duration,lr,units_shared,0.22920591443805077,0.18360742760196616,0.35684273709483794,,,,
+pca,PCA,frame,disease_duration,lr,units_grouped,0.19977633063389105,0.15791033531144527,0.31312525010004,,,,
+pca,PCA,frame,disease_duration,lr,subject_from_units_grouped,0.20374331550802136,0.13526840933454276,0.3333333333333333,,,,
+pca,PCA,frame,disease_duration,lr,subject_probe_mean,0.22239064005048656,0.21760824091854108,0.29869281045751633,0.15748825688117898,0.27400266602081835,0.2627372627372627,0.35764235764235763
+pca,PCA,seq,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+pca,PCA,seq,king_stage,rf,units_shared,0.2676198001243429,0.2586138777974628,0.42401960784313725,,,,
+pca,PCA,seq,king_stage,rf,units_grouped,0.1940745866513911,0.1719001324413819,0.3284313725490196,,,0.0297029702970297,
+pca,PCA,seq,king_stage,rf,subject_from_units_grouped,0.2095474763979666,0.16943677102516883,0.37254901960784315,,,,
+pca,PCA,seq,king_stage,rf,subject_probe_mean,0.19553228219768112,0.17725748440158232,0.3222222222222223,0.17172240734879138,0.2946324827374246,0.12187812187812187,0.3076923076923077
+pca,PCA,seq,king_stage,lr,units_shared,0.2239712305371112,0.21658145345136062,0.3553921568627451,,,,
+pca,PCA,seq,king_stage,lr,units_grouped,0.1895686053887858,0.17465337179600374,0.31209150326797386,,,0.039603960396039604,
+pca,PCA,seq,king_stage,lr,subject_from_units_grouped,0.20839554691608442,0.18028660994178236,0.35947712418300654,,,,
+pca,PCA,seq,king_stage,lr,subject_probe_mean,0.16977904335916508,0.16696903453127662,0.25163398692810457,0.12719826798339856,0.24914242932600317,0.4255744255744256,0.6103896103896104
+pca,PCA,seq,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+pca,PCA,seq,disease_duration,rf,units_shared,0.2976047929053044,0.28451049493257613,0.4207516339869281,,,,
+pca,PCA,seq,disease_duration,rf,units_grouped,0.2003657787225562,0.1694428374216961,0.30637254901960786,,,0.39603960396039606,
+pca,PCA,seq,disease_duration,rf,subject_from_units_grouped,0.20811051693404634,0.15597264658809834,0.3333333333333333,,,,
+pca,PCA,seq,disease_duration,rf,subject_probe_mean,0.23249172396231219,0.2094318243511469,0.34248366013071896,0.20092645505343015,0.30148031475748194,0.13286713286713286,0.3096903096903097
+pca,PCA,seq,disease_duration,lr,units_shared,0.2691379911648454,0.25647666988213225,0.37663398692810457,,,,
+pca,PCA,seq,disease_duration,lr,units_grouped,0.20981277886648733,0.1840211218809066,0.3137254901960784,,,0.24752475247524752,
+pca,PCA,seq,disease_duration,lr,subject_from_units_grouped,0.20566534914361,0.16575008950948802,0.3202614379084967,,,,
+pca,PCA,seq,disease_duration,lr,subject_probe_mean,0.21594180755306072,0.2104731237700578,0.29084967320261434,0.16311774563429426,0.28696135455874977,0.31868131868131866,0.45454545454545453
+ica,ICA,frame,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+ica,ICA,frame,king_stage,rf,units_shared,0.27510179488093495,0.27308027812005814,0.4357409630518874,,,,
+ica,ICA,frame,king_stage,rf,units_grouped,0.17558917140635608,0.1428957006785869,0.3126583966920101,,,,
+ica,ICA,frame,king_stage,rf,subject_from_units_grouped,0.18519653231663036,0.12282292024477437,0.35294117647058826,,,,
+ica,ICA,frame,king_stage,rf,subject_probe_mean,0.21582165752635665,0.19214902063858436,0.35424836601307186,0.19267822132288115,0.31777231460027566,0.023976023976023976,0.08691308691308691
+ica,ICA,frame,king_stage,lr,units_shared,0.19250756948201228,0.1505851027630178,0.34703881552621046,,,,
+ica,ICA,frame,king_stage,lr,units_grouped,0.17186730522840832,0.12606069800619163,0.31862745098039214,,,,
+ica,ICA,frame,king_stage,lr,subject_from_units_grouped,0.17804783950617284,0.10628579790125005,0.3464052287581699,,,,
+ica,ICA,frame,king_stage,lr,subject_probe_mean,0.16937326753080642,0.16569829664883273,0.25098039215686274,0.10817901234567902,0.22674162314793186,0.43956043956043955,0.5894105894105894
+ica,ICA,frame,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+ica,ICA,frame,disease_duration,rf,units_shared,0.30646374585972164,0.29148600954026377,0.4369080965719621,,,,
+ica,ICA,frame,disease_duration,rf,units_grouped,0.20123679059427274,0.16376170055472886,0.3125250100040016,,,,
+ica,ICA,frame,disease_duration,rf,subject_from_units_grouped,0.192602495543672,0.13207070707070706,0.3137254901960784,,,,
+ica,ICA,frame,disease_duration,rf,subject_probe_mean,0.2343270667950975,0.19496331578086257,0.35947712418300654,0.17179841758597938,0.2556181760029689,0.1258741258741259,0.2937062937062937
+ica,ICA,frame,disease_duration,lr,units_shared,0.22907950023600634,0.1835114860444097,0.3566426570628251,,,,
+ica,ICA,frame,disease_duration,lr,units_grouped,0.1997563226306898,0.15789644573822031,0.3130919034280379,,,,
+ica,ICA,frame,disease_duration,lr,subject_from_units_grouped,0.20374331550802136,0.13526840933454276,0.3333333333333333,,,,
+ica,ICA,frame,disease_duration,lr,subject_probe_mean,0.2282942505065267,0.2246895599583179,0.3026143790849673,0.1534589892089892,0.2693542144130379,0.20679320679320679,0.2787212787212787
+ica,ICA,seq,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+ica,ICA,seq,king_stage,rf,units_shared,0.27056668326899486,0.264782078185945,0.42483660130718953,,,,
+ica,ICA,seq,king_stage,rf,units_grouped,0.20147629114704632,0.18063742503114488,0.33986928104575165,,,0.009900990099009901,
+ica,ICA,seq,king_stage,rf,subject_from_units_grouped,0.20627950254175742,0.16938534278959808,0.3660130718954248,,,,
+ica,ICA,seq,king_stage,rf,subject_probe_mean,0.2140101075551549,0.19035391626351433,0.3522875816993464,0.17900237493987492,0.30154255778334726,0.03196803196803197,0.1108891108891109
+ica,ICA,seq,king_stage,lr,units_shared,0.22437972726913735,0.2167759501968922,0.3562091503267974,,,,
+ica,ICA,seq,king_stage,lr,units_grouped,0.19028699619338352,0.17559579838788816,0.31290849673202614,,,0.039603960396039604,
+ica,ICA,seq,king_stage,lr,subject_from_units_grouped,0.20839554691608442,0.1810513296227582,0.35947712418300654,,,,
+ica,ICA,seq,king_stage,lr,subject_probe_mean,0.17036496769107484,0.1674206143632484,0.2529411764705882,0.111705216873818,0.23092583507762077,0.4195804195804196,0.6033966033966034
+ica,ICA,seq,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+ica,ICA,seq,disease_duration,rf,units_shared,0.31490703989105523,0.30544857568775685,0.43790849673202614,,,,
+ica,ICA,seq,disease_duration,rf,units_grouped,0.21752873085993288,0.18052933065793614,0.3349673202614379,,,0.06930693069306931,
+ica,ICA,seq,disease_duration,rf,subject_from_units_grouped,0.21969696969696967,0.17066666666666666,0.3464052287581699,,,,
+ica,ICA,seq,disease_duration,rf,subject_probe_mean,0.23215005369736827,0.19011351873647964,0.3588235294117647,0.17998423772609817,0.26177931681681677,0.13986013986013987,0.35864135864135865
+ica,ICA,seq,disease_duration,lr,units_shared,0.2685698093466636,0.2559901224955647,0.3758169934640523,,,,
+ica,ICA,seq,disease_duration,lr,units_grouped,0.20981277886648733,0.1840211218809066,0.3137254901960784,,,0.2376237623762376,
+ica,ICA,seq,disease_duration,lr,subject_from_units_grouped,0.21021080368906456,0.16993639921722112,0.32679738562091504,,,,
+ica,ICA,seq,disease_duration,lr,subject_probe_mean,0.2235796769300605,0.21953628495309246,0.2973856209150327,0.16311774563429426,0.28696135455874977,0.25774225774225773,0.35264735264735264
+beta_vae_simvowels,Vowels β-VAE,frame,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+beta_vae_simvowels,Vowels β-VAE,frame,king_stage,rf,units_shared,0.24449052680188885,0.23882244479786796,0.382953181272509,,,,
+beta_vae_simvowels,Vowels β-VAE,frame,king_stage,rf,units_grouped,0.17485509452700423,0.14834804794888154,0.3039549152994531,,,0.019801980198019802,
+beta_vae_simvowels,Vowels β-VAE,frame,king_stage,rf,subject_from_units_grouped,0.18423202614379086,0.11836734693877553,0.35294117647058826,,,,
+beta_vae_simvowels,Vowels β-VAE,frame,king_stage,rf,subject_probe_mean,0.2186766559949454,0.20194539262005123,0.34901960784313724,0.18089407156639128,0.31152284463828694,0.024975024975024976,0.025974025974025976
+beta_vae_simvowels,Vowels β-VAE,frame,king_stage,lr,units_shared,0.19098276283693552,0.14786524433300108,0.340702947845805,,,,
+beta_vae_simvowels,Vowels β-VAE,frame,king_stage,lr,units_grouped,0.17361955465947063,0.12662567501185665,0.3208950246765373,,,0.06930693069306931,
+beta_vae_simvowels,Vowels β-VAE,frame,king_stage,lr,subject_from_units_grouped,0.16860702614379086,0.0925925925925926,0.3333333333333333,,,,
+beta_vae_simvowels,Vowels β-VAE,frame,king_stage,lr,subject_probe_mean,0.2216828843360706,0.2229405954454949,0.3078431372549019,0.15590155504218006,0.28495679371288013,0.03596403596403597,0.054945054945054944
+beta_vae_simvowels,Vowels β-VAE,frame,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+beta_vae_simvowels,Vowels β-VAE,frame,disease_duration,rf,units_shared,0.2715433095880927,0.2515371412722581,0.39322395624916634,,,,
+beta_vae_simvowels,Vowels β-VAE,frame,disease_duration,rf,units_grouped,0.2053652460419515,0.17360731395003712,0.313858876884087,,,0.0891089108910891,
+beta_vae_simvowels,Vowels β-VAE,frame,disease_duration,rf,subject_from_units_grouped,0.2163605363093854,0.15480372175454143,0.3464052287581699,,,,
+beta_vae_simvowels,Vowels β-VAE,frame,disease_duration,rf,subject_probe_mean,0.2527782575480785,0.236427362862114,0.3575163398692811,0.18986381289589885,0.29994433108171503,0.03896103896103896,0.03696303696303696
+beta_vae_simvowels,Vowels β-VAE,frame,disease_duration,lr,units_shared,0.2222075108982046,0.17382867024530216,0.35000666933440044,,,,
+beta_vae_simvowels,Vowels β-VAE,frame,disease_duration,lr,units_grouped,0.2005658022667,0.15459980847649196,0.31742697078831533,,,0.8217821782178217,
+beta_vae_simvowels,Vowels β-VAE,frame,disease_duration,lr,subject_from_units_grouped,0.20062388591800356,0.10936597989449585,0.3333333333333333,,,,
+beta_vae_simvowels,Vowels β-VAE,frame,disease_duration,lr,subject_probe_mean,0.20714844831213117,0.20091720586035694,0.2856209150326797,0.15330932204684472,0.2660972390636184,0.4095904095904096,0.5844155844155844
+beta_vae_simvowels,Vowels β-VAE,seq,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+beta_vae_simvowels,Vowels β-VAE,seq,king_stage,rf,units_shared,0.24590994979691946,0.23775077740740355,0.38643790849673204,,,,
+beta_vae_simvowels,Vowels β-VAE,seq,king_stage,rf,units_grouped,0.20010676085568327,0.1809966973529238,0.3333333333333333,,,0.009900990099009901,
+beta_vae_simvowels,Vowels β-VAE,seq,king_stage,rf,subject_from_units_grouped,0.20912176332857535,0.16884920634920633,0.37254901960784315,,,,
+beta_vae_simvowels,Vowels β-VAE,seq,king_stage,rf,subject_probe_mean,0.21781323560714191,0.20075236055984713,0.3503267973856209,0.18226945888639437,0.3109763457240781,0.022977022977022976,0.02197802197802198
+beta_vae_simvowels,Vowels β-VAE,seq,king_stage,lr,units_shared,0.2621881811288716,0.2689581383857961,0.35294117647058826,,,,
+beta_vae_simvowels,Vowels β-VAE,seq,king_stage,lr,units_grouped,0.18370208952158326,0.17449681874445097,0.2867647058823529,,,0.039603960396039604,
+beta_vae_simvowels,Vowels β-VAE,seq,king_stage,lr,subject_from_units_grouped,0.2159699527959332,0.185141556206024,0.3660130718954248,,,,
+beta_vae_simvowels,Vowels β-VAE,seq,king_stage,lr,subject_probe_mean,0.22607123241525712,0.22693470546257108,0.31307189542483654,0.15912568204251773,0.2864056475217999,0.029970029970029972,0.04895104895104895
+beta_vae_simvowels,Vowels β-VAE,seq,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+beta_vae_simvowels,Vowels β-VAE,seq,disease_duration,rf,units_shared,0.2911342600281219,0.27642413918867803,0.41094771241830064,,,,
+beta_vae_simvowels,Vowels β-VAE,seq,disease_duration,rf,units_grouped,0.23073883703679102,0.20042234646976426,0.3464052287581699,,,0.019801980198019802,
+beta_vae_simvowels,Vowels β-VAE,seq,disease_duration,rf,subject_from_units_grouped,0.2589126559714795,0.19911816578483243,0.4117647058823529,,,,
+beta_vae_simvowels,Vowels β-VAE,seq,disease_duration,rf,subject_probe_mean,0.2518694434295457,0.23621187539405458,0.35490196078431374,0.20487914020176193,0.3236887292336441,0.04495504495504495,0.04195804195804196
+beta_vae_simvowels,Vowels β-VAE,seq,disease_duration,lr,units_shared,0.2731084825234441,0.26177386556684257,0.37745098039215685,,,,
+beta_vae_simvowels,Vowels β-VAE,seq,disease_duration,lr,units_grouped,0.21724522813077804,0.199324118731532,0.31699346405228757,,,0.0891089108910891,
+beta_vae_simvowels,Vowels β-VAE,seq,disease_duration,lr,subject_from_units_grouped,0.2626936149954053,0.22523909270453052,0.39869281045751637,,,,
+beta_vae_simvowels,Vowels β-VAE,seq,disease_duration,lr,subject_probe_mean,0.2270522359141285,0.2228043786360086,0.3026143790849673,0.16349697533993168,0.2857276134510491,0.20279720279720279,0.3696303696303696
+beta_vae_timit,TIMIT β-VAE,frame,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+beta_vae_timit,TIMIT β-VAE,frame,king_stage,rf,units_shared,0.2321802483764898,0.22145209335487082,0.36778044551153793,,,,
+beta_vae_timit,TIMIT β-VAE,frame,king_stage,rf,units_grouped,0.1786961525756289,0.1603639765538801,0.2976523942910497,,,,
+beta_vae_timit,TIMIT β-VAE,frame,king_stage,rf,subject_from_units_grouped,0.17902369281045752,0.11049087364876838,0.3464052287581699,,,,
+beta_vae_timit,TIMIT β-VAE,frame,king_stage,rf,subject_probe_mean,0.21597562636165576,0.1985941931840987,0.3464052287581699,0.1720238528081171,0.299610314079844,0.03196803196803197,0.08591408591408592
+beta_vae_timit,TIMIT β-VAE,frame,king_stage,lr,units_shared,0.1841360666233288,0.1377802912517926,0.33736828064559155,,,,
+beta_vae_timit,TIMIT β-VAE,frame,king_stage,lr,units_grouped,0.17249553385063623,0.12542967573271446,0.3198612778444711,,,,
+beta_vae_timit,TIMIT β-VAE,frame,king_stage,lr,subject_from_units_grouped,0.16339869281045752,0.08210180623973727,0.32679738562091504,,,,
+beta_vae_timit,TIMIT β-VAE,frame,king_stage,lr,subject_probe_mean,0.22534973845614484,0.22256250081129494,0.3254901960784314,0.18116161846820417,0.33208842384254483,0.023976023976023976,0.11288711288711288
+beta_vae_timit,TIMIT β-VAE,frame,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+beta_vae_timit,TIMIT β-VAE,frame,disease_duration,rf,units_shared,0.26008114143455235,0.2434246496708802,0.3722155528878218,,,,
+beta_vae_timit,TIMIT β-VAE,frame,disease_duration,rf,units_grouped,0.20284003776552967,0.17711483795543276,0.3047885820995065,,,,
+beta_vae_timit,TIMIT β-VAE,frame,disease_duration,rf,subject_from_units_grouped,0.21221033868092692,0.14343434343434341,0.3464052287581699,,,,
+beta_vae_timit,TIMIT β-VAE,frame,disease_duration,rf,subject_probe_mean,0.21209602418042314,0.17886868809492681,0.32222222222222213,0.18058761408031218,0.2754126380338711,0.35264735264735264,0.5234765234765235
+beta_vae_timit,TIMIT β-VAE,frame,disease_duration,lr,units_shared,0.21900472498429072,0.17063214762768414,0.3453381352541016,,,,
+beta_vae_timit,TIMIT β-VAE,frame,disease_duration,lr,units_grouped,0.19768168136819944,0.1522576584277299,0.31312525010004,,,,
+beta_vae_timit,TIMIT β-VAE,frame,disease_duration,lr,subject_from_units_grouped,0.2057932263814617,0.12337258596325955,0.33986928104575165,,,,
+beta_vae_timit,TIMIT β-VAE,frame,disease_duration,lr,subject_probe_mean,0.24188001682886595,0.23894684133365982,0.3176470588235294,0.17901983225108226,0.3016727365622436,0.11988011988011989,0.3906093906093906
+beta_vae_timit,TIMIT β-VAE,seq,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+beta_vae_timit,TIMIT β-VAE,seq,king_stage,rf,units_shared,0.24266090036749055,0.2319969951507803,0.3799019607843137,,,,
+beta_vae_timit,TIMIT β-VAE,seq,king_stage,rf,units_grouped,0.19472117750356846,0.17820996299400668,0.3194444444444444,,,0.019801980198019802,
+beta_vae_timit,TIMIT β-VAE,seq,king_stage,rf,subject_from_units_grouped,0.21856257669095736,0.18024558308171754,0.38562091503267976,,,,
+beta_vae_timit,TIMIT β-VAE,seq,king_stage,rf,subject_probe_mean,0.22484665721333236,0.20858125991961635,0.35882352941176465,0.1717978207507804,0.3118468751406627,0.015984015984015984,0.06493506493506493
+beta_vae_timit,TIMIT β-VAE,seq,king_stage,lr,units_shared,0.2775526335337652,0.2906054381655436,0.3799019607843137,,,,
+beta_vae_timit,TIMIT β-VAE,seq,king_stage,lr,units_grouped,0.1983951800154682,0.18778469027357847,0.31209150326797386,,,0.009900990099009901,
+beta_vae_timit,TIMIT β-VAE,seq,king_stage,lr,subject_from_units_grouped,0.2257108782210202,0.20222425199960503,0.37254901960784315,,,,
+beta_vae_timit,TIMIT β-VAE,seq,king_stage,lr,subject_probe_mean,0.22570531601971763,0.22264012866777047,0.3261437908496732,0.17493303681641148,0.3196855834924475,0.02197802197802198,0.11288711288711288
+beta_vae_timit,TIMIT β-VAE,seq,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+beta_vae_timit,TIMIT β-VAE,seq,disease_duration,rf,units_shared,0.2648182593195381,0.24756595980685075,0.375,,,,
+beta_vae_timit,TIMIT β-VAE,seq,disease_duration,rf,units_grouped,0.20800367577861184,0.17552992911740048,0.3194444444444444,,,0.16831683168316833,
+beta_vae_timit,TIMIT β-VAE,seq,disease_duration,rf,subject_from_units_grouped,0.23021390374331546,0.17685425685425685,0.3660130718954248,,,,
+beta_vae_timit,TIMIT β-VAE,seq,disease_duration,rf,subject_probe_mean,0.22689645818801832,0.19860054992705986,0.3339869281045752,0.15784328124650707,0.25490071812424026,0.17882117882117882,0.3726273726273726
+beta_vae_timit,TIMIT β-VAE,seq,disease_duration,lr,units_shared,0.2726800799371132,0.26008404465222085,0.3741830065359477,,,,
+beta_vae_timit,TIMIT β-VAE,seq,disease_duration,lr,units_grouped,0.2218211296376258,0.2043262771466317,0.32189542483660133,,,0.04950495049504951,
+beta_vae_timit,TIMIT β-VAE,seq,disease_duration,lr,subject_from_units_grouped,0.26246498599439777,0.21509438558031907,0.40522875816993464,,,,
+beta_vae_timit,TIMIT β-VAE,seq,disease_duration,lr,subject_probe_mean,0.2357684259474541,0.23235810129776918,0.31568627450980397,0.17563172613873745,0.2935221227837419,0.15484515484515485,0.44255744255744256
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,king_stage,rf,units_shared,0.47423942683468917,0.5384187528825494,0.6072428971588636,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,king_stage,rf,units_grouped,0.1798077288865738,0.14012985129510827,0.3244297719087635,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,king_stage,rf,subject_from_units_grouped,0.17902369281045752,0.11077912082937208,0.3464052287581699,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,king_stage,rf,subject_probe_mean,0.2286127701399845,0.21077564612034694,0.3673202614379085,0.1917523789023173,0.3279751634135049,0.00999000999000999,0.028971028971028972
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,king_stage,lr,units_shared,0.2614312780753818,0.2503599374409347,0.36881419234360413,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,king_stage,lr,units_grouped,0.1785128635094376,0.15608164303437375,0.30532212885154064,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,king_stage,lr,subject_from_units_grouped,0.1904048656499637,0.13112680969823828,0.35947712418300654,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,king_stage,lr,subject_probe_mean,0.19378324679414943,0.19115940529436687,0.2777777777777778,0.21251332905270287,0.37124940508490256,0.17282717282717283,0.2887112887112887
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,disease_duration,rf,units_shared,0.506450423195817,0.5526891907127085,0.6154128317993864,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,disease_duration,rf,units_grouped,0.207305835942508,0.16316042468857322,0.32573029211684673,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,disease_duration,rf,subject_from_units_grouped,0.22397504456327985,0.15071447356886122,0.3660130718954248,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,disease_duration,rf,subject_probe_mean,0.19893120093887356,0.16782644468983904,0.3045751633986928,0.1652199958357799,0.2653202791554925,0.5104895104895105,0.8511488511488512
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,disease_duration,lr,units_shared,0.255449201137259,0.2304507438384861,0.3757169534480459,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,disease_duration,lr,units_grouped,0.20834409427237865,0.18020467854431793,0.3149593170601574,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,disease_duration,lr,subject_from_units_grouped,0.22152987677284353,0.16407586763518966,0.35294117647058826,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",frame,disease_duration,lr,subject_probe_mean,0.20716859866476237,0.20410853480258764,0.26013071895424833,0.1280747732426304,0.23769387933558137,0.3916083916083916,0.5734265734265734
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,king_stage,rf,units_shared,0.23457939509616108,0.230920303970073,0.3553921568627451,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,king_stage,rf,units_grouped,0.1945206463013047,0.17076254246605962,0.33088235294117646,,,0.009900990099009901,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,king_stage,rf,subject_from_units_grouped,0.2108864379084967,0.16107357357357358,0.3790849673202614,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,king_stage,rf,subject_probe_mean,0.20883851545088022,0.187659519930442,0.3411764705882353,0.16585984262959919,0.2870698051948052,0.04195804195804196,0.016983016983016984
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,king_stage,lr,units_shared,0.22920803328146763,0.2258804065490819,0.33905228758169936,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,king_stage,lr,units_grouped,0.20608880602172097,0.19955196861950975,0.3112745098039216,,,0.009900990099009901,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,king_stage,lr,subject_from_units_grouped,0.21421662534745697,0.18904664991621514,0.35947712418300654,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,king_stage,lr,subject_probe_mean,0.20717542027126204,0.2065320182950527,0.2849673202614379,0.17133460248749297,0.32246735571946816,0.08591408591408592,0.16383616383616384
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,disease_duration,rf,units_shared,0.22927219306695007,0.19868541973174236,0.34395424836601307,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,disease_duration,rf,units_grouped,0.19898258710598865,0.1629754390720702,0.3088235294117647,,,0.297029702970297,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,disease_duration,rf,subject_from_units_grouped,0.20748663101604276,0.15464535464535464,0.3333333333333333,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,disease_duration,rf,subject_probe_mean,0.2215495289024701,0.19147165316859063,0.3320261437908497,0.1829568691554496,0.2708573898211322,0.22077922077922077,0.13086913086913088
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,disease_duration,lr,units_shared,0.2405539686230223,0.23793151732189574,0.31781045751633985,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,disease_duration,lr,units_grouped,0.21068487671748543,0.20248423842863983,0.2908496732026144,,,0.1485148514851485,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,disease_duration,lr,subject_from_units_grouped,0.2093582887700535,0.1604551920341394,0.3333333333333333,,,,
+decvae_fd_simvowels_noc3,"Vowels β-DecVAE + FD, NoC 3",seq,disease_duration,lr,subject_probe_mean,0.22746039127113296,0.2276784432301402,0.2803921568627451,0.1582044608685287,0.2763515857857309,0.19880119880119881,0.32967032967032966
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,king_stage,rf,units_shared,0.4788770476139174,0.5417486272269972,0.6095438175270108,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,king_stage,rf,units_grouped,0.18077017684468422,0.14383948182512052,0.3242296918767507,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,king_stage,rf,subject_from_units_grouped,0.17902369281045752,0.11049087364876838,0.3464052287581699,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,king_stage,rf,subject_probe_mean,0.2291732793053364,0.2160039336967507,0.3647058823529412,0.17900868153585545,0.31161173911009216,0.00999000999000999,0.00999000999000999
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,king_stage,lr,units_shared,0.27851182179449047,0.2727951211253641,0.3728157929838602,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,king_stage,lr,units_grouped,0.18152782637148582,0.16350088900230642,0.3037548352674403,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,king_stage,lr,subject_from_units_grouped,0.18423202614379086,0.11879040305436243,0.35294117647058826,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,king_stage,lr,subject_probe_mean,0.22601027393961806,0.22914714170029926,0.3222222222222222,0.21121005391403871,0.3591432213304221,0.024975024975024976,0.11888111888111888
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,disease_duration,rf,units_shared,0.5138212032413192,0.5583130139813768,0.6266173135921035,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,disease_duration,rf,units_grouped,0.1981348891900069,0.15389189202824294,0.3129251700680272,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,disease_duration,rf,subject_from_units_grouped,0.19402852049910874,0.11875,0.3202614379084967,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,disease_duration,rf,subject_probe_mean,0.189067658684027,0.15347345100921772,0.29411764705882354,0.14884590859721675,0.24695330261136714,0.6653346653346653,0.8191808191808192
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,disease_duration,lr,units_shared,0.2537909827962806,0.23266514411567418,0.36924769907963184,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,disease_duration,lr,units_grouped,0.19832651863681666,0.17172683545255768,0.29981992797118845,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,disease_duration,lr,subject_from_units_grouped,0.19073083778966132,0.12197023951619321,0.3137254901960784,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",frame,disease_duration,lr,subject_probe_mean,0.21817927170868345,0.21954190105297489,0.2797385620915033,0.15850378033558515,0.28864161270986755,0.30569430569430567,0.6203796203796204
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,king_stage,rf,units_shared,0.2215321277623192,0.204477946838883,0.3611111111111111,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,king_stage,rf,units_grouped,0.20325847552462872,0.18487774934232717,0.33578431372549017,,,0.009900990099009901,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,king_stage,rf,subject_from_units_grouped,0.21469320486815416,0.16515982737180893,0.38562091503267976,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,king_stage,rf,subject_probe_mean,0.20609329220193828,0.1926439521203133,0.3300653594771242,0.1787697003169395,0.3125713045019497,0.058941058941058944,0.04995004995004995
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,king_stage,lr,units_shared,0.25274956119408665,0.25418929676335,0.3382352941176471,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,king_stage,lr,units_grouped,0.19894904493873392,0.1951555284639462,0.2957516339869281,,,0.019801980198019802,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,king_stage,lr,subject_from_units_grouped,0.2298302782160118,0.20682559954590607,0.3790849673202614,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,king_stage,lr,subject_probe_mean,0.22465667854232763,0.22488627992268562,0.3078431372549019,0.1859873342468357,0.3303258894362343,0.03996003996003996,0.03396603396603397
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,disease_duration,rf,units_shared,0.23774509803921573,0.21564113753742503,0.3472222222222222,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,disease_duration,rf,units_grouped,0.20238545022752183,0.17252437489279165,0.30637254901960786,,,0.2871287128712871,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,disease_duration,rf,subject_from_units_grouped,0.18083778966131908,0.1272496025437202,0.29411764705882354,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,disease_duration,rf,subject_probe_mean,0.1808443219184907,0.15941568412753018,0.2692810457516339,0.1318093030374757,0.2260191058941059,0.7322677322677322,0.7852147852147852
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,disease_duration,lr,units_shared,0.23206909245911805,0.23157733959477783,0.3006535947712418,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,disease_duration,lr,units_grouped,0.17833193554101484,0.17029153744352205,0.2508169934640523,,,0.8217821782178217,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,disease_duration,lr,subject_from_units_grouped,0.18458110516934045,0.14301270417422868,0.29411764705882354,,,,
+decvae_ewt_simvowels_noc3,"Vowels β-DecVAE + EWT, NoC 3",seq,disease_duration,lr,subject_probe_mean,0.1618723220513502,0.16078020120188952,0.2130718954248366,0.1139156314699793,0.2352398620195161,0.8731268731268731,0.9170829170829171
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,king_stage,rf,units_shared,0.5513128541707969,0.6249885085311044,0.6610310790983059,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,king_stage,rf,units_grouped,0.17907552855605355,0.1364624814476222,0.3251967453648126,,,0.009900990099009901,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,king_stage,rf,subject_from_units_grouped,0.1894403594771242,0.1261204919741505,0.35947712418300654,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,king_stage,rf,subject_probe_mean,0.22643560776801142,0.20139385611754715,0.37189542483660126,0.18303592995169085,0.30485751727746796,0.008991008991008992,0.01998001998001998
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,king_stage,lr,units_shared,0.3383768510105683,0.3147931757958611,0.37975190076030413,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,king_stage,lr,units_grouped,0.18098481502582367,0.163199326143643,0.3014205682272909,,,0.019801980198019802,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,king_stage,lr,subject_from_units_grouped,0.19138071895424838,0.1305239898989899,0.35947712418300654,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,king_stage,lr,subject_probe_mean,0.20218672165299956,0.20135812642739345,0.2915032679738562,0.13951220716509694,0.27231414063482373,0.10789210789210789,0.2057942057942058
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,disease_duration,rf,units_shared,0.5704938412406182,0.6260124869947443,0.6661331199146325,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,disease_duration,rf,units_grouped,0.20597880032871418,0.1623657711963201,0.3236627984527144,,,0.04950495049504951,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,disease_duration,rf,subject_from_units_grouped,0.21408199643493758,0.15351316941195195,0.3464052287581699,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,disease_duration,rf,subject_probe_mean,0.23876424087421536,0.19864901892787307,0.3673202614379085,0.22092538730693803,0.3113347184063471,0.0899100899100899,0.13986013986013987
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,disease_duration,lr,units_shared,0.28350311609680573,0.2721427444786705,0.39512471655328796,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,disease_duration,lr,units_grouped,0.2175034412409797,0.19567560046205923,0.32029478458049887,,,0.039603960396039604,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,disease_duration,lr,subject_from_units_grouped,0.23823529411764705,0.17224269221321542,0.38562091503267976,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",frame,disease_duration,lr,subject_probe_mean,0.220558286555729,0.21587207985929985,0.29673202614379085,0.16917426315134937,0.29037443130690055,0.25574425574425574,0.45754245754245754
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,king_stage,rf,units_shared,0.20490821148861846,0.17952412767245687,0.3488562091503268,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,king_stage,rf,units_grouped,0.19265213568665016,0.16716019870554558,0.3300653594771242,,,0.009900990099009901,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,king_stage,rf,subject_from_units_grouped,0.20700571895424838,0.1502495403204623,0.3790849673202614,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,king_stage,rf,subject_probe_mean,0.20178165614904967,0.17741681953691132,0.3339869281045752,0.18306120026071993,0.3095415798215838,0.06893106893106893,0.1068931068931069
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,king_stage,lr,units_shared,0.24117680769134456,0.24388576105537654,0.32107843137254904,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,king_stage,lr,units_grouped,0.19409124616665605,0.1896217161448065,0.28921568627450983,,,0.04950495049504951,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,king_stage,lr,subject_from_units_grouped,0.22824167981368793,0.20405438661252617,0.38562091503267976,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,king_stage,lr,subject_probe_mean,0.1887995806437321,0.1866413221073442,0.27254901960784317,0.1855695904276026,0.3335146644510734,0.22477522477522477,0.43156843156843155
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,disease_duration,rf,units_shared,0.22824903676885774,0.1920661256754746,0.3480392156862745,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,disease_duration,rf,units_grouped,0.2133132798573975,0.1661817399866451,0.3382352941176471,,,0.06930693069306931,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,disease_duration,rf,subject_from_units_grouped,0.22254901960784315,0.16319794921092684,0.35947712418300654,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,disease_duration,rf,subject_probe_mean,0.2193360901672922,0.1811625746596101,0.3366013071895425,0.18430588235294118,0.26543107008760947,0.24775224775224775,0.3046953046953047
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,disease_duration,lr,units_shared,0.24366177300959913,0.23597548190040124,0.3300653594771242,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,disease_duration,lr,units_grouped,0.19194241926019417,0.18654421502792276,0.2622549019607843,,,0.6534653465346535,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,disease_duration,lr,subject_from_units_grouped,0.20668449197860964,0.16028447915214056,0.32679738562091504,,,,
+decvae_fd_simvowels_noc4,"Vowels β-DecVAE + FD, NoC 4",seq,disease_duration,lr,subject_probe_mean,0.24610472647557047,0.24372926609776518,0.29869281045751633,0.18921867356040672,0.3177071912961572,0.1048951048951049,0.2057942057942058
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,king_stage,rf,units_shared,0.5164503765083005,0.5855836514863275,0.6192143524076297,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,king_stage,rf,units_grouped,0.1807594006632027,0.1402199539364106,0.32593037214885956,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,king_stage,rf,subject_from_units_grouped,0.18423202614379086,0.11879040305436243,0.35294117647058826,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,king_stage,rf,subject_probe_mean,0.19968470625798213,0.1724508434616071,0.334640522875817,0.16752467233502372,0.286374307110514,0.06393606393606394,0.04995004995004995
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,king_stage,lr,units_shared,0.33627573134200134,0.3180046462054981,0.37968520741629985,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,king_stage,lr,units_grouped,0.17758377251209945,0.16089702985975815,0.29528478057889823,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,king_stage,lr,subject_from_units_grouped,0.19464869281045752,0.13352970054000982,0.3660130718954248,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,king_stage,lr,subject_probe_mean,0.17085843848542462,0.1701239070758022,0.2490196078431372,0.10955363600033152,0.226166421851006,0.4325674325674326,0.35564435564435565
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,disease_duration,rf,units_shared,0.5335651990892348,0.5847448105304991,0.6370881686007737,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,disease_duration,rf,units_grouped,0.20831415570180645,0.1640078976518798,0.3276977457649727,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,disease_duration,rf,subject_from_units_grouped,0.21221033868092692,0.14352314352314352,0.3464052287581699,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,disease_duration,rf,subject_probe_mean,0.19877974114547003,0.16273709999158864,0.3071895424836601,0.16918379508178344,0.2616941967885364,0.5064935064935064,0.4905094905094905
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,disease_duration,lr,units_shared,0.2668257647497169,0.2537430741549318,0.377484327064159,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,disease_duration,lr,units_grouped,0.19874677426024054,0.1769799317874899,0.29591836734693877,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,disease_duration,lr,subject_from_units_grouped,0.22584670231729054,0.16041243555694423,0.3660130718954248,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",frame,disease_duration,lr,subject_probe_mean,0.20142751962445055,0.20204473676699145,0.24705882352941178,0.1707277806737115,0.31331277165292165,0.44555444555444557,0.32867132867132864
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,king_stage,rf,units_shared,0.23412847077749463,0.21714931227709092,0.3831699346405229,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,king_stage,rf,units_grouped,0.19610484279918863,0.17366304553636178,0.33251633986928103,,,0.009900990099009901,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,king_stage,rf,subject_from_units_grouped,0.21565771104099365,0.17193746599484305,0.38562091503267976,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,king_stage,rf,subject_probe_mean,0.21936341027471012,0.19953993196117387,0.35294117647058826,0.18348991062700742,0.3095761188023703,0.01898101898101898,0.03496503496503497
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,king_stage,lr,units_shared,0.22848787795278247,0.224881556967884,0.33169934640522875,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,king_stage,lr,units_grouped,0.21030637977265765,0.20875890170164638,0.3022875816993464,,,0.009900990099009901,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,king_stage,lr,subject_from_units_grouped,0.2625096254977087,0.24374011325230838,0.42483660130718953,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,king_stage,lr,subject_probe_mean,0.21452769025136337,0.21248327209484827,0.3,0.1828615955264028,0.3354244876609038,0.056943056943056944,0.0979020979020979
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,disease_duration,rf,units_shared,0.24769274310514716,0.20960815628049168,0.37663398692810457,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,disease_duration,rf,units_grouped,0.2154379241815303,0.17247879389674137,0.3382352941176471,,,0.07920792079207921,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,disease_duration,rf,subject_from_units_grouped,0.21470588235294116,0.15761507568736483,0.3464052287581699,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,disease_duration,rf,subject_probe_mean,0.21785825001937537,0.1888105546112336,0.3248366013071895,0.16974761904761904,0.25944723092998956,0.24675324675324675,0.4195804195804196
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,disease_duration,lr,units_shared,0.250134451013607,0.24858124638133505,0.3227124183006536,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,disease_duration,lr,units_grouped,0.19783155357004462,0.19238067518000912,0.2679738562091503,,,0.3564356435643564,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,disease_duration,lr,subject_from_units_grouped,0.20543672014260247,0.1584758605758822,0.32679738562091504,,,,
+decvae_ewt_simvowels_noc4,"Vowels β-DecVAE + EWT, NoC 4",seq,disease_duration,lr,subject_probe_mean,0.21441641478725879,0.21403032203687317,0.28104575163398693,0.1391168066693494,0.2687219249466057,0.35064935064935066,0.5284715284715285
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,king_stage,rf,units_shared,0.4906780291507997,0.5615792665916849,0.6053087901827398,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,king_stage,rf,units_grouped,0.1723076116130213,0.13253255691924798,0.3138255302120848,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,king_stage,rf,subject_from_units_grouped,0.17054738562091507,0.10050960050960052,0.3333333333333333,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,king_stage,rf,subject_probe_mean,0.20543778015676256,0.1831855913541726,0.3339869281045752,0.15983770790532192,0.2804062652554032,0.061938061938061936,0.04295704295704296
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,king_stage,lr,units_shared,0.2714762265243557,0.2655469619274983,0.36834733893557425,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,king_stage,lr,units_grouped,0.17868886229091305,0.16180905509329693,0.29815259437108177,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,king_stage,lr,subject_from_units_grouped,0.1894403594771242,0.12559319260350188,0.35947712418300654,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,king_stage,lr,subject_probe_mean,0.19693118786467334,0.19218238164589954,0.2849673202614379,0.141247172123947,0.26329980729925556,0.14385614385614387,0.3166833166833167
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,disease_duration,rf,units_shared,0.5183707333865223,0.5706509703283548,0.6162464985994398,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,disease_duration,rf,units_grouped,0.20358646846655093,0.15927529952024794,0.3208950246765373,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,disease_duration,rf,subject_from_units_grouped,0.21221033868092692,0.143373006234313,0.3464052287581699,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,disease_duration,rf,subject_probe_mean,0.19519956599240484,0.1567721843479248,0.30392156862745096,0.14234692716545033,0.23283239845261122,0.5464535464535465,0.5264735264735265
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,disease_duration,lr,units_shared,0.2625218523321243,0.24332288116312717,0.3776844070961718,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,disease_duration,lr,units_grouped,0.2038628353656539,0.17989644100559662,0.30468854208350005,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,disease_duration,lr,subject_from_units_grouped,0.2514764008370146,0.19304761904761905,0.39869281045751637,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",frame,disease_duration,lr,subject_probe_mean,0.19670419946634782,0.19249192982419558,0.26928104575163403,0.1262518367513076,0.23675274313833364,0.5074925074925075,0.8031968031968032
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,king_stage,rf,units_shared,0.1988455174135427,0.1640668376339147,0.3488562091503268,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,king_stage,rf,units_grouped,0.18072840366989706,0.14407660981640233,0.3235294117647059,,,0.019801980198019802,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,king_stage,rf,subject_from_units_grouped,0.18229166666666666,0.11245416270541898,0.35294117647058826,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,king_stage,rf,subject_probe_mean,0.21921679751083065,0.18413889533712252,0.3758169934640523,0.16278883349678544,0.2670004789272031,0.011988011988011988,0.08491508491508491
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,king_stage,lr,units_shared,0.19749339157511905,0.19392618989306573,0.29248366013071897,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,king_stage,lr,units_grouped,0.18119157807476563,0.17746365505478814,0.2687908496732026,,,0.07920792079207921,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,king_stage,lr,subject_from_units_grouped,0.181639010968372,0.15681738015071348,0.3137254901960784,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,king_stage,lr,subject_probe_mean,0.2034062493378332,0.2025239262947678,0.2928104575163399,0.11618463628746446,0.25142473498723494,0.1028971028971029,0.3016983016983017
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,disease_duration,rf,units_shared,0.2277101947498367,0.1820357593748104,0.35375816993464054,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,disease_duration,rf,units_grouped,0.20439418850544172,0.15967665136769704,0.32107843137254904,,,0.16831683168316833,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,disease_duration,rf,subject_from_units_grouped,0.18725490196078431,0.13763440860215054,0.3006535947712418,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,disease_duration,rf,subject_probe_mean,0.2380926916221034,0.1836734400506754,0.3758169934640523,0.2084273129541672,0.28680885687608376,0.07292707292707293,0.3116883116883117
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,disease_duration,lr,units_shared,0.21808964692596405,0.21546097714797002,0.2826797385620915,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,disease_duration,lr,units_grouped,0.19714566656702207,0.19279823121827175,0.26143790849673204,,,0.4158415841584158,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,disease_duration,lr,subject_from_units_grouped,0.21639928698752228,0.17043719639139487,0.33986928104575165,,,,
+decvae_fd_timit_noc4,"TIMIT β-DecVAE + FD, NoC 4",seq,disease_duration,lr,subject_probe_mean,0.21832536176525946,0.2145121203327313,0.292156862745098,0.1635307496713979,0.2782961820787908,0.2857142857142857,0.5574425574425574
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,king_stage,rf,units_shared,0.4350003961084385,0.4959704887147884,0.5546885420835,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,king_stage,rf,units_grouped,0.177156099508769,0.13823329574747653,0.32079498466053086,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,king_stage,rf,subject_from_units_grouped,0.16860702614379086,0.0925925925925926,0.3333333333333333,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,king_stage,rf,subject_probe_mean,0.210312938234042,0.19142953809717245,0.34183006535947713,0.1706232967453132,0.30468676786176785,0.03796203796203796,0.02097902097902098
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,king_stage,lr,units_shared,0.2895869648392317,0.2817097966470821,0.3701480592236895,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,king_stage,lr,units_grouped,0.17875868249967244,0.16346956281772346,0.2942176870748299,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,king_stage,lr,subject_from_units_grouped,0.19985702614379086,0.140619351729124,0.37254901960784315,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,king_stage,lr,subject_probe_mean,0.1785671679149113,0.17588107623540056,0.261437908496732,0.13806051363399924,0.25876908866995074,0.3156843156843157,0.4595404595404595
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,disease_duration,rf,units_shared,0.45480243480791527,0.49500608223471454,0.5628584767240229,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,disease_duration,rf,units_grouped,0.20071545557805281,0.1571227240144385,0.316359877284247,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,disease_duration,rf,subject_from_units_grouped,0.19714795008912658,0.13746435452793834,0.3202614379084967,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,disease_duration,rf,subject_probe_mean,0.22434411709347774,0.2025731255605478,0.32745098039215687,0.1863051441312311,0.29268730508236757,0.18681318681318682,0.14185814185814186
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,disease_duration,lr,units_shared,0.26929130489010966,0.25892548442188723,0.375750300120048,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,disease_duration,lr,units_grouped,0.19883553647320024,0.18057918256937716,0.2914499132986528,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,disease_duration,lr,subject_from_units_grouped,0.21283422459893048,0.14736842105263157,0.3464052287581699,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",frame,disease_duration,lr,subject_probe_mean,0.19358072873418145,0.1911514121469085,0.26013071895424833,0.15770571703428846,0.2662793817714995,0.5304695304695305,0.7552447552447552
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,king_stage,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,king_stage,rf,units_shared,0.22867500027690613,0.20914626989308796,0.37336601307189543,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,king_stage,rf,units_grouped,0.20359130841033732,0.18549554276650648,0.33088235294117646,,,0.009900990099009901,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,king_stage,rf,subject_from_units_grouped,0.2398216230936819,0.2054809006118933,0.4117647058823529,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,king_stage,rf,subject_probe_mean,0.2188507065440382,0.2158475231991257,0.33071895424836606,0.1768820003388969,0.3107076871525248,0.03596403596403597,0.028971028971028972
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,king_stage,lr,units_shared,0.22525003268696223,0.22141586182044745,0.3276143790849673,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,king_stage,lr,units_grouped,0.19694517764370703,0.19391858463889444,0.2883986928104575,,,0.009900990099009901,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,king_stage,lr,subject_from_units_grouped,0.2129907438709839,0.19521917087891438,0.35294117647058826,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,king_stage,lr,subject_probe_mean,0.18918485939910887,0.18683661291758086,0.2679738562091503,0.12905296007910025,0.25399749830966867,0.2047952047952048,0.2217782217782218
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,disease_duration,none,speaker_lookup,1.0,1.0,1.0,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,disease_duration,rf,units_shared,0.24304030900897908,0.21985568407808742,0.3545751633986928,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,disease_duration,rf,units_grouped,0.20909063230035096,0.17637592564590873,0.3202614379084967,,,0.16831683168316833,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,disease_duration,rf,subject_from_units_grouped,0.20748663101604276,0.15454813070356196,0.3333333333333333,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,disease_duration,rf,subject_probe_mean,0.23682687304170683,0.2149582063216359,0.34444444444444444,0.18496334882366128,0.2926864581778375,0.12887112887112886,0.13186813186813187
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,disease_duration,lr,units_shared,0.23957253850156662,0.23702580570884835,0.3088235294117647,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,disease_duration,lr,units_grouped,0.19395247229326512,0.1886961563932649,0.26715686274509803,,,0.45544554455445546,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,disease_duration,lr,subject_from_units_grouped,0.1971983259707045,0.16206940222897667,0.30718954248366015,,,,
+decvae_ewt_timit_noc4,"TIMIT β-DecVAE + EWT, NoC 4",seq,disease_duration,lr,subject_probe_mean,0.22645619512627185,0.22687885610154365,0.27254901960784317,0.17533344749461474,0.31761996854077595,0.23476523476523475,0.19880119880119881

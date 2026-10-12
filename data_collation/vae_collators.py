@@ -1104,7 +1104,7 @@ class DataCollatorForVAE1DLatentPostAnalysis_NoFeatureExtraction:
         elif "VOC_ALS" in self.dataset_name:
             batch["alsfrs_total"] = torch.tensor(alsfrs_total, dtype=torch.long, device=device)
             batch["disease_duration"] = torch.tensor(disease_duration, dtype=torch.long, device=device)
-            batch["king_stage"] = torch.tensor(king_stage, dtype=torch.long, device=device)
+            batch["king_stage"] = torch.tensor([int(k) for k in king_stage], dtype=torch.long, device=device)
             batch["alsfrs_speech"] = torch.tensor(alsfrs_speech, dtype=torch.long, device=device)
             batch["cantagallo"] = torch.tensor(cantagallo, dtype=torch.long, device=device)
             batch["phonemes"] = torch.tensor(phonemes, dtype=torch.long, device=device)
