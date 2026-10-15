@@ -5,6 +5,9 @@
 #' beta (S branch), with the references ln 2 and j_C of Proposition 2. Same style as beta_tradeoff.R.
 #' Reads data/block_structure/block_structure_<dataset>.csv and mean_distributions_<dataset>_<run_id>_<branch>_<split>.csv
 #' written by scripts/post-training/block_structure.py.
+#' The SI figure (SI_block_structure_simvowels, SimVowels S branch) combines (a) the within-utterance and
+#' average-profile cosines and (b) the JS against beta with the Supp. Fig. 22 plateau values; the panels above are
+#' kept for the analysis folder.
 
 library(ggplot2)
 library(vscDebugger)
@@ -13,6 +16,7 @@ library(tidyr)
 library(readr)
 library(scales)
 library(ggnewscale)
+library(patchwork)
 
 # Style and font parameters
 plot_font_family <- "Arial"
@@ -187,6 +191,126 @@ for (ds in names(datasets)) {
   heatmap_plot(d, ds, "z")
   ci_plot(d, ds)
   js_beta_plot(d, ds)
+}
+
+# ---- SI figure: SimVowels S branch ----
+si_dataset <- "sim_vowels"
+si_branch <- "s"
+si_models <- c("FD", "EWT")
+n_plateau <- 10  # last non-empty validation logs averaged for the Supp. Fig. 22 plateau
+wandb_dir <- file.path('..', 'data', 'results_wandb_exports_for_figures', 'vowels_pretraining',
+                       'FD_decomposition_loss_demo_betas', 'dual')
+set_labels <- c(test = "test set", validation = "validation set")
+set_shapes <- setNames(c(16, 1), set_labels)
+si_positive_palette <- c(FD = "#2166ac", EWT = "#35978f")  # FD blue, EWT teal
+si_legend_theme <- theme(legend.title = element_text(size = 24, family = plot_font_family),
+                         legend.text = element_text(size = 22, family = plot_font_family))
+cos_labels <- c(cos_ps = "within utterance", cos_ds = "average over utterances")
+
+# (a) Mean over pairs of the within-utterance (cos_ps) and average-profile (cos_ds) cosines
+si_cosines <- function(d) {
+  cs <- d %>% filter(branch == si_branch, measure %in% names(cos_labels)) %>%
+    group_by(model, beta, untrained, measure) %>% summarise(value = mean(value), .groups = "drop") %>%
+    mutate(Cosine = factor(unname(cos_labels[measure]), levels = cos_labels))
+  trained <- cs %>% filter(!untrained, model %in% si_models, beta %in% selected_betas) %>%
+    mutate(Model = factor(model, levels = si_models), Beta_f = factor(beta, levels = selected_betas))
+  control <- cs %>% filter(untrained, model == "FD") %>% arrange(Cosine) %>%
+    mutate(Control = factor(paste0(Cosine, " (", sprintf("%.3f", value), ")"),
+                            levels = paste0(Cosine, " (", sprintf("%.3f", value), ")")))
+  dodge <- position_dodge(width = 0.5)
+  ggplot(trained, aes(x = Beta_f, y = value, color = Model, shape = Cosine, group = interaction(Model, Cosine))) +
+    geom_hline(data = control, aes(yintercept = value, linetype = Control), color = "grey30",
+               linewidth = ref_line_size) +
+    geom_point(size = 2.5 * point_size, alpha = 0.9, position = dodge) +
+    scale_color_manual(name = "Decomposition", values = decomp_palette[si_models], guide = guide_legend(order = 1)) +
+    scale_shape_manual(name = "Cosine", values = c(16, 17), guide = guide_legend(order = 2)) +
+    scale_linetype_manual(name = "Untrained FD", values = c("dashed", "dotted"),
+                          guide = guide_legend(order = 3, keywidth = unit(3, "cm"), override.aes = list(linewidth = 1.5 * ref_line_size))) +
+    scale_y_continuous(breaks = seq(0, 1, 0.2), labels = label_number(accuracy = 0.1)) +
+    coord_cartesian(ylim = c(0, 1)) +
+    labs(title = "", x = "β value", y = "Cosine similarity between components") +
+    theme_block() + si_legend_theme
+}
+
+# Supp. Fig. 22 plateau: mean of the last n_plateau non-empty validation logs of a run's column
+plateau <- function(file, run) {
+  dat <- read_csv(file.path(wandb_dir, file), show_col_types = FALSE)
+  col <- grep(paste0("^", run, " - "), names(dat), value = TRUE)
+  col <- col[!grepl("__MIN|__MAX", col)]
+  stopifnot(length(col) == 1)
+  v <- dat[[col]][!is.na(dat[[col]])]
+  mean(tail(v, n_plateau))
+}
+
+supp_fig22_plateaus <- function() {
+  bind_rows(lapply(selected_betas, function(b) {
+    fd_run <- paste0("VOWELS_FILTER_b", b, "_DUAL_bs16")
+    ewt_run <- paste0("VOWELS_EWT_b", b, "_DUAL_bs16")
+    fd_pos <- sapply(c("0_1", "0_2", "0_3"), function(k) plateau(paste0("validation_divergence_", k, "_S.csv"), fd_run))
+    fd_neg <- sapply(c("2_1", "3_1", "3_2"), function(k) plateau(paste0("validation_divergence_", k, "_S.csv"), fd_run))
+    tibble(model = c("FD", "EWT"), beta = b,
+           js_pos_mean = c(mean(fd_pos), plateau("EWT_validation_divergence_positive_S.csv", ewt_run)),
+           js_neg_mean = c(mean(fd_neg), plateau("EWT_validation_divergence_negative_S.csv", ewt_run)),
+           pairs_pos = c(paste(sprintf("%.3f", fd_pos), collapse = ", "), ""),
+           pairs_neg = c(paste(sprintf("%.3f", fd_neg), collapse = ", "), ""))
+  }))
+}
+
+# (b) Per-sample JS against beta: test set (filled, lines) and Supp. Fig. 22 plateau (open)
+si_js <- function(d, val) {
+  s <- d %>% filter(branch == si_branch, !untrained, model %in% si_models, beta %in% selected_betas)
+  test <- s %>% filter(measure %in% c("js_pos_mean", "js_neg_mean")) %>%
+    select(model, beta, measure, value) %>% pivot_wider(names_from = measure, values_from = value) %>%
+    mutate(Set = set_labels[["test"]])
+  js <- bind_rows(test, val %>% select(model, beta, js_pos_mean, js_neg_mean) %>% mutate(Set = set_labels[["validation"]])) %>%
+    mutate(Model = factor(model, levels = si_models), Beta_f = factor(beta, levels = selected_betas),
+           Set = factor(Set, levels = set_labels))
+  test_js <- js %>% filter(Set == set_labels[["test"]])
+  j3 <- (s %>% filter(measure == "j_C"))$value[1]
+  ref <- tibble(value = c(log(2), j3), Reference = c("ln2", "j3"))
+  ref_labels <- c(paste0("maximum separation\nln 2 ≈ ", sprintf("%.3f", log(2))),
+                  paste0("predicted alignment\nat the optimum\nj₃ = ", sprintf("%.3f", j3)))
+  pos_pal <- si_positive_palette
+  neg_pal <- setNames(negative_colors[match(si_models, models)], si_models)
+  ggplot() +
+    geom_hline(data = ref, aes(yintercept = value, linetype = Reference), color = "grey30", linewidth = ref_line_size) +
+    scale_linetype_manual(name = "Proposition 2", values = c(ln2 = "dotted", j3 = "dashed"), breaks = c("ln2", "j3"),
+                          labels = ref_labels, guide = guide_legend(order = 4, ncol = 1, keywidth = unit(3, "cm"), keyheight = unit(2.6, "cm"),
+                                                                    override.aes = list(linewidth = 1.5 * ref_line_size))) +
+    geom_line(data = test_js, aes(x = Beta_f, y = js_pos_mean, color = Model, group = Model), linewidth = line_size, alpha = 0.8) +
+    geom_point(data = js, aes(x = Beta_f, y = js_pos_mean, color = Model, shape = Set), size = 2 * point_size,
+               stroke = 1.5, alpha = 0.9) +
+    scale_color_manual(name = "Positive", values = pos_pal, guide = guide_legend(order = 1)) +
+    new_scale_color() +
+    geom_line(data = test_js, aes(x = Beta_f, y = js_neg_mean, color = Model, group = Model), linewidth = line_size, alpha = 0.8) +
+    geom_point(data = js, aes(x = Beta_f, y = js_neg_mean, color = Model, shape = Set), size = 2 * point_size,
+               stroke = 1.5, alpha = 0.9) +
+    scale_color_manual(name = "Negative", values = neg_pal, guide = guide_legend(order = 2)) +
+    scale_shape_manual(name = "", values = set_shapes, guide = guide_legend(order = 3, ncol = 1)) +
+    scale_x_discrete(labels = selected_betas) +
+    scale_y_continuous(breaks = pretty_breaks(n = 8), labels = label_number(accuracy = 0.1)) +
+    coord_cartesian(ylim = c(0, 0.8)) +
+    labs(title = "", x = "β value", y = lab_div) +
+    theme_block() + si_legend_theme
+}
+
+d_si <- read_dataset(si_dataset)
+if (!is.null(d_si) && nrow(d_si) > 0) {
+  val <- supp_fig22_plateaus()
+  cat("Supp. Fig. 22 plateau values (mean of the last", n_plateau, "validation logs, S branch):\n")
+  print(as.data.frame(val %>% mutate(across(c(js_pos_mean, js_neg_mean), ~ round(.x, 3)))))
+  p_si <- (si_cosines(d_si) | si_js(d_si, val)) +
+    plot_annotation(tag_levels = "a") &
+    theme(plot.tag = element_text(size = plot_title_size, face = "bold", family = plot_font_family))
+  for (ext in c("png", "pdf")) {
+    save_path <- file.path(save_dir, paste0("SI_block_structure_simvowels.", ext))
+    if (ext == "png") {
+      ggsave(filename = save_path, plot = p_si, width = 30, height = 11, dpi = 600, bg = "white")
+    } else {
+      ggsave(filename = save_path, plot = p_si, width = 30, height = 11, device = cairo_pdf, bg = "white")
+    }
+    cat("Plot saved to:", save_path, "\n")
+  }
 }
 
 cat("Completed block structure figures\n")
