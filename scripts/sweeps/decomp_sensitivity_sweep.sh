@@ -183,6 +183,7 @@ for TAG in "${TAGS[@]}"; do
   cp "$EVAL" "$DUMP"
   $UPD "$DUMP" output_dir "$RESULTS/$DATASET/$TAG/dump_run"
   $UPD "$DUMP" eval_dump_only true
+  $UPD "$DUMP" classify false
   $UPD "$DUMP" eval_dump_dir "$DUMP_DIR"
   $UPD "$DUMP" eval_dump_tag "${DATASET}_${TAG}"
 
