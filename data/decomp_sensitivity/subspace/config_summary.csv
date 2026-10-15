@@ -1,0 +1,130 @@
+dataset,config,order,decomposition,beta,headline,run,quantity,matrix,partition,mean,std,n,std_over
+sim_vowels,C4,0,fd,0.1,False,main,selectivity,P,own,0.19397379248176022,0.0022274805129607208,5,folds
+sim_vowels,C4,0,fd,0.1,False,main,selectivity,P,null,0.06482116676914809,0.004187372969275675,20,null partitions
+sim_vowels,C4,0,fd,0.1,False,main,selectivity,A,own,0.249239459988266,0.026545245084814095,5,folds
+sim_vowels,C4,0,fd,0.1,False,main,selectivity,A,null,0.1165239428654665,0.014894623231968628,20,null partitions
+sim_vowels,C4,0,fd,0.1,False,main,selectivity,dT,own,0.4816758361488067,0.018824209701055708,5,folds
+sim_vowels,C4,0,fd,0.1,False,main,selectivity,dT,null,0.10730492979468846,0.06250946353948732,20,null partitions
+sim_vowels,rand,1,fd,0.1,False,main,selectivity,P,own,0.16099054900355414,0.007381788185216787,3,seeds
+sim_vowels,rand,1,fd,0.1,False,main,selectivity,P,null,0.032595638394765356,0.013009743820554346,60,null partitions
+sim_vowels,rand,1,fd,0.1,False,main,alignment_mae,P,own,0.1297539690574694,0.011863747995954105,3,seeds
+sim_vowels,rand,1,fd,0.1,False,main,selectivity,A,own,0.3752043259583182,0.03012343407355977,3,seeds
+sim_vowels,rand,1,fd,0.1,False,main,selectivity,A,null,0.07039273977473567,0.023975274638289103,60,null partitions
+sim_vowels,rand,1,fd,0.1,False,main,alignment_mae,A,own,0.1949847689060167,0.040429691012050316,3,seeds
+sim_vowels,rand,1,fd,0.1,False,main,selectivity,dT,own,0.4073065719187868,0.08640436767500016,3,seeds
+sim_vowels,rand,1,fd,0.1,False,main,selectivity,dT,null,0.12956892646817939,0.08020098232965063,60,null partitions
+sim_vowels,rand,1,fd,0.1,False,main,alignment_mae,dT,own,0.1008857236766777,0.01882199889501579,3,seeds
+sim_vowels,C2,2,fd,0.1,False,main,selectivity,P,own,0.1458724074078501,0.009499456146051181,5,folds
+sim_vowels,C2,2,fd,0.1,False,main,selectivity,P,null,0.10083700184508629,0.004175215905197888,20,null partitions
+sim_vowels,C2,2,fd,0.1,False,main,selectivity,A,own,0.007854755412906225,0.0036354126544166612,5,folds
+sim_vowels,C2,2,fd,0.1,False,main,selectivity,A,null,0.013173623664999046,0.012281903524870132,20,null partitions
+sim_vowels,C2,2,fd,0.1,False,main,selectivity,dT,own,0.0812785768478054,0.021640601756915095,5,folds
+sim_vowels,C2,2,fd,0.1,False,main,selectivity,dT,null,0.2820837978347476,0.2153447959872011,20,null partitions
+sim_vowels,C5,3,fd,0.1,False,main,selectivity,P,own,0.2046659058070805,0.005656892612917381,5,folds
+sim_vowels,C5,3,fd,0.1,False,main,selectivity,P,null,0.020322314459597215,0.002533981541354893,20,null partitions
+sim_vowels,C5,3,fd,0.1,False,main,selectivity,A,own,0.5439235590483137,0.06762724684373221,5,folds
+sim_vowels,C5,3,fd,0.1,False,main,selectivity,A,null,0.16799528971049474,0.032399758315318515,20,null partitions
+sim_vowels,C5,3,fd,0.1,False,main,selectivity,dT,own,0.6640395150584678,0.032971428094502,5,folds
+sim_vowels,C5,3,fd,0.1,False,main,selectivity,dT,null,0.16331886972009607,0.06940224680008,20,null partitions
+sim_vowels,int3,4,fd,0.1,False,main,selectivity,P,own,0.16233227982253956,0.002393655138370516,5,folds
+sim_vowels,int3,4,fd,0.1,False,main,selectivity,P,null,0.03323689078673299,0.0022999471401094966,20,null partitions
+sim_vowels,int3,4,fd,0.1,False,main,alignment_mae,P,own,0.11633717807244534,0.0030976067889002794,5,folds
+sim_vowels,int3,4,fd,0.1,False,main,selectivity,A,own,0.36133427505620486,0.043662174093257136,5,folds
+sim_vowels,int3,4,fd,0.1,False,main,selectivity,A,null,0.19092716659204573,0.028757865706878,20,null partitions
+sim_vowels,int3,4,fd,0.1,False,main,alignment_mae,A,own,0.11764837824226612,0.012121057987271004,5,folds
+sim_vowels,int3,4,fd,0.1,False,main,selectivity,dT,own,0.4854257457726788,0.0307615737292293,5,folds
+sim_vowels,int3,4,fd,0.1,False,main,selectivity,dT,null,0.13798492070853113,0.09557838481701238,20,null partitions
+sim_vowels,int3,4,fd,0.1,False,main,alignment_mae,dT,own,0.1109972799796306,0.012994154854791235,5,folds
+sim_vowels,C6,5,fd,0.1,False,main,selectivity,P,own,0.2485887140670648,0.010391928841946757,5,folds
+sim_vowels,C6,5,fd,0.1,False,main,selectivity,P,null,0.024923299641011264,0.0021582254649808712,20,null partitions
+sim_vowels,C6,5,fd,0.1,False,main,selectivity,A,own,0.518940350578903,0.07087896941698771,5,folds
+sim_vowels,C6,5,fd,0.1,False,main,selectivity,A,null,0.10331768204932139,0.015956387387251195,20,null partitions
+sim_vowels,C6,5,fd,0.1,False,main,selectivity,dT,own,0.5668847419035095,0.020560677467764663,5,folds
+sim_vowels,C6,5,fd,0.1,False,main,selectivity,dT,null,0.176419515276898,0.07351633482369008,20,null partitions
+sim_vowels,lin,6,fd,0.1,False,main,selectivity,P,own,0.13789809935292457,0.002881411473967444,5,folds
+sim_vowels,lin,6,fd,0.1,False,main,selectivity,P,null,0.030362804463664083,0.0019871698259702228,20,null partitions
+sim_vowels,lin,6,fd,0.1,False,main,alignment_mae,P,own,0.14577167774539637,0.0069986033338744645,5,folds
+sim_vowels,lin,6,fd,0.1,False,main,selectivity,A,own,0.30402716288622256,0.02261725974766797,5,folds
+sim_vowels,lin,6,fd,0.1,False,main,selectivity,A,null,0.07795750206715152,0.014312772965619502,20,null partitions
+sim_vowels,lin,6,fd,0.1,False,main,alignment_mae,A,own,0.21538998781269053,0.03255864230714455,5,folds
+sim_vowels,lin,6,fd,0.1,False,main,selectivity,dT,own,0.3096448923140374,0.015150797546824869,5,folds
+sim_vowels,lin,6,fd,0.1,False,main,selectivity,dT,null,0.15944208210513344,0.0721065577978701,20,null partitions
+sim_vowels,lin,6,fd,0.1,False,main,alignment_mae,dT,own,0.06146411359086107,0.009781404987170991,5,folds
+sim_vowels,int8,7,fd,0.1,False,main,selectivity,P,own,0.18982034976129938,0.007105044787937704,5,folds
+sim_vowels,int8,7,fd,0.1,False,main,selectivity,P,null,0.05936402850770316,0.00351895405783386,20,null partitions
+sim_vowels,int8,7,fd,0.1,False,main,alignment_mae,P,own,0.12365978357782566,0.004764558452904601,5,folds
+sim_vowels,int8,7,fd,0.1,False,main,selectivity,A,own,0.2912480442567694,0.024968625292511697,5,folds
+sim_vowels,int8,7,fd,0.1,False,main,selectivity,A,null,0.09128516688147414,0.02521913501972268,20,null partitions
+sim_vowels,int8,7,fd,0.1,False,main,alignment_mae,A,own,0.13125572167499625,0.019523113143423712,5,folds
+sim_vowels,int8,7,fd,0.1,False,main,selectivity,dT,own,0.41222622503840284,0.028228632277508114,5,folds
+sim_vowels,int8,7,fd,0.1,False,main,selectivity,dT,null,0.20304619565334106,0.10816370998392358,20,null partitions
+sim_vowels,int8,7,fd,0.1,False,main,alignment_mae,dT,own,0.11976816141304232,0.011764387048830706,5,folds
+sim_vowels,C3,8,fd,0.1,True,main,selectivity,P,own,0.17704536139069163,0.008404878012435724,3,seeds
+sim_vowels,C3,8,fd,0.1,True,main,selectivity,P,null,0.03691002467413681,0.004652900127841355,60,null partitions
+sim_vowels,C3,8,fd,0.1,True,main,alignment_mae,P,own,0.09661429161537338,0.008548330884396257,3,seeds
+sim_vowels,C3,8,fd,0.1,True,main,selectivity,A,own,0.2868292766170863,0.04029112541275439,3,seeds
+sim_vowels,C3,8,fd,0.1,True,main,selectivity,A,null,0.07935515468258086,0.019051482695699704,60,null partitions
+sim_vowels,C3,8,fd,0.1,True,main,alignment_mae,A,own,0.1934714183927324,0.07640730384145328,3,seeds
+sim_vowels,C3,8,fd,0.1,True,main,selectivity,dT,own,0.4148633506632751,0.04224996482633015,3,seeds
+sim_vowels,C3,8,fd,0.1,True,main,selectivity,dT,null,0.16337925952534532,0.09892944253743886,60,null partitions
+sim_vowels,C3,8,fd,0.1,True,main,alignment_mae,dT,own,0.09228992965356435,0.008737024098754655,3,seeds
+sim_coupled,C3,9,fd,0.1,True,main,selectivity,P,own,0.012891189172532522,0.0019720812725198228,3,seeds
+sim_coupled,C3,9,fd,0.1,True,main,selectivity,P,null,0.011432595237839507,0.005100433964870029,60,null partitions
+sim_coupled,C3,9,fd,0.1,True,main,selectivity,A,own,0.019186430399156167,0.005293671540709663,3,seeds
+sim_coupled,C3,9,fd,0.1,True,main,selectivity,A,null,0.08381864527875009,0.042008766705548324,60,null partitions
+sim_coupled,C3,9,fd,0.1,True,main,selectivity,dT,own,0.025529404685858095,0.011603573482473655,3,seeds
+sim_coupled,C3,9,fd,0.1,True,main,selectivity,dT,null,0.25876273654564297,0.13567138366312886,60,null partitions
+sim_coupled,C3,9,fd,0.1,True,indep,selectivity,P,own,0.04985076770945971,0.006761088942313277,3,seeds
+sim_coupled,C3,9,fd,0.1,True,indep,selectivity,P,null,0.013538183864915846,0.00993671636757807,60,null partitions
+sim_coupled,C3,9,fd,0.1,True,indep,selectivity,A,own,0.06775570379738176,0.040462377571925175,3,seeds
+sim_coupled,C3,9,fd,0.1,True,indep,selectivity,A,null,0.28728404764610194,0.15733390315041568,60,null partitions
+sim_coupled,C3,9,fd,0.1,True,indep,selectivity,dT,own,0.029249605219100278,0.01541295769308002,3,seeds
+sim_coupled,C3,9,fd,0.1,True,indep,selectivity,dT,null,0.2487012303925514,0.13860084392529404,60,null partitions
+sim_coupled,C2,10,fd,0.1,False,main,selectivity,P,own,0.008403231520037394,0.0009421143324391791,5,folds
+sim_coupled,C2,10,fd,0.1,False,main,selectivity,P,null,0.00996247122705157,0.0010652261976038355,20,null partitions
+sim_coupled,C2,10,fd,0.1,False,main,selectivity,A,own,0.015017630502798774,0.005722465086954515,5,folds
+sim_coupled,C2,10,fd,0.1,False,main,selectivity,A,null,0.035509445497339254,0.00982340365197462,20,null partitions
+sim_coupled,C2,10,fd,0.1,False,main,selectivity,dT,own,0.027914257076691013,0.002444017169840041,5,folds
+sim_coupled,C2,10,fd,0.1,False,main,selectivity,dT,null,0.2626365250506105,0.21804431497823054,20,null partitions
+sim_coupled,C2,10,fd,0.1,False,indep,selectivity,P,own,0.03181185311950939,0.000849174491544189,5,folds
+sim_coupled,C2,10,fd,0.1,False,indep,selectivity,P,null,0.016252001692775717,0.0022153884152303705,20,null partitions
+sim_coupled,C2,10,fd,0.1,False,indep,selectivity,A,own,0.06267204073412683,0.009343582389102963,5,folds
+sim_coupled,C2,10,fd,0.1,False,indep,selectivity,A,null,0.20550803052308425,0.05084453623861384,20,null partitions
+sim_coupled,C2,10,fd,0.1,False,indep,selectivity,dT,own,0.008110588691421606,0.0028677608957768507,5,folds
+sim_coupled,C2,10,fd,0.1,False,indep,selectivity,dT,null,0.31695165379124773,0.19602794801892956,20,null partitions
+sim_coupled,C4,11,fd,0.1,False,main,selectivity,P,own,0.013176139759911559,0.0014325064157531182,5,folds
+sim_coupled,C4,11,fd,0.1,False,main,selectivity,P,null,0.009246853206290788,0.0012078324969873792,20,null partitions
+sim_coupled,C4,11,fd,0.1,False,main,selectivity,A,own,0.021347705362757423,0.006406450075600306,5,folds
+sim_coupled,C4,11,fd,0.1,False,main,selectivity,A,null,0.060459906681284356,0.01833377434520219,20,null partitions
+sim_coupled,C4,11,fd,0.1,False,main,selectivity,dT,own,0.03745377592605227,0.00679952397784661,5,folds
+sim_coupled,C4,11,fd,0.1,False,main,selectivity,dT,null,0.21767779783598207,0.11217583418745897,20,null partitions
+sim_coupled,C4,11,fd,0.1,False,indep,selectivity,P,own,0.03382285096492319,0.0020218440915571886,5,folds
+sim_coupled,C4,11,fd,0.1,False,indep,selectivity,P,null,0.002943541746570204,0.0014437606994866185,20,null partitions
+sim_coupled,C4,11,fd,0.1,False,indep,selectivity,A,own,0.06136618262254699,0.008570612319064261,5,folds
+sim_coupled,C4,11,fd,0.1,False,indep,selectivity,A,null,0.10744646345863448,0.05126559297246281,20,null partitions
+sim_coupled,C4,11,fd,0.1,False,indep,selectivity,dT,own,0.029997967192517582,0.006317507587513964,5,folds
+sim_coupled,C4,11,fd,0.1,False,indep,selectivity,dT,null,0.24739892243094688,0.12618620023000027,20,null partitions
+sim_coupled,C5,12,fd,0.1,False,main,selectivity,P,own,0.02015750690815682,0.0021596559285323425,5,folds
+sim_coupled,C5,12,fd,0.1,False,main,selectivity,P,null,0.001775977655183968,0.0004790437525468083,20,null partitions
+sim_coupled,C5,12,fd,0.1,False,main,selectivity,A,own,0.014759434326007825,0.01027635875556831,5,folds
+sim_coupled,C5,12,fd,0.1,False,main,selectivity,A,null,0.20264043913631627,0.0329581064287701,20,null partitions
+sim_coupled,C5,12,fd,0.1,False,main,selectivity,dT,own,0.02024143239439708,0.006311724480548834,5,folds
+sim_coupled,C5,12,fd,0.1,False,main,selectivity,dT,null,0.10404240485063376,0.043824457037438154,20,null partitions
+sim_coupled,C5,12,fd,0.1,False,indep,selectivity,P,own,0.0242410369491373,0.003696452671080235,5,folds
+sim_coupled,C5,12,fd,0.1,False,indep,selectivity,P,null,0.0313216956786911,0.0028929656620820944,20,null partitions
+sim_coupled,C5,12,fd,0.1,False,indep,selectivity,A,own,0.06523810862942728,0.01071786526914143,5,folds
+sim_coupled,C5,12,fd,0.1,False,indep,selectivity,A,null,0.2959642120995388,0.051055548810912996,20,null partitions
+sim_coupled,C5,12,fd,0.1,False,indep,selectivity,dT,own,0.010304855341703511,0.0037108087889399714,5,folds
+sim_coupled,C5,12,fd,0.1,False,indep,selectivity,dT,null,0.19441906775517975,0.11034378997680105,20,null partitions
+sim_coupled,C6,13,fd,0.1,False,main,selectivity,P,own,0.015410499562303264,0.0017626970113043241,5,folds
+sim_coupled,C6,13,fd,0.1,False,main,selectivity,P,null,0.019678815649584246,0.002683449283627665,20,null partitions
+sim_coupled,C6,13,fd,0.1,False,main,selectivity,A,own,0.020047215741254943,0.008313774594902297,5,folds
+sim_coupled,C6,13,fd,0.1,False,main,selectivity,A,null,0.07821112226659005,0.029390870356513082,20,null partitions
+sim_coupled,C6,13,fd,0.1,False,main,selectivity,dT,own,0.018268432327212054,0.004046437114117869,5,folds
+sim_coupled,C6,13,fd,0.1,False,main,selectivity,dT,null,0.2770652162388841,0.1244053637630515,20,null partitions
+sim_coupled,C6,13,fd,0.1,False,indep,selectivity,P,own,0.023578455397614217,0.0007526599883240153,5,folds
+sim_coupled,C6,13,fd,0.1,False,indep,selectivity,P,null,0.0064524069595906,0.00202816329788448,20,null partitions
+sim_coupled,C6,13,fd,0.1,False,indep,selectivity,A,own,0.052184137739382276,0.016927279395086717,5,folds
+sim_coupled,C6,13,fd,0.1,False,indep,selectivity,A,null,0.2486654403221694,0.04077849210668722,20,null partitions
+sim_coupled,C6,13,fd,0.1,False,indep,selectivity,dT,own,0.010867414724248368,0.0018454780709720527,5,folds
+sim_coupled,C6,13,fd,0.1,False,indep,selectivity,dT,null,0.3116769712005262,0.1410082041477888,20,null partitions
