@@ -1230,50 +1230,52 @@ def main():
                     )
 
             elif "VOC_ALS" in data_training_args.dataset_name:
+                "Task names as latents_post_analysis.py uses them ('<name>_frame'), or the older plain names"
+                voc_task = lambda *names: "all" in data_training_args.classification_tasks or any(n in data_training_args.classification_tasks for n in names)
                 "Phoneme, King's stage and disease duration carry the speaker as support, for the speaker-independent split (voc_als_cv_scheme)"
-                if "phoneme" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
+                if voc_task("phoneme", "phoneme_frame"):
                     "Check phoneme accuracy in z"
                     prediction_eval(data_training_args,config,
                         X = z_mean, X_test = None,
                         y = torch.stack((phonemes_frame,speaker_id_frame), dim = 1), y_test = None,
                         checkpoint = ckp, latent_type="z",target = ["phoneme_frame", "speaker_frame"]
                     )
-                if "speaker_frame" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:  
+                if voc_task("speaker_frame"):  
                     "Check speaker identification in z"
                     prediction_eval(data_training_args,config,
                         X = z_mean, X_test = None,
                         y = speaker_id_frame, y_test = None,
                         checkpoint = ckp, latent_type="z",target = "speaker_frame" 
                 )
-                if "group" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:   
+                if voc_task("group", "group_frame"):   
                     "Check group in z"
                     prediction_eval(data_training_args,config,
                         X = z_mean, X_test = None,
                         y = group_frame, y_test = None,
                         checkpoint = ckp, latent_type="z",target = "group_frame"
                     )
-                if "kings_stage" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
+                if voc_task("kings_stage", "kings_stage_frame"):
                     "Check King's staging in z"
                     prediction_eval(data_training_args,config,
                         X = z_mean, X_test = None,
                         y = torch.stack((king_stage_frame,speaker_id_frame), dim = 1), y_test = None,
                         checkpoint = ckp, latent_type="z",target = ["kings_stage_frame", "speaker_frame"]
                     )
-                if "disease_duration" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:   
+                if voc_task("disease_duration", "disease_duration_frame"):   
                     "Check Disease Duration staging in z"
                     prediction_eval(data_training_args,config,
                         X = z_mean, X_test = None,
                         y = torch.stack((disease_duration_frame,speaker_id_frame), dim = 1), y_test = None,
                         checkpoint = ckp, latent_type="z",target = ["disease_duration_frame", "speaker_frame"]
                     )
-                if "alsfrs_total" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
+                if voc_task("alsfrs_total", "alsfrs_total_frame"):
                     "Check ALSFRS-total staging in z"
                     prediction_eval(data_training_args,config,
                         X = z_mean, X_test = None,
                         y = alsfrs_total_frame, y_test = None,
                         checkpoint = ckp, latent_type="z",target = "alsfrs_total_frame"
                     )
-                if "alsfrs_speech" in data_training_args.classification_tasks or "all" in data_training_args.classification_tasks:
+                if voc_task("alsfrs_speech", "alsfrs_speech_frame"):
                     "Check ALSFRS-speech subitem staging in z"
                     prediction_eval(data_training_args,config,
                         X = z_mean, X_test = None,
@@ -1282,6 +1284,8 @@ def main():
                     )
 
             "Sequence-level targets, read off the pooled embeddings"
+            if z_seq is None and any(t.endswith("_seq") for t in data_training_args.classification_tasks):
+                print("Skipping the sequence-level classification - vae_seq_pooling is not set, so there are no pooled embeddings to evaluate")
             if z_seq is not None:
                 tasks = data_training_args.classification_tasks
                 if "vowels" in data_training_args.dataset_name:
@@ -1291,6 +1295,15 @@ def main():
                 elif "iemocap" in data_training_args.dataset_name:
                     seq_targets = [(speaker_id_seq, None, "speaker_seq", "speaker_seq"),
                                    (torch.stack((emotion_seq, speaker_id_seq), dim = 1), None, ["cat_emotion_seq", "speaker_seq"], "emotion_seq")]
+                elif "VOC_ALS" in data_training_args.dataset_name:
+                    "Phoneme, King's stage and disease duration carry the speaker as support, for the speaker-independent split (voc_als_cv_scheme)"
+                    seq_targets = [(torch.stack((phonemes_seq, speaker_id_seq), dim = 1), None, ["phoneme_seq", "speaker_seq"], "phoneme_seq"),
+                                   (speaker_id_seq, None, "speaker_seq", "speaker_seq"),
+                                   (torch.stack((king_stage_seq, speaker_id_seq), dim = 1), None, ["kings_stage_seq", "speaker_seq"], "kings_stage_seq"),
+                                   (torch.stack((disease_duration_seq, speaker_id_seq), dim = 1), None, ["disease_duration_seq", "speaker_seq"], "disease_duration_seq"),
+                                   (group_seq, None, "group_seq", "group_seq"),
+                                   (alsfrs_total_seq, None, "alsfrs_total_seq", "alsfrs_total_seq"),
+                                   (alsfrs_speech_seq, None, "alsfrs_speech_seq", "alsfrs_speech_seq")]
                 else:
                     print(f"No sequence-level classification targets are set up for {data_training_args.dataset_name}")
                     seq_targets = []
